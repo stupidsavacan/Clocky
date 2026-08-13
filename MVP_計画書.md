@@ -520,3 +520,64 @@ MVP では `appWidgetId` ごとに設定を保持する。
 6. **基準端末の実測値を参考にするが、固定値には依存しない。**
 7. **見た目の自由度と電池消費の少なさを両立する。**
 8. **プロプライエタリ資産をコピーせず独立実装する。**
+
+---
+
+## 17. 参照APKの保管と GitHub Actions 出力ガード
+
+### 17.1 位置づけ
+
+Google 時計 7.13 の APK は、Clocky の挙動・寸法・AppWidget 構造を確認するための**ローカル参照資料**として扱う。
+
+Clocky のビルド依存物・ランタイム資産・配布物にはしない。Google 時計の APK 本体や、その中のコード・画像・フォント等を Clocky に取り込まない。
+
+ローカルで参照する場合の推奨配置：
+
+```text
+reference_apk/
+└─ google-clock-7.13/
+   ├─ base.apk
+   └─ split_config.xhdpi.apk
+```
+
+`reference_apk/` は Git 管理対象外とする。再現性のため、リポジトリにはバイナリそのものではなく、版情報・ファイルサイズ・SHA-256・解析結果を `docs/reference/` に記録する。
+
+### 17.2 現在の参照APK識別情報
+
+| ファイル | サイズ | SHA-256 |
+|---|---:|---|
+| `base.apk` | 14,906,517 bytes | `58fc4c98cfc80786d81a927fed6b87852b8367734f758523c8264be5a2ded21d` |
+| `split_config.xhdpi.apk` | 77,330 bytes | `65ca09d76f4e7b5dc174eee36be60c1670ae5578352df55fd2570b12fbad9191` |
+
+対象パッケージ：`com.google.android.deskclock`
+
+対象バージョン：`7.13 (745094482)` / versionCode `76007130`
+
+### 17.3 Actions / Release のルール
+
+GitHub Actions から APK・AAB・ZIP 等を Artifact / Release として書き出す場合は、**Clocky のビルドで生成された出力だけを明示的にホワイトリストする**。
+
+禁止事項：
+
+- リポジトリ全体を対象に `**/*.apk` のような広い glob で Artifact を集める
+- `reference_apk/` や参照資料ディレクトリを Artifact / Release に含める
+- `com.google.android.deskclock` を applicationId とする APK を Clocky の成果物として公開する
+- 上記 SHA-256 と一致する参照 APK を Actions の成果物へ含める
+
+実装ルール：
+
+1. Build workflow は Clocky の Gradle 出力ディレクトリだけを Artifact 候補にする。
+2. `upload-artifact` / Release upload の**直前**に `scripts/verify-release-artifacts.sh` を実行する。
+3. 参照 APK と同一 SHA-256 のファイルを検出した場合は即座に失敗する。
+4. `apkanalyzer` が利用可能な場合、APK の applicationId を確認し `com.google.android.deskclock` なら失敗する。
+5. ソースツリーに `.apk` / `.apks` / `.xapk` / `.aab` が誤って Git 追跡された場合も CI を失敗させる。
+6. ガードが失敗した状態では Artifact / Release upload を実行しない。
+
+このルールは **「参照用 APK は解析のためローカルに保持できるが、Clocky の成果物としては絶対に外へ出さない」** ことを機械的に保証するためのものとする。
+
+### 17.4 実装ファイル
+
+- `.gitignore` — 参照 APK とビルド済み Android package の誤コミット防止
+- `.github/workflows/reference-apk-guard.yml` — Git 追跡された Android package バイナリを検出して CI failure
+- `scripts/verify-release-artifacts.sh` — Actions の Artifact / Release upload 前に実行する成果物検査
+- `docs/reference/google-clock-7.13.md` — 参照 APK の識別情報と解析メモ
