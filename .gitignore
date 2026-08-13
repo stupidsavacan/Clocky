@@ -1,0 +1,21 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.iml
+.idea/
+
+# Local reference / reverse-engineering binaries
+reference_apk/
+reference/vendor/
+
+# Prebuilt Android packages must not be committed.
+# Generated Clocky packages belong in build outputs / Actions artifacts, not Git.
+*.apk
+*.apks
+*.xapk
+*.aab
+
+# Local analysis scratch
+analysis/apk/
+analysis/decompiled/
