@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - agent/mvp-ci
+      - agent/mvp-java
     paths:
       - 'ci/Clocky_MVP_source.zip'
       - 'ci/GenerateJks.java'
@@ -45,6 +45,7 @@ jobs:
         run: |
           rm -rf mvp-work
           mkdir -p mvp-work
+          unzip -t ci/Clocky_MVP_source.zip
           unzip -q ci/Clocky_MVP_source.zip -d mvp-work
           test -f mvp-work/clocky_mvp/settings.gradle.kts
 
