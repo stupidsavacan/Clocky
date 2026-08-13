@@ -1,0 +1,30 @@
+name: Reference APK Guard
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  source-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Reject tracked Android package binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          tracked="$(git ls-files | grep -Ei '\.(apk|apks|xapk|aab)$' || true)"
+          if [[ -n "$tracked" ]]; then
+            echo 'Prebuilt Android package binaries must not be tracked.' >&2
+            printf '%s\n' "$tracked" >&2
+            exit 1
+          fi
+
+      - name: Validate release guard script
+        shell: bash
+        run: bash -n scripts/verify-release-artifacts.sh
