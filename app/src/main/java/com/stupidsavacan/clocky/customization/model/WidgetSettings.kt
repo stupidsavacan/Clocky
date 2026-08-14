@@ -74,12 +74,16 @@ fun WidgetSettings.normalized(): WidgetSettings = copy(
         sizeSp = time.sizeSp.coerceAtLeast(1f),
         letterSpacing = WidgetLetterSpacingPolicy.normalize(time.letterSpacing),
         opacity = time.opacity.coerceIn(0f, 1f),
+        xDp = time.xDp.finiteOrZero(),
+        yDp = time.yDp.finiteOrZero(),
     ),
     date = date.copy(
         requestedWeight = date.requestedWeight.coerceIn(100, 900),
         sizeSp = date.sizeSp.coerceAtLeast(1f),
         letterSpacing = WidgetLetterSpacingPolicy.normalize(date.letterSpacing),
         opacity = date.opacity.coerceIn(0f, 1f),
+        xDp = date.xDp.finiteOrZero(),
+        yDp = date.yDp.finiteOrZero(),
     ),
     background = background.copy(
         opacity = background.opacity.coerceIn(0f, 1f),
@@ -95,4 +99,12 @@ private fun ProfileOverride.normalized(): ProfileOverride = copy(
     dateWeight = dateWeight?.coerceIn(100, 900),
     timeSizeSp = timeSizeSp?.coerceAtLeast(1f),
     dateSizeSp = dateSizeSp?.coerceAtLeast(1f),
+    timeXDp = timeXDp.finiteOrZeroIfPresent(),
+    timeYDp = timeYDp.finiteOrZeroIfPresent(),
+    dateXDp = dateXDp.finiteOrZeroIfPresent(),
+    dateYDp = dateYDp.finiteOrZeroIfPresent(),
 )
+
+private fun Float.finiteOrZero(): Float = if (isFinite()) this else 0f
+
+private fun Float?.finiteOrZeroIfPresent(): Float? = this?.finiteOrZero()

@@ -43,4 +43,28 @@ class WidgetSettingsTest {
         assertEquals(1f, normalized.fourByOne?.dateSizeSp)
         assertEquals(null, normalized.fourByOne?.timeXDp)
     }
+
+    @Test
+    fun normalizedSanitizesNonFiniteOffsetsWithoutFillingInheritedFields() {
+        val normalized = WidgetSettings(
+            appWidgetId = 8,
+            time = TimeSettings(xDp = Float.NaN, yDp = Float.POSITIVE_INFINITY),
+            date = DateSettings(xDp = Float.NEGATIVE_INFINITY, yDp = 12.5f),
+            fourByOne = ProfileOverride(
+                timeXDp = Float.NaN,
+                timeYDp = null,
+                dateXDp = Float.POSITIVE_INFINITY,
+                dateYDp = -4f,
+            ),
+        ).normalized()
+
+        assertEquals(0f, normalized.time.xDp)
+        assertEquals(0f, normalized.time.yDp)
+        assertEquals(0f, normalized.date.xDp)
+        assertEquals(12.5f, normalized.date.yDp)
+        assertEquals(0f, normalized.fourByOne?.timeXDp)
+        assertEquals(null, normalized.fourByOne?.timeYDp)
+        assertEquals(0f, normalized.fourByOne?.dateXDp)
+        assertEquals(-4f, normalized.fourByOne?.dateYDp)
+    }
 }
