@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="clocky_widget_config_title">デジタルウィジェットの外観</string>
+    <string name="clocky_widget_config_weight_help">文字の太さを100〜900の範囲で自由に指定できます。古いAndroidで最寄りの太さに丸めて描画する場合でも、指定した値自体は保持されます。</string>
+    <string name="clocky_widget_time_weight">時刻の太さ</string>
+    <string name="clocky_widget_date_weight">日付の太さ</string>
+    <string name="clocky_widget_apply">適用</string>
+</resources>
