@@ -2,7 +2,7 @@
 
 **Google Clock の使い慣れた時計体験を基準にしつつ、ウィジェットのタイポグラフィとレイアウトを大幅に拡張する Android 時計アプリ。**
 
-> Status: **AOSP DeskClock direct-port prepared / 12 pre-build phases complete / compile not started**
+> Status: **standalone AOSP DeskClock port builds on GitHub Actions / Digital Widget customization integration in progress / real-device parity pending**
 
 ## Product direction
 
@@ -33,7 +33,7 @@ ci/Clocky_MVP_source.zip      # previous MVP source bundle retained for referenc
 | resources | 505 | 505 |
 | assets | 1 | 1 |
 
-`app/` にはこの後 Clocky 固有コードが追加されるため、現在は AOSP 原本より大きくなります。
+`app/` にはこの後 Clocky 固有コードが追加されているため、現在は AOSP 原本より大きくなっています。
 
 ## Standalone Gradle adaptation
 
@@ -49,7 +49,7 @@ minSdk: 23
 targetSdk: 35
 ```
 
-Direct-port 初期段階では AOSP の package/import を大量変更しないため `namespace = com.android.deskclock` を維持し、インストール識別子だけ `com.stupidsavacan.clocky` に分離しています。Provider authority は `${applicationId}` に変更済みです。
+Direct-port では AOSP の package/import を大量変更しないため `namespace = com.android.deskclock` を維持し、インストール識別子だけ `com.stupidsavacan.clocky` に分離しています。Provider authority は `${applicationId}` に変更済みです。
 
 AOSP `Android.bp` の AndroidX / Material 依存は standalone Gradle 依存へマッピング済みです。
 
@@ -57,28 +57,30 @@ AOSP `Android.bp` の AndroidX / Material 依存は standalone Gradle 依存へ�
 - [`docs/port/PLATFORM_API_SCAN.md`](./docs/port/PLATFORM_API_SCAN.md)
 - [`docs/port/AOSP_MIRROR_STATUS.md`](./docs/port/AOSP_MIRROR_STATUS.md)
 
-## Pre-build work completed
+## GitHub build status
 
-APK を生成せずに行う12工程は完了しています。
+`Current App CI` が現在の canonical Web build environment です。GitHub Actions 上で次を継続検証しています。
 
-1. AOSP vendor PR を `main` へマージ
-2. AOSP functional source を `app/` へ direct-port
-3. Soong → standalone Gradle 設定
-4. Manifest 移植・application identity 適応
-5. resources / assets mirror
-6. platform / hidden API 静的スキャン
-7. AndroidX / Material dependency map
-8. Clocky Widget settings model + per-widget persistence
-9. Font Weight `100..900` resolver / render contract
-10. Google Clock UI/UX parity contract
-11. Digital / Stacked / Cities / Analog / Stopwatch Widget parity spec
-12. 旧 Clocky MVP → AOSP/Clocky ownership integration design
+- debug runtime dependency resolution
+- Kotlin/resources/Manifest compile
+- unit tests
+- Android lint + lint gate
+- `assembleDebug`
+- debug APK SHA-256
 
-詳細：[`docs/port/TWELVE_PHASE_LEDGER.md`](./docs/port/TWELVE_PHASE_LEDGER.md)
+Reference APK Guard は別workflowとして維持しています。Actions artifact storage quotaによりAPK uploadだけ失敗する場合がありますが、build/test/lint/assemble/hashが成功していれば既存方針どおりnonfatalです。
 
-## Static platform scan
+この検証は **実機・エミュレータ・launcher E2Eの代替ではありません**。実際の表示、clipping、resize interaction、targetSdk runtime behaviorなどは別途device検証が必要です。
 
-Pre-build の静的スキャンでは AOSP source 160 files を調査し、強い platform-internal import は検出されず、`@hide` 文字列が2箇所検出されています。これはコンパイラ/API lint の代替ではないため、次フェーズで実際の compile error を基準に再評価します。
+## Foundation work
+
+AOSP vendor/direct-port、Gradle移植、Manifest/resource/assets移植、platform API静的スキャン、dependency map、Clocky settings model、Google Clock parity contracts、Widget parity contracts、旧MVP integration designまでの基礎工程は完了しています。
+
+詳細：
+
+- [`docs/port/TWELVE_PHASE_LEDGER.md`](./docs/port/TWELVE_PHASE_LEDGER.md)
+- [`docs/IMPLEMENTATION_BACKLOG.md`](./docs/IMPLEMENTATION_BACKLOG.md)
+- [`docs/WEB_AGENT_HANDOFF.md`](./docs/WEB_AGENT_HANDOFF.md)
 
 ## Clocky customization model
 
@@ -123,6 +125,23 @@ Weight の保存値は renderer の能力と独立しています。例えば `5
 - [`docs/spec/FONT_WEIGHT.md`](./docs/spec/FONT_WEIGHT.md)
 - [`app/src/main/java/com/stupidsavacan/clocky/customization/`](./app/src/main/java/com/stupidsavacan/clocky/customization/)
 
+## Digital Widget customization currently integrated
+
+GitHub `main` のDigital Widget pathでは、少なくとも次がmodel/storageから実描画またはconfig editorへ接続されています。
+
+- independent time/date weight rendering + base/profile editor
+- date visibility rendering + settings
+- independent time/date size rendering + base/profile editor
+- independent time/date letter spacing rendering + settings
+- 4×1 / 4×2 per-field nullable overrides (`null = inherit`) for supported fields
+- independent time/date X/Y offset resolution
+- API 31+ RemoteViews translation for X/Y offsets
+- API 23–30 effective 0dp offset fallback while preserving requested settings
+- non-finite offset sanitization at the renderer boundary
+- resolver/editor/renderer regression tests
+
+X/Y editing UIや、modelに存在していてもまだ実描画/editorへ接続されていない項目は `docs/IMPLEMENTATION_BACKLOG.md` で未完了として扱います。Web作業では、repository内にrange/interaction semanticsが無いUIを推測して実装しません。
+
 ## Google Clock parity target
 
 通常利用で Google Clock にある主要機能を取りこぼさないことを目標にします。
@@ -150,31 +169,31 @@ Weight の保存値は renderer の能力と独立しています。例えば `5
 
 ## Existing MVP integration
 
-旧 MVP の per-widget settings、4×2 / compact profile、time/date independent size、font、alignment、colour/background は捨てず、AOSP の domain/widget lifecycle の上に Clocky presentation layer として統合します。
+旧 MVP の per-widget settings、4×2 / compact profile、time/date independent size、font、alignment、colour/background は、AOSP の domain/widget lifecycle の上に Clocky presentation layer として統合する方針です。
 
 AOSP が Alarm / Timer / Stopwatch / World Clock の状態を所有し、Clocky は typography/layout/preset を所有します。Widget が独自に timer/stopwatch state を持つことは禁止します。
 
 詳細：[`docs/architecture/MVP_INTEGRATION.md`](./docs/architecture/MVP_INTEGRATION.md)
 
-## Next gate
+## Next gates
 
-12工程は **pre-build completion** です。まだ次は実施していません。
+Web-safe側では、current model/storage/tests/renderer/docsを再読し、**既に意味論が確定している小さな残件だけ**を実装します。重複実装やGoogle Clockの見た目の推測は行いません。
+
+Device/reference側には引き続き次が残ります。
 
 ```text
-compile / dependency resolution
+real-device functional smoke test
         ↓
-compile error remediation
+launcher / resize / RemoteViews behavior verification
         ↓
-manifest + targetSdk behavior fixes
+targetSdk runtime behavior verification
         ↓
-assembleDebug
+Google Clock side-by-side parity measurement
         ↓
-real-device functional test
-        ↓
-Google Clock side-by-side parity test
+release validation
 ```
 
-現時点では **APKを生成しておらず、compile成功もまだ主張しません**。
+GitHub Actionsがgreenでも、上記を「検証済み」とは表現しません。
 
 ## Non-goals
 

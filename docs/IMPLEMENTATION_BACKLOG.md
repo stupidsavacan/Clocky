@@ -1,6 +1,6 @@
 # Clocky implementation backlog
 
-This backlog separates **completed pre-build foundation work** from the next compile/runtime stages.
+This backlog separates **GitHub/Web-validated implementation** from work that still requires device/reference verification. GitHub `main`, current source/tests and required Actions checks are the source of truth for implementation status.
 
 ## F0 — repository / upstream foundation — complete
 
@@ -10,7 +10,7 @@ This backlog separates **completed pre-build foundation work** from the next com
 - [x] Keep the proprietary Google Clock APK outside the source tree.
 - [x] Preserve the previous Clocky MVP source bundle for migration reference.
 
-## F1 — AOSP standalone direct-port — complete as pre-build work
+## F1 — AOSP standalone direct-port — buildable on GitHub Actions
 
 - [x] Copy AOSP functional source into `app/src/main/java`.
 - [x] Copy all AOSP resources into `app/src/main/res`.
@@ -23,14 +23,17 @@ This backlog separates **completed pre-build foundation work** from the next com
 - [x] Move provider authority to `${applicationId}`.
 - [x] Generate static platform/hidden-API risk scan.
 - [x] Generate AndroidX/Material dependency/import map.
+- [x] Resolve Gradle dependencies in Current App CI.
+- [x] Compile the current app with JDK 17 / Android SDK 35 in Current App CI.
+- [x] Run unit tests, Android lint + lint gate, and `assembleDebug` in Current App CI.
+- [x] Record the debug APK SHA-256 in CI even when Actions artifact storage quota prevents upload.
 
-### F1 runtime follow-up
+### F1 runtime/device follow-up
 
-- [ ] Resolve Gradle dependencies in a real compile.
-- [ ] Fix compile errors and missing transitive dependencies.
-- [ ] Review obsolete/restricted Manifest attributes for targetSdk 35.
+- [ ] Review obsolete/restricted Manifest attributes for targetSdk 35 beyond what compile/lint can prove.
 - [ ] Review `READ_EXTERNAL_STORAGE`, exact-alarm, notification and full-screen-intent behavior on targetSdk 35.
 - [ ] Validate direct-boot/backup/provider behavior as a non-system app.
+- [ ] Run real-device functional smoke testing.
 
 ## F2 — Google Clock UX specification — pre-build contract complete
 
@@ -43,11 +46,13 @@ This backlog separates **completed pre-build foundation work** from the next com
 - [x] Motion recreation rules using public Android/Material primitives.
 - [x] Visual measurement sheet and parity definition-of-done.
 
-### F2 device-measurement follow-up
+### F2 device/reference follow-up
 
 - [ ] Freeze exact geometry for every Google Clock reference screen.
 - [ ] Freeze actual color/type/radius constants from reference captures.
 - [ ] Verify dark/light, RTL, locale and font-scale states on device.
+
+Do not guess missing Google Clock measurements from Web-only work.
 
 ## F3 — Widget parity specification — pre-build contract complete
 
@@ -65,32 +70,54 @@ This backlog separates **completed pre-build foundation work** from the next com
 
 - [ ] Measure exact Google reference breakpoints.
 - [ ] Implement Stacked/Cities/Stopwatch families.
-- [ ] Verify click destinations against the reference APK.
+- [ ] Verify click destinations against the reference behavior on an allowed device workflow.
 - [ ] Launcher restore/rebind testing.
 
-## F4 — Clocky customization model — pre-build code complete
+## F4 — Clocky customization model — model/persistence complete; Digital path partially integrated
 
 - [x] Schema-versioned `WidgetSettings` model.
 - [x] Per-`appWidgetId` SharedPreferences store.
-- [x] Independent time/date font family.
+- [x] Independent time/date font family fields.
 - [x] Independent time/date requested Weight `100..900`.
-- [x] Independent time/date size.
+- [x] Independent time/date size fields.
 - [x] Letter spacing fields.
 - [x] Color/opacity fields.
-- [x] X/Y offsets.
+- [x] X/Y offset fields.
 - [x] Alignment and hour-mode fields.
-- [x] Background color/opacity/radius/padding.
-- [x] 4×2 / 4×1 profile override model.
+- [x] Background color/opacity/radius/padding fields.
+- [x] 4×2 / 4×1 nullable profile override model.
 - [x] Google-like preset identity.
 - [x] Requested→effective Font Weight resolver for variable/static capabilities.
 
-### F4 renderer/editor follow-up
+### F4 Digital renderer/editor — implemented on main through PR #23
 
-- [ ] Wire settings store into AppWidget providers.
-- [ ] Implement config/editor UI controls.
-- [ ] Confirm a reliable RemoteViews weight backend.
-- [ ] Surface requested/effective weight when a static font is quantized.
-- [ ] Add real Google-like baseline values after measurement.
+- [x] Wire per-widget settings store into the Digital AppWidget provider path.
+- [x] Render independent time/date weight.
+- [x] Render date visibility.
+- [x] Render independent time/date size.
+- [x] Render independent time/date letter spacing.
+- [x] Resolve 4×1 / 4×2 per-field nullable overrides with `null = inherit` for supported fields.
+- [x] Render independent time/date X/Y offsets on API 31+ via RemoteViews translation.
+- [x] Preserve requested X/Y settings but use effective 0dp offsets on API 23–30.
+- [x] Sanitize non-finite offset values at the renderer boundary.
+- [x] Provide settings UI for weight, date visibility, size and letter spacing.
+- [x] Add resolver/editor/renderer regression tests for the merged Digital customization path.
+
+### F4 remaining Web-safe candidates — require source-defined semantics before implementation
+
+- [ ] X/Y offset editing UI (renderer/model are present; do not invent range/interaction semantics without repository evidence).
+- [ ] Color/opacity rendering and editing, if current source/contracts define exact behavior.
+- [ ] Alignment rendering/editing, if current source/contracts define exact behavior.
+- [ ] Hour mode / leading-zero rendering/editing, if current source/contracts define exact behavior.
+- [ ] Background rendering/editing, if current source/contracts define exact behavior.
+- [ ] Surface requested/effective weight when a static font is quantized, if a concrete UI contract is present.
+
+### F4 device-only verification
+
+- [ ] Verify Digital customization appearance in real launcher hosts.
+- [ ] Verify RemoteViews X/Y translation and clipping on API 31+ devices.
+- [ ] Verify the API 23–30 effective-0dp fallback visually.
+- [ ] Verify resize/profile transitions and touch/config UX on device.
 
 ## F5 — existing MVP integration design — complete
 
@@ -101,38 +128,42 @@ This backlog separates **completed pre-build foundation work** from the next com
 - [x] Forbid widget-only duplicate timer/stopwatch state.
 - [x] Preserve signing/release discipline separately from the source port.
 
-## F6 — next technical gate: compile/error remediation
+## F6 — GitHub build/test gate — complete for current main
 
-This is the first unfinished stage and intentionally comes **after** the 12 no-APK phases.
+Current App CI is the canonical Web build environment.
 
-1. Resolve Gradle dependencies.
-2. Compile Kotlin/resources/Manifest without producing a release artifact.
-3. Triage compile errors by root cause, not by blind suppression.
-4. Replace or adapt incompatible targetSdk/public-API behavior.
-5. Add tests for core migrations/settings.
-6. Only then produce `assembleDebug`.
+- [x] Resolve debug runtime dependencies.
+- [x] Compile Kotlin/resources/Manifest.
+- [x] Run unit tests.
+- [x] Run Android lint and enforce the lint gate.
+- [x] Assemble the debug APK.
+- [x] Hash the debug APK.
+- [x] Keep artifact upload quota failures nonfatal when all build/hash steps succeeded.
+- [x] Run Reference APK Guard independently of the current-app build.
+
+A green GitHub build does **not** imply launcher/device parity.
 
 ## F7 — runtime functional parity
 
-1. Alarm scheduling/firing/snooze/dismiss.
-2. Timer state, expiration and notifications.
-3. Stopwatch + laps/background state.
-4. World clocks/city selection/time-zone changes.
-5. Digital/Analog AOSP baseline widgets.
-6. Google-parity app UI.
-7. Google-parity widget families.
-8. Clocky typography/layout controls.
-9. accessibility + RTL + font-scale.
-10. real-device side-by-side verification.
+1. [ ] Alarm scheduling/firing/snooze/dismiss.
+2. [ ] Timer state, expiration and notifications.
+3. [ ] Stopwatch + laps/background state.
+4. [ ] World clocks/city selection/time-zone changes.
+5. [ ] Digital/Analog AOSP baseline widgets on device.
+6. [ ] Google-parity app UI.
+7. [ ] Google-parity widget families.
+8. [ ] Remaining Clocky typography/layout controls.
+9. [ ] accessibility + RTL + font-scale device verification.
+10. [ ] real-device side-by-side verification.
 
 ## F8 — release discipline
 
 - Keep the established Clocky signing identity for upgrade-compatible releases.
-- Do not commit signing passwords/JKS to a branch intended to become public.
-- Produce signed APKs only after reviewed source, build checks and runtime parity validation.
+- Do not commit signing passwords/JKS to branches.
+- Produce signed/release artifacts only after reviewed source, build checks and runtime parity validation.
 
 ## Current definition of success
 
-The **pre-build foundation is complete** when the repository contains the AOSP direct-port tree, standalone build configuration, static dependency/API analysis, Clocky customization model, Google UI/UX contract, Widget parity contract and MVP integration ownership map. That condition is now met.
+The repository has passed the old “pre-build foundation” gate: the standalone app now resolves dependencies, compiles, tests, lints, assembles a debug APK and records its hash in GitHub Actions. The Digital Widget customization path currently includes weight, date visibility, size, letter spacing and model-backed X/Y rendering with regression coverage.
 
-Product success still requires compile success and real-device parity testing.
+Product success still requires the remaining runtime families/behaviors and real-device/launcher parity testing. Web-only work must keep those device-only claims explicitly unverified.
