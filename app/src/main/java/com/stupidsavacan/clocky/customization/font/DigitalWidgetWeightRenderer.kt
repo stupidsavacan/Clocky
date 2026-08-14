@@ -10,7 +10,7 @@ import androidx.annotation.RequiresApi
 import com.android.deskclock.R
 
 /**
- * Applies Clocky-owned font-weight settings to the classic RemoteViews digital widget.
+ * Applies Clocky-owned text appearance settings to the classic RemoteViews digital widget.
  *
  * RemoteViews cannot receive an arbitrary Typeface instance. The widget therefore exposes one
  * TextClock per canonical 100-step weight and toggles visibility. The requested 100..900 value is
@@ -49,6 +49,8 @@ object DigitalWidgetWeightRenderer {
         dateSizePx: Float,
         dateFormat: CharSequence,
         dateEnabled: Boolean = true,
+        timeLetterSpacing: Float = 0f,
+        dateLetterSpacing: Float = 0f,
     ) {
         val sdkInt = Build.VERSION.SDK_INT
         val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)
@@ -61,6 +63,7 @@ object DigitalWidgetWeightRenderer {
             sizePx = clockSizePx,
             dateFormat = null,
             enabled = true,
+            letterSpacing = timeLetterSpacing,
         )
         applyGroup(
             remoteViews = remoteViews,
@@ -69,22 +72,27 @@ object DigitalWidgetWeightRenderer {
             sizePx = dateSizePx,
             dateFormat = dateFormat,
             enabled = dateEnabled,
+            letterSpacing = dateLetterSpacing,
         )
     }
 
-    /** Apply the same resolved weight and date visibility to the in-process measurement views. */
+    /** Apply identical appearance values to the in-process measurement views. */
     fun applySizerWeights(
         clock: TextClock,
         date: TextClock,
         requestedTimeWeight: Int,
         requestedDateWeight: Int,
         dateEnabled: Boolean = true,
+        timeLetterSpacing: Float = 0f,
+        dateLetterSpacing: Float = 0f,
     ) {
         val sdkInt = Build.VERSION.SDK_INT
         val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)
         val dateWeight = RemoteViewsFontWeightPolicy.resolve(requestedDateWeight, sdkInt)
         clock.typeface = typefaceFor(time.effective)
         date.typeface = typefaceFor(dateWeight.effective)
+        clock.letterSpacing = WidgetLetterSpacingPolicy.normalize(timeLetterSpacing)
+        date.letterSpacing = WidgetLetterSpacingPolicy.normalize(dateLetterSpacing)
         date.visibility = if (dateEnabled) View.VISIBLE else View.GONE
     }
 
@@ -98,11 +106,14 @@ object DigitalWidgetWeightRenderer {
         sizePx: Float,
         dateFormat: CharSequence?,
         enabled: Boolean,
+        letterSpacing: Float,
     ) {
         val selectedIndex = RemoteViewsFontWeightPolicy.canonicalIndex(effectiveWeight)
+        val safeLetterSpacing = WidgetLetterSpacingPolicy.normalize(letterSpacing)
         ids.forEachIndexed { index, id ->
             val visible = enabled && index == selectedIndex
             remoteViews.setViewVisibility(id, if (visible) View.VISIBLE else View.GONE)
+            remoteViews.setFloat(id, "setLetterSpacing", safeLetterSpacing)
             if (visible) {
                 remoteViews.setTextViewTextSize(id, android.util.TypedValue.COMPLEX_UNIT_PX, sizePx)
             }

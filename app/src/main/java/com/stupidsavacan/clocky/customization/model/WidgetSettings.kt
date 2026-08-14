@@ -1,5 +1,7 @@
 package com.stupidsavacan.clocky.customization.model
 
+import com.stupidsavacan.clocky.customization.font.WidgetLetterSpacingPolicy
+
 /** Clocky-owned settings layered on top of the AOSP DeskClock functional base. */
 data class WidgetSettings(
     val appWidgetId: Int,
@@ -70,11 +72,13 @@ fun WidgetSettings.normalized(): WidgetSettings = copy(
     time = time.copy(
         requestedWeight = time.requestedWeight.coerceIn(100, 900),
         sizeSp = time.sizeSp.coerceAtLeast(1f),
+        letterSpacing = WidgetLetterSpacingPolicy.normalize(time.letterSpacing),
         opacity = time.opacity.coerceIn(0f, 1f),
     ),
     date = date.copy(
         requestedWeight = date.requestedWeight.coerceIn(100, 900),
         sizeSp = date.sizeSp.coerceAtLeast(1f),
+        letterSpacing = WidgetLetterSpacingPolicy.normalize(date.letterSpacing),
         opacity = date.opacity.coerceIn(0f, 1f),
     ),
     background = background.copy(
