@@ -12,159 +12,119 @@ This backlog separates **GitHub/Web-validated implementation** from work that st
 
 ## F1 — AOSP standalone direct-port — buildable on GitHub Actions
 
-- [x] Copy AOSP functional source into `app/src/main/java`.
-- [x] Copy all AOSP resources into `app/src/main/res`.
-- [x] Copy AOSP assets into `app/src/main/assets`.
-- [x] Preserve `third_party/aosp-deskclock/` as immutable provenance.
-- [x] Translate AOSP Soong static-library declarations into Gradle dependencies.
-- [x] Keep source namespace `com.android.deskclock` during direct-port to avoid mass import rewrites.
-- [x] Separate install identity as `applicationId = com.stupidsavacan.clocky`.
-- [x] Remove Manifest `uses-sdk`/`original-package` assumptions owned by AGP.
-- [x] Move provider authority to `${applicationId}`.
-- [x] Generate static platform/hidden-API risk scan.
-- [x] Generate AndroidX/Material dependency/import map.
-- [x] Resolve Gradle dependencies in Current App CI.
-- [x] Compile the current app with JDK 17 / Android SDK 35 in Current App CI.
-- [x] Run unit tests, Android lint + lint gate, and `assembleDebug` in Current App CI.
-- [x] Record the debug APK SHA-256 in CI even when Actions artifact storage quota prevents upload.
+- [x] Port AOSP source/resources/assets into `app/` while preserving immutable upstream provenance.
+- [x] Translate AOSP build dependencies into standalone Gradle dependencies.
+- [x] Keep source namespace `com.android.deskclock` and separate install identity as `com.stupidsavacan.clocky`.
+- [x] Move provider authority to `${applicationId}` and adapt Manifest/build assumptions to AGP.
+- [x] Resolve dependencies, compile, unit-test, lint, `assembleDebug`, and hash the APK in Current App CI.
+- [x] Keep artifact-upload quota failures nonfatal when build/test/lint/assemble/hash succeed.
 
 ### F1 runtime/device follow-up
 
-- [ ] Review obsolete/restricted Manifest attributes for targetSdk 35 beyond what compile/lint can prove.
-- [ ] Review `READ_EXTERNAL_STORAGE`, exact-alarm, notification and full-screen-intent behavior on targetSdk 35.
+- [ ] Review targetSdk 35 runtime-sensitive permission/Manifest behavior on device.
 - [ ] Validate direct-boot/backup/provider behavior as a non-system app.
 - [ ] Run real-device functional smoke testing.
 
 ## F2 — Google Clock UX specification — pre-build contract complete
 
-- [x] Global navigation/interaction contract.
-- [x] Alarm list/edit/firing state requirements.
-- [x] Clock/world-city requirements.
-- [x] Timer state machine and interactions.
-- [x] Stopwatch + lap requirements.
-- [x] Settings separation between core Clock behavior and Clocky customisation.
-- [x] Motion recreation rules using public Android/Material primitives.
-- [x] Visual measurement sheet and parity definition-of-done.
+The app/navigation, Alarm, Clock, Timer, Stopwatch, settings-separation, motion, and parity definition-of-done contracts are documented.
 
 ### F2 device/reference follow-up
 
-- [ ] Freeze exact geometry for every Google Clock reference screen.
-- [ ] Freeze actual color/type/radius constants from reference captures.
+- [ ] Freeze exact geometry/color/type/radius constants from allowed reference captures.
 - [ ] Verify dark/light, RTL, locale and font-scale states on device.
 
 Do not guess missing Google Clock measurements from Web-only work.
 
 ## F3 — Widget parity specification — pre-build contract complete
 
-- [x] Digital family contract.
-- [x] Digital Stacked contract.
-- [x] Digital Cities contract.
-- [x] Analog contract.
-- [x] Stopwatch Widget contract.
-- [x] Shared resize/update/accessibility/restore rules.
-- [x] Data-source ownership rules.
-- [x] Click-role matrix.
-- [x] Host-size-driven layout strategy.
+Digital, Digital Stacked, Digital Cities, Analog, Stopwatch Widget, resize/update/accessibility/restore, data ownership and click-role contracts are documented.
 
 ### F3 runtime follow-up
 
 - [ ] Measure exact Google reference breakpoints.
-- [ ] Implement Stacked/Cities/Stopwatch families.
-- [ ] Verify click destinations against the reference behavior on an allowed device workflow.
-- [ ] Launcher restore/rebind testing.
+- [ ] Implement Stacked/Cities/Stopwatch families when their exact contracts are actionable.
+- [ ] Verify click destinations and launcher restore/rebind behavior on an allowed device workflow.
 
-## F4 — Clocky customization model — model/persistence complete; Digital path partially integrated
+## F4 — Clocky customization model — model/persistence complete; source-defined Digital path integrated through PR #29
 
-- [x] Schema-versioned `WidgetSettings` model.
-- [x] Per-`appWidgetId` SharedPreferences store.
-- [x] Independent time/date font family fields.
-- [x] Independent time/date requested Weight `100..900`.
-- [x] Independent time/date size fields.
-- [x] Letter spacing fields.
-- [x] Color/opacity fields.
-- [x] X/Y offset fields.
-- [x] Alignment and hour-mode fields.
+- [x] Schema-versioned per-`appWidgetId` `WidgetSettings` JSON store.
+- [x] Time/date font family, requested weight, size, letter spacing, color/opacity, X/Y and alignment fields.
+- [x] Time hour-mode/leading-zero fields and date format field.
 - [x] Background color/opacity/radius/padding fields.
-- [x] 4×2 / 4×1 nullable profile override model.
-- [x] Google-like preset identity.
-- [x] Requested→effective Font Weight resolver for variable/static capabilities.
+- [x] 4×2 / 4×1 nullable profile overrides and Google-like preset identity.
+- [x] Requested→effective Font Weight resolution.
 
-### F4 Digital renderer/editor — implemented on main through PR #25
+### F4 Digital renderer/editor — implemented
 
-- [x] Wire per-widget settings store into the Digital AppWidget provider path.
-- [x] Render independent time/date weight.
-- [x] Render date visibility.
-- [x] Render independent time/date size.
-- [x] Render independent time/date letter spacing.
-- [x] Resolve 4×1 / 4×2 per-field nullable overrides with `null = inherit` for supported fields.
-- [x] Render independent time/date X/Y offsets on API 31+ via RemoteViews translation.
-- [x] Preserve requested X/Y settings but use effective 0dp offsets on API 23–30.
-- [x] Sanitize non-finite offset values at the renderer boundary.
-- [x] Normalize non-finite base/profile X/Y values to 0dp before persistence while preserving nullable profile inheritance.
+- [x] Wire per-widget settings store into the Digital provider.
+- [x] Render independent time/date weight, date visibility, size and letter spacing.
+- [x] Resolve 4×1 / 4×2 nullable overrides with `null = inherit` for supported fields.
+- [x] Render independent X/Y offsets via RemoteViews translation on API 31+; preserve requested settings with effective 0dp fallback on API 23–30.
+- [x] Normalize/sanitize non-finite base/profile X/Y values without destroying nullable inheritance.
 - [x] Provide settings UI for weight, date visibility, size and letter spacing.
-- [x] Add resolver/editor/renderer/model regression tests for the merged Digital customization path.
+- [x] Add regression tests for the merged resolver/editor/renderer/model paths.
+- [x] PR #27: support the repository-MVP's five proven legacy font families for time/date without replacing the existing requested-weight path.
+- [x] PR #28: apply explicit widget hour modes: follow-system leaves the existing TextClock formats intact, forced 12h uses `h:mm`, forced 24h uses `HH:mm`.
+- [x] PR #29: delete consolidated per-widget settings when the launcher removes that widget, preventing orphan settings from surviving widget deletion.
 
-### F4 remaining Web-safe candidates — require source-defined semantics before implementation
+### F4 remaining Web-safe candidates — blocked unless semantics are defined
 
-- [ ] X/Y offset editing UI (renderer/model are present; do not invent range/interaction semantics without repository evidence).
-- [ ] Color/opacity rendering and editing, if current source/contracts define exact behavior.
-- [ ] Alignment rendering/editing, if current source/contracts define exact behavior.
-- [ ] Hour mode / leading-zero rendering/editing, if current source/contracts define exact behavior.
-- [ ] Background rendering/editing, if current source/contracts define exact behavior.
-- [ ] Surface requested/effective weight when a static font is quantized, if a concrete UI contract is present.
+- [ ] X/Y offset editing UI: renderer/model exist, but repository does not define range/interaction semantics.
+- [ ] Date-format renderer/editor: current `DateSettings.formatPattern` is non-null with default `EEE, MMM d`, while the provider currently derives its default from locale; there is no explicit “no override” state.
+- [ ] Color/opacity rendering/editing: current contracts do not define how ARGB alpha composes with the separate opacity field.
+- [ ] Alignment rendering/editing: legacy values mean START/CENTER/END, while the current enum is LEFT/CENTER/RIGHT; exact RTL semantics are not defined.
+- [ ] Background rendering/editing: exact transparent/dark/light mapping, fallback colors, padding/radius and API fallback semantics are not fully defined.
+- [ ] Leading-zero behavior: the current model has a field, but the old MVP persisted no leading-zero key; do not synthesize migration behavior.
+- [ ] Requested/effective weight disclosure UI, if a concrete UI contract is added.
 
 ### F4 device-only verification
 
 - [ ] Verify Digital customization appearance in real launcher hosts.
-- [ ] Verify RemoteViews X/Y translation and clipping on API 31+ devices.
-- [ ] Verify the API 23–30 effective-0dp fallback visually.
+- [ ] Verify RemoteViews X/Y translation/clipping and API 23–30 fallback visually.
 - [ ] Verify resize/profile transitions and touch/config UX on device.
 
-## F5 — existing MVP integration design — design complete; primitive-key migration blocked
+## F5 — existing MVP integration — source persistence contract decoded; importer intentionally deferred
 
-- [x] Map old per-widget settings to the new Clocky settings owner at the architecture level.
-- [x] Retain 4×2 + compact concepts as size profiles.
-- [x] Retain independent time/date styling.
-- [x] Assign Alarm/Timer/Stopwatch/World Clock state ownership to the AOSP domain layer.
-- [x] Forbid widget-only duplicate timer/stopwatch state.
-- [x] Preserve signing/release discipline separately from the source port.
-- [ ] Implement one-time old-MVP primitive SharedPreferences import into `WidgetSettings`.
+- [x] Define ownership of old per-widget presentation settings versus AOSP domain state.
+- [x] Retain independent time/date styling and size-profile concepts without duplicating timer/stopwatch state.
+- [x] Decode the authoritative retained source bundle `ci/Clocky_MVP_source.zip` (14,299 bytes; Git blob `6d63be2463ec408824a9b06eec282153c1a2df55`).
+- [x] Verify legacy SharedPreferences file `clocky_widgets`, prefix `w_<appWidgetId>_`, all saved key names/types, enum mappings, defaults, save/delete behavior, font array, date-pattern array, and absence of profile-specific persistence.
+- [x] Verify there is **no old persisted `leadingZero` key**.
+- [ ] Implement one-time primitive SharedPreferences import into `WidgetSettings` only after all persisted old semantics are losslessly representable.
 
-### F5 migration blocker
+### F5 exact legacy key contract
 
-`docs/architecture/MVP_INTEGRATION.md` makes `ci/Clocky_MVP_source.zip` the authority for the old key names until a migration reader exists. The latest retained bundle is 14,299 bytes with Git blob `6d63be2463ec408824a9b06eec282153c1a2df55`.
+- integers: `timeFont`, `dateFont`, `timeSize`, `dateSize`, `timeX`, `timeY`, `dateX`, `dateY`, `align`, `bg`, `hourMode`, `dateFormat`
+- boolean: `showDate`
+- strings: `timeColor`, `dateColor`
+- no legacy profile keys; no leading-zero key
 
-The connected GitHub Web reader can identify that exact binary but cannot decode/materialize it through its UTF-8-only file/blob read path. `ci/source-b64/part-00.txt` predates commit `23338240ae55a358c0fae0b443b383cd13169628` (`Update MVP source bundle`), so it is not authoritative for the final source bundle. Do **not** implement a partial migration from that stale helper or remembered key mappings.
+### F5 importer rules once semantics are resolved
 
-To unblock this Web-safe task, extract only the repository-owned plain-text source from the final ZIP that defines SharedPreferences name/key construction, all persisted keys/types/defaults, enum/date/background/color semantics, save/load/delete/reset behavior and any profile persistence. No APK/reference assets/device data/signing material are required. See `docs/WEB_AGENT_HANDOFF.md` for the precise minimum evidence list.
+1. Existing consolidated JSON in `clocky_widget_settings` / `widget.<id>.settings` always wins.
+2. Read exact legacy keys/types; never guess missing values or invent profile data.
+3. Normalize and save into the current JSON store.
+4. After successful import, remove or permanently ignore that widget's old keys so deleted/edited values cannot be resurrected.
+5. Never dual-write current values to the old primitive key space.
+
+The remaining blocker is **representability**, not source readability: date-format default/override state, color/opacity composition, START/END versus LEFT/RIGHT RTL meaning, and exact old background-layout mapping remain under-specified in the current contract. A partial/lossy importer is intentionally not added.
 
 ## F6 — GitHub build/test gate — complete for current main
 
-Current App CI is the canonical Web build environment.
-
-- [x] Resolve debug runtime dependencies.
-- [x] Compile Kotlin/resources/Manifest.
-- [x] Run unit tests.
-- [x] Run Android lint and enforce the lint gate.
-- [x] Assemble the debug APK.
-- [x] Hash the debug APK.
-- [x] Keep artifact upload quota failures nonfatal when all build/hash steps succeeded.
-- [x] Run Reference APK Guard independently of the current-app build.
-
-A green GitHub build does **not** imply launcher/device parity.
+Current App CI is the canonical Web build environment and continuously covers dependency resolution, compile, unit tests, lint gate, `assembleDebug`, and APK SHA-256. Reference APK Guard runs independently. A green GitHub build does **not** imply launcher/device parity.
 
 ## F7 — runtime functional parity
 
-1. [ ] Alarm scheduling/firing/snooze/dismiss.
-2. [ ] Timer state, expiration and notifications.
-3. [ ] Stopwatch + laps/background state.
-4. [ ] World clocks/city selection/time-zone changes.
-5. [ ] Digital/Analog AOSP baseline widgets on device.
-6. [ ] Google-parity app UI.
-7. [ ] Google-parity widget families.
-8. [ ] Remaining Clocky typography/layout controls.
-9. [ ] accessibility + RTL + font-scale device verification.
-10. [ ] real-device side-by-side verification.
+- [ ] Alarm scheduling/firing/snooze/dismiss.
+- [ ] Timer state, expiration and notifications.
+- [ ] Stopwatch + laps/background state.
+- [ ] World clocks/city selection/time-zone changes.
+- [ ] Digital/Analog baseline widgets on device.
+- [ ] Google-parity app UI and remaining widget families.
+- [ ] Remaining Clocky typography/layout controls after their contracts are explicit.
+- [ ] accessibility + RTL + font-scale device verification.
+- [ ] real-device side-by-side verification.
 
 ## F8 — release discipline
 
@@ -174,6 +134,6 @@ A green GitHub build does **not** imply launcher/device parity.
 
 ## Current definition of success
 
-The repository has passed the old “pre-build foundation” gate: the standalone app now resolves dependencies, compiles, tests, lints, assembles a debug APK and records its hash in GitHub Actions. The Digital Widget customization path currently includes weight, date visibility, size, letter spacing and model-backed X/Y rendering with regression coverage, including persistence-time non-finite X/Y normalization.
+The standalone app resolves dependencies, compiles, tests, lints, assembles a debug APK and records its hash in GitHub Actions. The source-defined Digital customization path now covers weight, date visibility, size, letter spacing, X/Y rendering, the retained MVP's five font families, explicit hour mode, and widget-settings lifecycle cleanup.
 
-Product success still requires the remaining runtime families/behaviors and real-device/launcher parity testing. Old-MVP primitive-key migration also remains intentionally unimplemented until the final retained source bundle's mapping can be reviewed as authoritative plain text. Web-only work must keep those device-only and source-blocked claims explicitly unverified.
+The remaining clear work is either contract/specification work or device/reference verification. Web-only work must not invent the unresolved date/color/alignment/background semantics or describe CI as physical-device verification.
