@@ -8,7 +8,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application android:name=".DeskClockApplication" android:allowBackup="false" android:backupAgent="DeskClockBackupAgent" android:fullBackupContent="@xml/backup_scheme" android:fullBackupOnly="true" android:icon="@mipmap/ic_launcher_alarmclock" android:label="@string/app_label" android:requiredForAllUsers="true" android:supportsRtl="true" android:theme="@style/Theme.DeskClock">
@@ -53,6 +54,7 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
         <receiver android:name=".alarms.AlarmStateManager" android:directBootAware="true" />
