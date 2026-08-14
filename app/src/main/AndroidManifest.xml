@@ -23,6 +23,15 @@
         <activity android:name=".ringtone.RingtonePickerActivity" android:excludeFromRecents="true" android:taskAffinity="" android:theme="@style/Theme.DeskClock.RingtonePicker" />
         <activity android:name=".worldclock.CitySelectionActivity" android:excludeFromRecents="true" android:label="@string/cities_activity_title" android:parentActivityName=".DeskClock" android:taskAffinity="" android:theme="@style/Theme.DeskClock.CitySelection" />
         <activity android:name=".settings.SettingsActivity" android:excludeFromRecents="true" android:label="@string/settings" android:parentActivityName=".DeskClock" android:taskAffinity="" android:theme="@style/Theme.DeskClock.Settings" />
+        <activity
+            android:name="com.stupidsavacan.clocky.widget.DigitalWidgetConfigActivity"
+            android:exported="true"
+            android:label="@string/clocky_widget_config_label"
+            android:theme="@style/Theme.DeskClock.Settings">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
         <activity android:name=".HandleShortcuts" android:excludeFromRecents="true" android:launchMode="singleInstance" android:taskAffinity="" android:theme="@android:style/Theme.NoDisplay" />
         <activity android:name="com.android.deskclock.HandleApiCalls" android:permission="com.android.alarm.permission.SET_ALARM" android:directBootAware="true" android:excludeFromRecents="true" android:launchMode="singleInstance" android:showWhenLocked="true" android:taskAffinity="" android:exported="true" android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>

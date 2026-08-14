@@ -16,6 +16,7 @@
 
 <appwidget-provider
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.stupidsavacan.clocky.widget.DigitalWidgetConfigActivity"
     android:initialLayout="@layout/loading_widget"
     android:minHeight="@dimen/min_digital_widget_height"
     android:minWidth="@dimen/min_digital_widget_width"
