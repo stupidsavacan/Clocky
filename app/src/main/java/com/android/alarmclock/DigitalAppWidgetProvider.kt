@@ -61,6 +61,7 @@ import com.android.deskclock.data.DataModel
 import com.android.deskclock.uidata.UiDataModel
 import com.android.deskclock.worldclock.CitySelectionActivity
 import com.stupidsavacan.clocky.customization.font.DigitalWidgetWeightRenderer
+import com.stupidsavacan.clocky.customization.position.DigitalWidgetOffsetRenderer
 import com.stupidsavacan.clocky.customization.model.DigitalWidgetProfileResolver
 import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
 
@@ -374,6 +375,10 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     widgetSettings,
                     options.getInt(OPTION_APPWIDGET_MIN_HEIGHT),
             )
+            val resolvedOffsets = DigitalWidgetProfileResolver.resolveOffsets(
+                    widgetSettings,
+                    options.getInt(OPTION_APPWIDGET_MIN_HEIGHT),
+            )
 
             // Fetch the widget size selected by the user.
             val resources: Resources = context.getResources()
@@ -431,6 +436,11 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     dateEnabled = resolvedWeights.dateEnabled,
                     timeLetterSpacing = widgetSettings.time.letterSpacing,
                     dateLetterSpacing = widgetSettings.date.letterSpacing,
+            )
+            DigitalWidgetOffsetRenderer.applyRemoteViews(
+                    remoteViews = rv,
+                    requested = resolvedOffsets,
+                    density = density,
             )
             rv.setTextViewTextSize(R.id.nextAlarm, COMPLEX_UNIT_PX, sizes.mFontSizePx.toFloat())
 
