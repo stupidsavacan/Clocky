@@ -16,6 +16,7 @@
 
 <appwidget-provider
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.stupidsavacan.clocky.customization.ui.DigitalWidgetConfigActivity"
     android:initialLayout="@layout/loading_widget"
     android:minHeight="@dimen/min_digital_widget_height"
     android:minWidth="@dimen/min_digital_widget_width"
@@ -24,4 +25,5 @@
     android:previewImage="@drawable/appwidget_digital_clock_preview"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="0"
-    android:widgetCategory="keyguard|home_screen" />
+    android:widgetCategory="keyguard|home_screen"
+    android:widgetFeatures="reconfigurable" />
