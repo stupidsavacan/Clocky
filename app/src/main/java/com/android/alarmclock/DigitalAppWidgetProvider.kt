@@ -417,6 +417,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     resolvedWeights.timeWeight,
                     resolvedWeights.dateWeight,
                     resolvedWeights.dateEnabled,
+                    widgetSettings.time.fontFamily,
+                    widgetSettings.date.fontFamily,
                     widgetSettings.time.letterSpacing,
                     widgetSettings.date.letterSpacing,
             )
@@ -436,6 +438,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     dateEnabled = resolvedWeights.dateEnabled,
                     timeLetterSpacing = widgetSettings.time.letterSpacing,
                     dateLetterSpacing = widgetSettings.date.letterSpacing,
+                    timeFontFamily = widgetSettings.time.fontFamily,
+                    dateFontFamily = widgetSettings.date.fontFamily,
             )
             DigitalWidgetOffsetRenderer.applyRemoteViews(
                     remoteViews = rv,
@@ -480,6 +484,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             requestedTimeWeight: Int,
             requestedDateWeight: Int,
             dateEnabled: Boolean,
+            timeFontFamily: String,
+            dateFontFamily: String,
             timeLetterSpacing: Float,
             dateLetterSpacing: Float,
         ): Sizes {
@@ -502,6 +508,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     dateEnabled,
                     timeLetterSpacing,
                     dateLetterSpacing,
+                    timeFontFamily,
+                    dateFontFamily,
             )
 
             // Configure the next alarm views to display the next alarm time or be gone.

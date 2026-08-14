@@ -41,6 +41,22 @@ object DigitalWidgetWeightRenderer {
         R.id.date_w900,
     )
 
+    private val legacyTimeViewIds = intArrayOf(
+        R.id.clock_legacy_sans_light,
+        R.id.clock_legacy_sans_rounded,
+        R.id.clock_legacy_serif,
+        R.id.clock_legacy_sans_condensed,
+        R.id.clock_legacy_monospace,
+    )
+
+    private val legacyDateViewIds = intArrayOf(
+        R.id.date_legacy_sans_light,
+        R.id.date_legacy_sans_rounded,
+        R.id.date_legacy_serif,
+        R.id.date_legacy_sans_condensed,
+        R.id.date_legacy_monospace,
+    )
+
     fun applyRemoteViews(
         remoteViews: RemoteViews,
         requestedTimeWeight: Int,
@@ -51,6 +67,8 @@ object DigitalWidgetWeightRenderer {
         dateEnabled: Boolean = true,
         timeLetterSpacing: Float = 0f,
         dateLetterSpacing: Float = 0f,
+        timeFontFamily: String = "system-sans",
+        dateFontFamily: String = "system-sans",
     ) {
         val sdkInt = Build.VERSION.SDK_INT
         val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)
@@ -59,6 +77,8 @@ object DigitalWidgetWeightRenderer {
         applyGroup(
             remoteViews = remoteViews,
             ids = timeViewIds,
+            legacyIds = legacyTimeViewIds,
+            legacySelectedId = legacyViewId(timeFontFamily, time.effective, isDate = false),
             effectiveWeight = time.effective,
             sizePx = clockSizePx,
             dateFormat = null,
@@ -68,6 +88,8 @@ object DigitalWidgetWeightRenderer {
         applyGroup(
             remoteViews = remoteViews,
             ids = dateViewIds,
+            legacyIds = legacyDateViewIds,
+            legacySelectedId = legacyViewId(dateFontFamily, date.effective, isDate = true),
             effectiveWeight = date.effective,
             sizePx = dateSizePx,
             dateFormat = dateFormat,
@@ -85,12 +107,14 @@ object DigitalWidgetWeightRenderer {
         dateEnabled: Boolean = true,
         timeLetterSpacing: Float = 0f,
         dateLetterSpacing: Float = 0f,
+        timeFontFamily: String = "system-sans",
+        dateFontFamily: String = "system-sans",
     ) {
         val sdkInt = Build.VERSION.SDK_INT
         val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)
         val dateWeight = RemoteViewsFontWeightPolicy.resolve(requestedDateWeight, sdkInt)
-        clock.typeface = typefaceFor(time.effective)
-        date.typeface = typefaceFor(dateWeight.effective)
+        clock.typeface = typefaceFor(time.effective, timeFontFamily)
+        date.typeface = typefaceFor(dateWeight.effective, dateFontFamily)
         clock.letterSpacing = WidgetLetterSpacingPolicy.normalize(timeLetterSpacing)
         date.letterSpacing = WidgetLetterSpacingPolicy.normalize(dateLetterSpacing)
         date.visibility = if (dateEnabled) View.VISIBLE else View.GONE
@@ -102,6 +126,8 @@ object DigitalWidgetWeightRenderer {
     private fun applyGroup(
         remoteViews: RemoteViews,
         ids: IntArray,
+        legacyIds: IntArray,
+        legacySelectedId: Int?,
         effectiveWeight: Int,
         sizePx: Float,
         dateFormat: CharSequence?,
@@ -110,21 +136,63 @@ object DigitalWidgetWeightRenderer {
     ) {
         val selectedIndex = RemoteViewsFontWeightPolicy.canonicalIndex(effectiveWeight)
         val safeLetterSpacing = WidgetLetterSpacingPolicy.normalize(letterSpacing)
+        val useLegacyFamily = legacySelectedId != null
         ids.forEachIndexed { index, id ->
-            val visible = enabled && index == selectedIndex
-            remoteViews.setViewVisibility(id, if (visible) View.VISIBLE else View.GONE)
-            remoteViews.setFloat(id, "setLetterSpacing", safeLetterSpacing)
-            if (visible) {
-                remoteViews.setTextViewTextSize(id, android.util.TypedValue.COMPLEX_UNIT_PX, sizePx)
-            }
-            if (dateFormat != null) {
-                remoteViews.setCharSequence(id, "setFormat12Hour", dateFormat)
-                remoteViews.setCharSequence(id, "setFormat24Hour", dateFormat)
-            }
+            applyView(
+                remoteViews,
+                id,
+                enabled && !useLegacyFamily && index == selectedIndex,
+                sizePx,
+                dateFormat,
+                safeLetterSpacing,
+            )
+        }
+        legacyIds.forEach { id ->
+            applyView(
+                remoteViews,
+                id,
+                enabled && id == legacySelectedId,
+                sizePx,
+                dateFormat,
+                safeLetterSpacing,
+            )
         }
     }
 
-    private fun typefaceFor(weight: Int): Typeface {
+    private fun applyView(
+        remoteViews: RemoteViews,
+        id: Int,
+        visible: Boolean,
+        sizePx: Float,
+        dateFormat: CharSequence?,
+        letterSpacing: Float,
+    ) {
+        remoteViews.setViewVisibility(id, if (visible) View.VISIBLE else View.GONE)
+        remoteViews.setFloat(id, "setLetterSpacing", letterSpacing)
+        if (visible) {
+            remoteViews.setTextViewTextSize(id, android.util.TypedValue.COMPLEX_UNIT_PX, sizePx)
+        }
+        if (dateFormat != null) {
+            remoteViews.setCharSequence(id, "setFormat12Hour", dateFormat)
+            remoteViews.setCharSequence(id, "setFormat24Hour", dateFormat)
+        }
+    }
+
+    private fun legacyViewId(fontFamily: String, effectiveWeight: Int, isDate: Boolean): Int? {
+        return when (LegacyWidgetFontFamilyPolicy.exactFamilyOrNull(fontFamily, effectiveWeight)) {
+            "sans-serif-light" -> if (isDate) R.id.date_legacy_sans_light else R.id.clock_legacy_sans_light
+            "sans-serif-rounded" -> if (isDate) R.id.date_legacy_sans_rounded else R.id.clock_legacy_sans_rounded
+            "serif" -> if (isDate) R.id.date_legacy_serif else R.id.clock_legacy_serif
+            "sans-serif-condensed" -> if (isDate) R.id.date_legacy_sans_condensed else R.id.clock_legacy_sans_condensed
+            "monospace" -> if (isDate) R.id.date_legacy_monospace else R.id.clock_legacy_monospace
+            else -> null
+        }
+    }
+
+    private fun typefaceFor(weight: Int, fontFamily: String): Typeface {
+        LegacyWidgetFontFamilyPolicy.exactFamilyOrNull(fontFamily, weight)?.let { family ->
+            return Typeface.create(family, Typeface.NORMAL)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             return createWeightedTypeface(weight)
         }
