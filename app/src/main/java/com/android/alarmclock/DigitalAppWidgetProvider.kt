@@ -149,6 +149,14 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
         }
     }
 
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+
+        val settingsStore = SharedPreferencesWidgetSettingsStore(context)
+        appWidgetIds.forEach { appWidgetId -> settingsStore.delete(appWidgetId) }
+    }
+
     /**
      * Called when the app widget changes sizes.
      */
