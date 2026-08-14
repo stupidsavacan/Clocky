@@ -128,6 +128,7 @@ object NotificationUtils {
         }
     }
 
+    @android.annotation.TargetApi(android.os.Build.VERSION_CODES.O)
     private fun getAllExistingChannelIds(nm: NotificationManagerCompat): Set<String> {
         val result: MutableSet<String> = ArraySet()
         for (channel in nm.getNotificationChannels()) {

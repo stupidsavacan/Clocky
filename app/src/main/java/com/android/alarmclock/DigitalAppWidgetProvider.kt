@@ -187,7 +187,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
         // Schedule the next day-change callback; at least one city is displayed.
         val pi: PendingIntent =
                 PendingIntent.getBroadcast(context, 0, DAY_CHANGE_INTENT, FLAG_UPDATE_CURRENT)
-        getAlarmManager(context).setExact(AlarmManager.RTC, nextDay.time, pi)
+        // Day-boundary refresh does not require exact-alarm privilege.
+        getAlarmManager(context).set(AlarmManager.RTC, nextDay.time, pi)
     }
 
     /**

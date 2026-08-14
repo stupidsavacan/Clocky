@@ -473,6 +473,7 @@ class Alarm : Parcelable, AlarmsColumns {
             return deletedRows == 1
         }
 
+        @JvmField
         val CREATOR: Parcelable.Creator<Alarm> = object : Parcelable.Creator<Alarm> {
             override fun createFromParcel(p: Parcel): Alarm {
                 return Alarm(p)

@@ -102,7 +102,7 @@ class DeskClockBackupAgent : BackupAgent() {
 
         // Schedule the Intent delivery in AlarmManager.
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAtMillis, restoreIntent)
+        alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAtMillis, restoreIntent)
 
         LOGGER.i("Waiting for %s to complete the data restore", ACTION_COMPLETE_RESTORE)
     }

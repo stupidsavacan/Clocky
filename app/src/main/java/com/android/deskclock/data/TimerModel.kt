@@ -809,11 +809,25 @@ internal class TimerModel(
         private val MISSED_THRESHOLD: Long = -MINUTE_IN_MILLIS
 
         fun schedulePendingIntent(am: AlarmManager, triggerTime: Long, pi: PendingIntent) {
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S ||
+                    am.canScheduleExactAlarms()) {
+                try {
+                    if (Utils.isMOrLater) {
+                        // Ensure the timer fires even if the device is dozing.
+                        am.setExactAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
+                    } else {
+                        am.setExact(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
+                    }
+                    return
+                } catch (_: SecurityException) {
+                    // Exact-alarm access can be revoked after the capability check.
+                }
+            }
+
             if (Utils.isMOrLater) {
-                // Ensure the timer fires even if the device is dozing.
-                am.setExactAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
+                am.setAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
             } else {
-                am.setExact(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
+                am.set(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
             }
         }
     }

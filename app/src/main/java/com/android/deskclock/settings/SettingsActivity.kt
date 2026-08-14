@@ -285,7 +285,7 @@ class SettingsActivity : BaseActivity() {
             if (i == -1) {
                 listPref.setSummary(R.string.auto_silence_never)
             } else {
-                listPref.setSummary(Utils.getNumberFormattedQuantityString(getActivity()!!,
+                listPref.setSummary(Utils.getNumberFormattedQuantityString(requireActivity(),
                         R.plurals.auto_silence_summary, i))
             }
         }

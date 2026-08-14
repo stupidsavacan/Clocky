@@ -66,7 +66,7 @@ internal class TimerNotificationBuilder {
             val channel = NotificationChannel(
                     TIMER_MODEL_NOTIFICATION_CHANNEL_ID,
                     context.getString(R.string.default_label),
-                    NotificationManagerCompat.IMPORTANCE_DEFAULT)
+                    android.app.NotificationManager.IMPORTANCE_DEFAULT)
             notificationManager.createNotificationChannel(channel)
         }
     }

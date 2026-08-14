@@ -123,11 +123,27 @@ class AlarmStateManager : BroadcastReceiver() {
                     stateChangeIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
             val am: AlarmManager = context.getSystemService(ALARM_SERVICE) as AlarmManager
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S ||
+                    am.canScheduleExactAlarms()) {
+                try {
+                    if (Utils.isMOrLater) {
+                        // Ensure the alarm fires even if the device is dozing.
+                        am.setExactAndAllowWhileIdle(
+                                AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
+                    } else {
+                        am.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
+                    }
+                    return
+                } catch (_: SecurityException) {
+                    // Exact-alarm access can be revoked after the capability check.
+                }
+            }
+
+            // Keep the state machine alive with best-effort timing instead of crashing.
             if (Utils.isMOrLater) {
-                // Ensure the alarm fires even if the device is dozing.
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
             } else {
-                am.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
+                am.set(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
             }
         }
 
