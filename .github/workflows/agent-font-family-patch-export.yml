@@ -1,0 +1,181 @@
+name: Agent font patch export
+
+on:
+  push:
+    branches:
+      - agent/widget-font-family-renderer
+
+permissions:
+  contents: read
+
+jobs:
+  export-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply font-family compatibility patch
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+
+          policy = root / 'app/src/main/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicy.kt'
+          policy.write_text('''package com.stupidsavacan.clocky.customization.font
+
+object LegacyWidgetFontFamilyPolicy {
+    const val EXACT_WEIGHT = 400
+
+    private val exactFamilies = setOf(
+        "sans-serif-light",
+        "sans-serif-rounded",
+        "serif",
+        "sans-serif-condensed",
+        "monospace",
+    )
+
+    fun exactFamilyOrNull(fontFamily: String, effectiveWeight: Int): String? =
+        fontFamily.takeIf { effectiveWeight == EXACT_WEIGHT && it in exactFamilies }
+}
+''', encoding='utf-8')
+
+          test = root / 'app/src/test/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicyTest.kt'
+          test.write_text('''package com.stupidsavacan.clocky.customization.font
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class LegacyWidgetFontFamilyPolicyTest {
+    @Test
+    fun repositoryMvpFamiliesAreExactAtNormalWeight() {
+        val families = listOf(
+            "sans-serif-light",
+            "sans-serif-rounded",
+            "serif",
+            "sans-serif-condensed",
+            "monospace",
+        )
+        families.forEach { family ->
+            assertEquals(family, LegacyWidgetFontFamilyPolicy.exactFamilyOrNull(family, 400))
+        }
+    }
+
+    @Test
+    fun otherFamiliesOrWeightsStayOnExistingRenderer() {
+        assertNull(LegacyWidgetFontFamilyPolicy.exactFamilyOrNull("system-sans", 400))
+        assertNull(LegacyWidgetFontFamilyPolicy.exactFamilyOrNull("serif", 300))
+        assertNull(LegacyWidgetFontFamilyPolicy.exactFamilyOrNull("serif", 700))
+    }
+}
+''', encoding='utf-8')
+
+          renderer = root / 'app/src/main/java/com/stupidsavacan/clocky/customization/font/DigitalWidgetWeightRenderer.kt'
+          text = renderer.read_text(encoding='utf-8')
+          text = text.replace(
+              '''    private val dateViewIds = intArrayOf(\n        R.id.date_w100,\n        R.id.date_w200,\n        R.id.date_w300,\n        R.id.date_w400,\n        R.id.date_w500,\n        R.id.date_w600,\n        R.id.date_w700,\n        R.id.date_w800,\n        R.id.date_w900,\n    )\n''',
+              '''    private val dateViewIds = intArrayOf(\n        R.id.date_w100,\n        R.id.date_w200,\n        R.id.date_w300,\n        R.id.date_w400,\n        R.id.date_w500,\n        R.id.date_w600,\n        R.id.date_w700,\n        R.id.date_w800,\n        R.id.date_w900,\n    )\n\n    private val legacyTimeViewIds = intArrayOf(\n        R.id.clock_legacy_sans_light,\n        R.id.clock_legacy_sans_rounded,\n        R.id.clock_legacy_serif,\n        R.id.clock_legacy_sans_condensed,\n        R.id.clock_legacy_monospace,\n    )\n\n    private val legacyDateViewIds = intArrayOf(\n        R.id.date_legacy_sans_light,\n        R.id.date_legacy_sans_rounded,\n        R.id.date_legacy_serif,\n        R.id.date_legacy_sans_condensed,\n        R.id.date_legacy_monospace,\n    )\n''',
+              1,
+          )
+          text = text.replace(
+              '''        timeLetterSpacing: Float = 0f,\n        dateLetterSpacing: Float = 0f,\n    ) {\n''',
+              '''        timeLetterSpacing: Float = 0f,\n        dateLetterSpacing: Float = 0f,\n        timeFontFamily: String = "system-sans",\n        dateFontFamily: String = "system-sans",\n    ) {\n''',
+              1,
+          )
+          text = text.replace(
+              '''        applyGroup(\n            remoteViews = remoteViews,\n            ids = timeViewIds,\n            effectiveWeight = time.effective,\n''',
+              '''        applyGroup(\n            remoteViews = remoteViews,\n            ids = timeViewIds,\n            legacyIds = legacyTimeViewIds,\n            legacySelectedId = legacyViewId(timeFontFamily, time.effective, false),\n            effectiveWeight = time.effective,\n''',
+              1,
+          )
+          text = text.replace(
+              '''        applyGroup(\n            remoteViews = remoteViews,\n            ids = dateViewIds,\n            effectiveWeight = date.effective,\n''',
+              '''        applyGroup(\n            remoteViews = remoteViews,\n            ids = dateViewIds,\n            legacyIds = legacyDateViewIds,\n            legacySelectedId = legacyViewId(dateFontFamily, date.effective, true),\n            effectiveWeight = date.effective,\n''',
+              1,
+          )
+          text = text.replace(
+              '''        timeLetterSpacing: Float = 0f,\n        dateLetterSpacing: Float = 0f,\n    ) {\n        val sdkInt = Build.VERSION.SDK_INT\n        val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)\n        val dateWeight = RemoteViewsFontWeightPolicy.resolve(requestedDateWeight, sdkInt)\n        clock.typeface = typefaceFor(time.effective)\n        date.typeface = typefaceFor(dateWeight.effective)\n''',
+              '''        timeLetterSpacing: Float = 0f,\n        dateLetterSpacing: Float = 0f,\n        timeFontFamily: String = "system-sans",\n        dateFontFamily: String = "system-sans",\n    ) {\n        val sdkInt = Build.VERSION.SDK_INT\n        val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)\n        val dateWeight = RemoteViewsFontWeightPolicy.resolve(requestedDateWeight, sdkInt)\n        clock.typeface = typefaceFor(time.effective, timeFontFamily)\n        date.typeface = typefaceFor(dateWeight.effective, dateFontFamily)\n''',
+              1,
+          )
+          text = text.replace(
+              '''        ids: IntArray,\n        effectiveWeight: Int,\n''',
+              '''        ids: IntArray,\n        legacyIds: IntArray,\n        legacySelectedId: Int?,\n        effectiveWeight: Int,\n''',
+              1,
+          )
+          text = text.replace(
+              '''        val selectedIndex = RemoteViewsFontWeightPolicy.canonicalIndex(effectiveWeight)\n        val safeLetterSpacing = WidgetLetterSpacingPolicy.normalize(letterSpacing)\n        ids.forEachIndexed { index, id ->\n            val visible = enabled && index == selectedIndex\n            remoteViews.setViewVisibility(id, if (visible) View.VISIBLE else View.GONE)\n            remoteViews.setFloat(id, "setLetterSpacing", safeLetterSpacing)\n            if (visible) {\n                remoteViews.setTextViewTextSize(id, android.util.TypedValue.COMPLEX_UNIT_PX, sizePx)\n            }\n            if (dateFormat != null) {\n                remoteViews.setCharSequence(id, "setFormat12Hour", dateFormat)\n                remoteViews.setCharSequence(id, "setFormat24Hour", dateFormat)\n            }\n        }\n    }\n\n    private fun typefaceFor(weight: Int): Typeface {\n''',
+              '''        val selectedIndex = RemoteViewsFontWeightPolicy.canonicalIndex(effectiveWeight)\n        val safeLetterSpacing = WidgetLetterSpacingPolicy.normalize(letterSpacing)\n        val useLegacyFamily = legacySelectedId != null\n        ids.forEachIndexed { index, id ->\n            applyView(remoteViews, id, enabled && !useLegacyFamily && index == selectedIndex, sizePx, dateFormat, safeLetterSpacing)\n        }\n        legacyIds.forEach { id ->\n            applyView(remoteViews, id, enabled && id == legacySelectedId, sizePx, dateFormat, safeLetterSpacing)\n        }\n    }\n\n    private fun applyView(\n        remoteViews: RemoteViews,\n        id: Int,\n        visible: Boolean,\n        sizePx: Float,\n        dateFormat: CharSequence?,\n        letterSpacing: Float,\n    ) {\n        remoteViews.setViewVisibility(id, if (visible) View.VISIBLE else View.GONE)\n        remoteViews.setFloat(id, "setLetterSpacing", letterSpacing)\n        if (visible) {\n            remoteViews.setTextViewTextSize(id, android.util.TypedValue.COMPLEX_UNIT_PX, sizePx)\n        }\n        if (dateFormat != null) {\n            remoteViews.setCharSequence(id, "setFormat12Hour", dateFormat)\n            remoteViews.setCharSequence(id, "setFormat24Hour", dateFormat)\n        }\n    }\n\n    private fun legacyViewId(fontFamily: String, effectiveWeight: Int, isDate: Boolean): Int? {\n        return when (LegacyWidgetFontFamilyPolicy.exactFamilyOrNull(fontFamily, effectiveWeight)) {\n            "sans-serif-light" -> if (isDate) R.id.date_legacy_sans_light else R.id.clock_legacy_sans_light\n            "sans-serif-rounded" -> if (isDate) R.id.date_legacy_sans_rounded else R.id.clock_legacy_sans_rounded\n            "serif" -> if (isDate) R.id.date_legacy_serif else R.id.clock_legacy_serif\n            "sans-serif-condensed" -> if (isDate) R.id.date_legacy_sans_condensed else R.id.clock_legacy_sans_condensed\n            "monospace" -> if (isDate) R.id.date_legacy_monospace else R.id.clock_legacy_monospace\n            else -> null\n        }\n    }\n\n    private fun typefaceFor(weight: Int, fontFamily: String): Typeface {\n        LegacyWidgetFontFamilyPolicy.exactFamilyOrNull(fontFamily, weight)?.let { family ->\n            return Typeface.create(family, Typeface.NORMAL)\n        }\n''',
+              1,
+          )
+          renderer.write_text(text, encoding='utf-8')
+
+          provider = root / 'app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt'
+          p = provider.read_text(encoding='utf-8')
+          p = p.replace(
+              '''                    resolvedWeights.dateEnabled,\n                    widgetSettings.time.letterSpacing,\n                    widgetSettings.date.letterSpacing,\n''',
+              '''                    resolvedWeights.dateEnabled,\n                    widgetSettings.time.fontFamily,\n                    widgetSettings.date.fontFamily,\n                    widgetSettings.time.letterSpacing,\n                    widgetSettings.date.letterSpacing,\n''',
+              1,
+          )
+          p = p.replace(
+              '''                    timeLetterSpacing = widgetSettings.time.letterSpacing,\n                    dateLetterSpacing = widgetSettings.date.letterSpacing,\n''',
+              '''                    timeLetterSpacing = widgetSettings.time.letterSpacing,\n                    dateLetterSpacing = widgetSettings.date.letterSpacing,\n                    timeFontFamily = widgetSettings.time.fontFamily,\n                    dateFontFamily = widgetSettings.date.fontFamily,\n''',
+              1,
+          )
+          p = p.replace(
+              '''            dateEnabled: Boolean,\n            timeLetterSpacing: Float,\n            dateLetterSpacing: Float,\n''',
+              '''            dateEnabled: Boolean,\n            timeFontFamily: String,\n            dateFontFamily: String,\n            timeLetterSpacing: Float,\n            dateLetterSpacing: Float,\n''',
+              1,
+          )
+          p = p.replace(
+              '''                    dateEnabled,\n                    timeLetterSpacing,\n                    dateLetterSpacing,\n''',
+              '''                    dateEnabled,\n                    timeLetterSpacing,\n                    dateLetterSpacing,\n                    timeFontFamily,\n                    dateFontFamily,\n''',
+              1,
+          )
+          provider.write_text(p, encoding='utf-8')
+
+          layout = root / 'app/src/main/res/layout/digital_widget.xml'
+          x = layout.read_text(encoding='utf-8')
+          time_views = '''\n\n        <TextClock\n            android:id="@+id/clock_legacy_sans_light"\n            style="@style/widget_big_thin"\n            android:layout_width="wrap_content"\n            android:layout_height="wrap_content"\n            android:ellipsize="none"\n            android:fontFamily="sans-serif-light"\n            android:format12Hour="@string/lock_screen_12_hour_format"\n            android:format24Hour="@string/lock_screen_24_hour_format"\n            android:includeFontPadding="false"\n            android:singleLine="true"\n            android:textColor="@color/white"\n            android:visibility="gone" />\n\n        <TextClock\n            android:id="@+id/clock_legacy_sans_rounded"\n            style="@style/widget_big_thin"\n            android:layout_width="wrap_content"\n            android:layout_height="wrap_content"\n            android:ellipsize="none"\n            android:fontFamily="sans-serif-rounded"\n            android:format12Hour="@string/lock_screen_12_hour_format"\n            android:format24Hour="@string/lock_screen_24_hour_format"\n            android:includeFontPadding="false"\n            android:singleLine="true"\n            android:textColor="@color/white"\n            android:visibility="gone" />\n\n        <TextClock\n            android:id="@+id/clock_legacy_serif"\n            style="@style/widget_big_thin"\n            android:layout_width="wrap_content"\n            android:layout_height="wrap_content"\n            android:ellipsize="none"\n            android:fontFamily="serif"\n            android:format12Hour="@string/lock_screen_12_hour_format"\n            android:format24Hour="@string/lock_screen_24_hour_format"\n            android:includeFontPadding="false"\n            android:singleLine="true"\n            android:textColor="@color/white"\n            android:visibility="gone" />\n\n        <TextClock\n            android:id="@+id/clock_legacy_sans_condensed"\n            style="@style/widget_big_thin"\n            android:layout_width="wrap_content"\n            android:layout_height="wrap_content"\n            android:ellipsize="none"\n            android:fontFamily="sans-serif-condensed"\n            android:format12Hour="@string/lock_screen_12_hour_format"\n            android:format24Hour="@string/lock_screen_24_hour_format"\n            android:includeFontPadding="false"\n            android:singleLine="true"\n            android:textColor="@color/white"\n            android:visibility="gone" />\n\n        <TextClock\n            android:id="@+id/clock_legacy_monospace"\n            style="@style/widget_big_thin"\n            android:layout_width="wrap_content"\n            android:layout_height="wrap_content"\n            android:ellipsize="none"\n            android:fontFamily="monospace"\n            android:format12Hour="@string/lock_screen_12_hour_format"\n            android:format24Hour="@string/lock_screen_24_hour_format"\n            android:includeFontPadding="false"\n            android:singleLine="true"\n            android:textColor="@color/white"\n            android:visibility="gone" />'''
+          date_views = '''\n\n            <TextClock\n                android:id="@+id/date_legacy_sans_light"\n                style="@style/widget_label"\n                android:layout_width="wrap_content"\n                android:layout_height="wrap_content"\n                android:ellipsize="none"\n                android:fontFamily="sans-serif-light"\n                android:includeFontPadding="false"\n                android:singleLine="true"\n                android:textAllCaps="true"\n                android:textColor="@color/white"\n                android:visibility="gone" />\n\n            <TextClock\n                android:id="@+id/date_legacy_sans_rounded"\n                style="@style/widget_label"\n                android:layout_width="wrap_content"\n                android:layout_height="wrap_content"\n                android:ellipsize="none"\n                android:fontFamily="sans-serif-rounded"\n                android:includeFontPadding="false"\n                android:singleLine="true"\n                android:textAllCaps="true"\n                android:textColor="@color/white"\n                android:visibility="gone" />\n\n            <TextClock\n                android:id="@+id/date_legacy_serif"\n                style="@style/widget_label"\n                android:layout_width="wrap_content"\n                android:layout_height="wrap_content"\n                android:ellipsize="none"\n                android:fontFamily="serif"\n                android:includeFontPadding="false"\n                android:singleLine="true"\n                android:textAllCaps="true"\n                android:textColor="@color/white"\n                android:visibility="gone" />\n\n            <TextClock\n                android:id="@+id/date_legacy_sans_condensed"\n                style="@style/widget_label"\n                android:layout_width="wrap_content"\n                android:layout_height="wrap_content"\n                android:ellipsize="none"\n                android:fontFamily="sans-serif-condensed"\n                android:includeFontPadding="false"\n                android:singleLine="true"\n                android:textAllCaps="true"\n                android:textColor="@color/white"\n                android:visibility="gone" />\n\n            <TextClock\n                android:id="@+id/date_legacy_monospace"\n                style="@style/widget_label"\n                android:layout_width="wrap_content"\n                android:layout_height="wrap_content"\n                android:ellipsize="none"\n                android:fontFamily="monospace"\n                android:includeFontPadding="false"\n                android:singleLine="true"\n                android:textAllCaps="true"\n                android:textColor="@color/white"\n                android:visibility="gone" />'''
+          x, n1 = re.subn(r'(        <TextClock\n            android:id="@\+id/clock_w900".*?android:visibility="gone" />)(\n    </FrameLayout>)', lambda m: m.group(1) + time_views + m.group(2), x, count=1, flags=re.S)
+          x, n2 = re.subn(r'(            <TextClock\n                android:id="@\+id/date_w900".*?android:visibility="gone" />)(\n        </FrameLayout>)', lambda m: m.group(1) + date_views + m.group(2), x, count=1, flags=re.S)
+          if n1 != 1 or n2 != 1:
+              raise SystemExit(f'layout insertion failed: time={n1} date={n2}')
+          layout.write_text(x, encoding='utf-8')
+
+          offset = root / 'app/src/main/java/com/stupidsavacan/clocky/customization/position/DigitalWidgetOffsetRenderer.kt'
+          o = offset.read_text(encoding='utf-8')
+          o = o.replace('''        R.id.clock_w900,\n    )\n''', '''        R.id.clock_w900,\n        R.id.clock_legacy_sans_light,\n        R.id.clock_legacy_sans_rounded,\n        R.id.clock_legacy_serif,\n        R.id.clock_legacy_sans_condensed,\n        R.id.clock_legacy_monospace,\n    )\n''', 1)
+          o = o.replace('''        R.id.date_w900,\n    )\n''', '''        R.id.date_w900,\n        R.id.date_legacy_sans_light,\n        R.id.date_legacy_sans_rounded,\n        R.id.date_legacy_serif,\n        R.id.date_legacy_sans_condensed,\n        R.id.date_legacy_monospace,\n    )\n''', 1)
+          offset.write_text(o, encoding='utf-8')
+
+          for path in (renderer, provider, layout, offset, policy, test):
+              if not path.exists() or path.stat().st_size == 0:
+                  raise SystemExit(f'missing patched file: {path}')
+
+      - name: Package patched sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p patch-export
+          cp --parents \
+            app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt \
+            app/src/main/java/com/stupidsavacan/clocky/customization/font/DigitalWidgetWeightRenderer.kt \
+            app/src/main/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicy.kt \
+            app/src/main/java/com/stupidsavacan/clocky/customization/position/DigitalWidgetOffsetRenderer.kt \
+            app/src/main/res/layout/digital_widget.xml \
+            app/src/test/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicyTest.kt \
+            patch-export/
+          tar -C patch-export -czf font-family-patch.tgz app
+          sha256sum font-family-patch.tgz
+
+      - name: Upload patched sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-font-family-patch-${{ github.sha }}
+          path: font-family-patch.tgz
+          if-no-files-found: error
+          retention-days: 1
