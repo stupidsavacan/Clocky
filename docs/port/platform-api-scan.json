@@ -1,0 +1,17 @@
+{
+  "source_files": 160,
+  "findings": [
+    {
+      "kind": "hidden annotation",
+      "file": "app/src/main/java/com/android/deskclock/Utils.kt",
+      "line": 506,
+      "match": "@hide"
+    },
+    {
+      "kind": "hidden annotation",
+      "file": "app/src/main/java/com/android/deskclock/AsyncRingtonePlayer.kt",
+      "line": 57,
+      "match": "@hide"
+    }
+  ]
+}

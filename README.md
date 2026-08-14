@@ -2,67 +2,98 @@
 
 **Google Clock の使い慣れた時計体験を基準にしつつ、ウィジェットのタイポグラフィとレイアウトを大幅に拡張する Android 時計アプリ。**
 
-> Status: **MVP built / AOSP DeskClock foundation & Google Clock parity planning**
+> Status: **AOSP DeskClock direct-port prepared / 12 pre-build phases complete / compile not started**
 
 ## Product direction
 
-Clocky は今後、次の2層で作ります。
+Clocky は次の3層で構成します。
 
-1. **Open functional base** — AOSP DeskClock の Alarm / Timer / Stopwatch / World Clock などを、スタンドアロン Gradle アプリ向けに適応。
-2. **Clocky experience layer** — Google Clock を操作・表示の参照仕様としてパリティを取り、その上に Clocky 独自のウィジェット編集機能を追加。
+1. **Immutable upstream provenance** — AOSP DeskClock `android-17.0.0_r1` を `third_party/aosp-deskclock/` に固定保存。
+2. **Standalone functional app** — AOSP Alarm / Timer / Stopwatch / World Clock / Digital & Analog Widget を `app/` に直接移植し、通常の Gradle Android アプリ向けに適応。
+3. **Clocky experience layer** — Google Clock を UI/UX の参照仕様としてパリティを取り、その上に Clocky 独自の Widget 編集機能を追加。
 
-Google Clock の APK は挙動・寸法・UI/UXの参照にのみ使い、プロプライエタリなコード・画像・フォント・署名資産は Clocky にコピーしません。
+Google Clock の APK は挙動・寸法・UI/UX の参照にのみ使い、プロプライエタリなコード・画像・フォント・署名資産は Clocky にコピーしません。
 
-## Current MVP
+## Current source state
 
-現在の MVP では、ホーム画面のデジタル時計 Widget と基本的なカスタマイズ基盤まで到達しています。
+AOSP DeskClock の固定スナップショットは、原本と実作業ツリーを分離しています。
 
-- classic `RemoteViews` / `AppWidgetProvider`
-- 4×2 baseline
-- compact / 4×1 profile foundation
-- time + date
-- date show / hide
-- independent time/date size
-- font-family choices
-- colour/background choices
-- alignment
-- per-widget settings
-- signed release build pipeline
+```text
+third_party/aosp-deskclock/   # immutable AOSP provenance snapshot
+app/                          # standalone Gradle adaptation + Clocky-owned code
+legacy/mvp-app-skeleton/      # pre-port Clocky app skeleton snapshot
+ci/Clocky_MVP_source.zip      # previous MVP source bundle retained for reference
+```
 
-実機での Google Clock 完全パリティはまだ未完了です。
+最初の direct-port bootstrap では次を `app/` にミラー済みです。
 
-## Google Clock parity target
+| Area | AOSP files | Port files at bootstrap |
+|---|---:|---:|
+| source | 160 | 160 |
+| resources | 505 | 505 |
+| assets | 1 | 1 |
 
-最終的には、通常利用で Google Clock にある主要機能を取りこぼさないことを目標にします。
+`app/` にはこの後 Clocky 固有コードが追加されるため、現在は AOSP 原本より大きくなります。
 
-- Alarm
-- Timer
-- Stopwatch + laps
-- World clock / cities
-- Settings
-- Digital widget
-- Digital Stacked widget
-- Digital Cities widget
-- Analog widget
-- Stopwatch widget
-- resize / 12h-24h / next-alarm / date / theme behaviour
+## Standalone Gradle adaptation
 
-詳細は [`docs/parity/GOOGLE_CLOCK_PARITY.md`](./docs/parity/GOOGLE_CLOCK_PARITY.md)。
+現在の移植設定：
 
-## Clocky extensions
+```text
+AOSP tag: android-17.0.0_r1
+DeskClock commit: 1f6ebf36d0c14f5e16265d80022cb6068d97cebd
+namespace: com.android.deskclock
+applicationId: com.stupidsavacan.clocky
+compileSdk: 35
+minSdk: 23
+targetSdk: 35
+```
 
-Google-like default preset を出発点に、次を変更可能にします。
+Direct-port 初期段階では AOSP の package/import を大量変更しないため `namespace = com.android.deskclock` を維持し、インストール識別子だけ `com.stupidsavacan.clocky` に分離しています。Provider authority は `${applicationId}` に変更済みです。
+
+AOSP `Android.bp` の AndroidX / Material 依存は standalone Gradle 依存へマッピング済みです。
+
+- [`docs/port/DEPENDENCY_MAP.md`](./docs/port/DEPENDENCY_MAP.md)
+- [`docs/port/PLATFORM_API_SCAN.md`](./docs/port/PLATFORM_API_SCAN.md)
+- [`docs/port/AOSP_MIRROR_STATUS.md`](./docs/port/AOSP_MIRROR_STATUS.md)
+
+## Pre-build work completed
+
+APK を生成せずに行う12工程は完了しています。
+
+1. AOSP vendor PR を `main` へマージ
+2. AOSP functional source を `app/` へ direct-port
+3. Soong → standalone Gradle 設定
+4. Manifest 移植・application identity 適応
+5. resources / assets mirror
+6. platform / hidden API 静的スキャン
+7. AndroidX / Material dependency map
+8. Clocky Widget settings model + per-widget persistence
+9. Font Weight `100..900` resolver / render contract
+10. Google Clock UI/UX parity contract
+11. Digital / Stacked / Cities / Analog / Stopwatch Widget parity spec
+12. 旧 Clocky MVP → AOSP/Clocky ownership integration design
+
+詳細：[`docs/port/TWELVE_PHASE_LEDGER.md`](./docs/port/TWELVE_PHASE_LEDGER.md)
+
+## Static platform scan
+
+Pre-build の静的スキャンでは AOSP source 160 files を調査し、強い platform-internal import は検出されず、`@hide` 文字列が2箇所検出されています。これはコンパイラ/API lint の代替ではないため、次フェーズで実際の compile error を基準に再評価します。
+
+## Clocky customization model
+
+Clocky 固有設定は AOSP domain state と分離しています。
 
 ### Time
 
 - font family / variant
-- size
-- **weight 100–900**
+- independent size
+- **requested weight 100–900**
 - letter spacing
 - colour / opacity
 - X/Y offset
 - Left / Center / Right
-- 12h / 24h
+- system / forced 12h / forced 24h
 - leading zero
 
 ### Date
@@ -70,12 +101,11 @@ Google-like default preset を出発点に、次を変更可能にします。
 - show / hide
 - same / independent font
 - independent size
-- **independent weight 100–900**
+- **independent requested weight 100–900**
 - letter spacing
 - colour / opacity
 - date format
 - X/Y offset
-- distance from time
 
 ### Layout / Background
 
@@ -83,66 +113,81 @@ Google-like default preset を出発点に、次を変更可能にします。
 - background opacity
 - corner radius
 - padding
-- global alignment / vertical position
 - size-specific overrides
-- editable presets
+- Google-like baseline preset + editable Clocky settings
 
-Weight の詳細仕様は [`docs/spec/FONT_WEIGHT.md`](./docs/spec/FONT_WEIGHT.md)。
+Settings are stored per `appWidgetId` as schema-versioned JSON in `SharedPreferences`.
 
-## AOSP DeskClock baseline
+Weight の保存値は renderer の能力と独立しています。例えば `563` を保存したまま、Variable Font なら exact `wght`、static family なら nearest available face へ解決できます。
 
-最初の移植ベースは AOSP DeskClock のタグ付きスナップショットを固定して使用します。
+- [`docs/spec/FONT_WEIGHT.md`](./docs/spec/FONT_WEIGHT.md)
+- [`app/src/main/java/com/stupidsavacan/clocky/customization/`](./app/src/main/java/com/stupidsavacan/clocky/customization/)
+
+## Google Clock parity target
+
+通常利用で Google Clock にある主要機能を取りこぼさないことを目標にします。
+
+### App
+
+- Alarm
+- Timer
+- Stopwatch + laps
+- World clock / cities
+- Settings
+
+### Widget
+
+- Digital
+- Digital Stacked
+- Digital Cities
+- Analog
+- Stopwatch
+
+- [`docs/parity/GOOGLE_CLOCK_PARITY.md`](./docs/parity/GOOGLE_CLOCK_PARITY.md)
+- [`docs/parity/GOOGLE_CLOCK_UI_UX_SPEC.md`](./docs/parity/GOOGLE_CLOCK_UI_UX_SPEC.md)
+- [`docs/parity/WIDGET_PARITY_SPEC.md`](./docs/parity/WIDGET_PARITY_SPEC.md)
+- [`docs/parity/REFERENCE_CAPTURE_PROTOCOL.md`](./docs/parity/REFERENCE_CAPTURE_PROTOCOL.md)
+
+## Existing MVP integration
+
+旧 MVP の per-widget settings、4×2 / compact profile、time/date independent size、font、alignment、colour/background は捨てず、AOSP の domain/widget lifecycle の上に Clocky presentation layer として統合します。
+
+AOSP が Alarm / Timer / Stopwatch / World Clock の状態を所有し、Clocky は typography/layout/preset を所有します。Widget が独自に timer/stopwatch state を持つことは禁止します。
+
+詳細：[`docs/architecture/MVP_INTEGRATION.md`](./docs/architecture/MVP_INTEGRATION.md)
+
+## Next gate
+
+12工程は **pre-build completion** です。まだ次は実施していません。
 
 ```text
-Tag: android-17.0.0_r1
-DeskClock commit: 1f6ebf36d0c14f5e16265d80022cb6068d97cebd
+compile / dependency resolution
+        ↓
+compile error remediation
+        ↓
+manifest + targetSdk behavior fixes
+        ↓
+assembleDebug
+        ↓
+real-device functional test
+        ↓
+Google Clock side-by-side parity test
 ```
 
-AOSP DeskClock は Android platform / Soong 向けのため、そのまま `app/` にコピーするのではなく、依存関係を分類して standalone Gradle 用に適応します。
-
-- [`docs/architecture/AOSP_DESKCLOCK_ADOPTION.md`](./docs/architecture/AOSP_DESKCLOCK_ADOPTION.md)
-- [`docs/architecture/AOSP_PORT_INVENTORY.md`](./docs/architecture/AOSP_PORT_INVENTORY.md)
-- [`THIRD_PARTY_AND_REFERENCE_POLICY.md`](./THIRD_PARTY_AND_REFERENCE_POLICY.md)
-
-## Size strategy
-
-Google Clock の reference behaviour を基準にしますが、固定ピクセルではなく AppWidget Host から渡されるサイズを優先します。
-
-既存の参考端末実測値:
-
-| 項目 | 値 |
-|---|---:|
-| Display | 720 × 1600 px |
-| Density | 280 dpi / 1.75 px per dp |
-| Logical display | 約 411 × 914 dp |
-| Launcher | Motorola Launcher |
-| Reference Widget | Google 時計 Digital |
-| Current span | 4 × 2 |
-| Measured 4×2 HostView | 692 × 484 px |
-| Measured 4×2 HostView | 約 395.4 × 276.6 dp |
-
-## Development order
-
-1. AOSP snapshot / license / dependency inventory
-2. Expand current MVP source into normal reviewable source files
-3. Adapt AOSP core domains to standalone Gradle
-4. Google Clock screen + widget parity specs
-5. Functional parity implementation
-6. Clocky extensions: weight / font / size / spacing / X/Y / colour / background
-7. presets + advanced editor
-8. real-device side-by-side verification
-
-See [`docs/IMPLEMENTATION_BACKLOG.md`](./docs/IMPLEMENTATION_BACKLOG.md).
+現時点では **APKを生成しておらず、compile成功もまだ主張しません**。
 
 ## Non-goals
 
 - SystemUI / Android lock-screen clock replacement
 - root-required behaviour
-- pretending to be signed by Google or a platform key
-- redistribution of Google Clock APK/assets
-- copying proprietary Google/Apple fonts solely to imitate appearance
+- Google / platform signing identity の模倣
+- Google Clock APK/assets の再配布
+- proprietary Google/Apple fonts のコピー
 
-## Legacy planning docs
+## License / provenance
 
-- [`MVP_計画書.md`](./MVP_計画書.md)
-- [`実装予定表.md`](./実装予定表.md)
+- AOSP DeskClock: Apache License 2.0 upstream snapshot
+- Google Clock: behavioral/UI reference only
+- Clocky-owned code: project policyに従う
+
+See [`THIRD_PARTY_AND_REFERENCE_POLICY.md`](./THIRD_PARTY_AND_REFERENCE_POLICY.md).
