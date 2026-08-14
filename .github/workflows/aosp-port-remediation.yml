@@ -6,6 +6,8 @@ on:
       - agent/compile-bootstrap
     paths:
       - 'tools/ci/remediate_aosp_port.py'
+      - 'tools/ci/remediate_runtime_lint.py'
+      - '.github/workflows/aosp-port-remediation.yml'
   workflow_dispatch:
 
 permissions:
@@ -23,6 +25,9 @@ jobs:
 
       - name: Apply deterministic port fixes
         run: python tools/ci/remediate_aosp_port.py
+
+      - name: Apply runtime lint fixes
+        run: python tools/ci/remediate_runtime_lint.py
 
       - name: Validate patch
         run: git diff --check
