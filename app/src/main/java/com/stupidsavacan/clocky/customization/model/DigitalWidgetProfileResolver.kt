@@ -13,6 +13,12 @@ data class ResolvedWidgetWeights(
     val dateEnabled: Boolean,
 )
 
+data class ResolvedWidgetSizes(
+    val profile: DigitalWidgetProfile,
+    val timeSizeSp: Float,
+    val dateSizeSp: Float,
+)
+
 /**
  * Resolves AppWidget host dimensions to Clocky's compact (4x1) or regular (4x2) profile.
  *
@@ -35,15 +41,30 @@ object DigitalWidgetProfileResolver {
 
     fun resolveWeights(settings: WidgetSettings, targetHeightDp: Int): ResolvedWidgetWeights {
         val profile = profileForHeightDp(targetHeightDp)
-        val override = when (profile) {
-            DigitalWidgetProfile.FOUR_BY_ONE -> settings.fourByOne
-            DigitalWidgetProfile.FOUR_BY_TWO -> settings.fourByTwo
-        }
+        val override = overrideFor(settings, profile)
         return ResolvedWidgetWeights(
             profile = profile,
             timeWeight = override?.timeWeight ?: settings.time.requestedWeight,
             dateWeight = override?.dateWeight ?: settings.date.requestedWeight,
             dateEnabled = override?.dateEnabled ?: settings.date.enabled,
         )
+    }
+
+    fun resolveSizes(settings: WidgetSettings, targetHeightDp: Int): ResolvedWidgetSizes {
+        val profile = profileForHeightDp(targetHeightDp)
+        val override = overrideFor(settings, profile)
+        return ResolvedWidgetSizes(
+            profile = profile,
+            timeSizeSp = (override?.timeSizeSp ?: settings.time.sizeSp).coerceAtLeast(1f),
+            dateSizeSp = (override?.dateSizeSp ?: settings.date.sizeSp).coerceAtLeast(1f),
+        )
+    }
+
+    private fun overrideFor(
+        settings: WidgetSettings,
+        profile: DigitalWidgetProfile,
+    ): ProfileOverride? = when (profile) {
+        DigitalWidgetProfile.FOUR_BY_ONE -> settings.fourByOne
+        DigitalWidgetProfile.FOUR_BY_TWO -> settings.fourByTwo
     }
 }
