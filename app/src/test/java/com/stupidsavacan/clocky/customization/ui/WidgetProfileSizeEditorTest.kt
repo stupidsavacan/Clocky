@@ -50,8 +50,8 @@ class WidgetProfileSizeEditorTest {
         assertNull(updated.dateSizeSp)
         assertEquals(575, updated.timeWeight)
         assertEquals(650, updated.dateWeight)
-        assertEquals(3f, updated.timeXDp, 0.001f)
-        assertEquals(-2f, updated.dateYDp, 0.001f)
+        assertEquals(3f, updated.timeXDp ?: 0f, 0.001f)
+        assertEquals(-2f, updated.dateYDp ?: 0f, 0.001f)
         assertFalse(updated.dateEnabled ?: true)
     }
 
@@ -77,7 +77,7 @@ class WidgetProfileSizeEditorTest {
         )
 
         requireNotNull(updated)
-        assertEquals(50f, updated.timeSizeSp, 0.001f)
+        assertEquals(50f, updated.timeSizeSp ?: 0f, 0.001f)
         assertNull(updated.dateSizeSp)
         assertEquals(650, updated.dateWeight)
     }
