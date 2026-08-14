@@ -1,0 +1,54 @@
+name: Apply widget letter spacing v2 wiring
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths:
+      - 'app/**'
+      - 'tools/ci/apply_widget_letter_spacing_v2.py'
+      - 'tools/ci/apply_widget_letter_spacing_ui_v2.py'
+      - '.github/workflows/apply-widget-letter-spacing-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'agent/widget-letter-spacing-v2'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout letter spacing v2 branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply provider and settings UI patches
+        run: |
+          python3 tools/ci/apply_widget_letter_spacing_v2.py
+          python3 tools/ci/apply_widget_letter_spacing_ui_v2.py
+
+      - name: Verify diff shape
+        run: |
+          git diff --check
+          git diff -- app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt
+          git diff -- app/src/main/java/com/stupidsavacan/clocky/widget/DigitalWidgetConfigActivity.kt
+          git diff -- app/src/main/res/layout/clocky_digital_widget_config.xml
+
+      - name: Commit generated wiring
+        run: |
+          rm .github/workflows/apply-widget-letter-spacing-v2.yml
+          git add app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt \
+                  app/src/main/java/com/stupidsavacan/clocky/widget/DigitalWidgetConfigActivity.kt \
+                  app/src/main/res/layout/clocky_digital_widget_config.xml \
+                  tools/ci/apply_widget_letter_spacing_v2.py \
+                  tools/ci/apply_widget_letter_spacing_ui_v2.py \
+                  .github/workflows/apply-widget-letter-spacing-v2.yml
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Wire digital widget letter spacing end to end'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
