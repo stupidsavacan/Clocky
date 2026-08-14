@@ -2,9 +2,10 @@ name: Apply widget size config v2
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
     paths:
       - 'app/**'
+      - 'tools/ci/apply_widget_size_config_activity_v2.py'
       - '.github/workflows/apply-widget-size-config-v2.yml'
 
 permissions:
@@ -21,32 +22,31 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
-      - name: Fetch original size UI branch
-        run: git fetch origin agent/widget-size-config-ui:refs/remotes/origin/agent/widget-size-config-ui
-
-      - name: Three-way apply size UI only
+      - name: Apply layout and strings from original size UI
         run: |
           git diff c72e81d94ecb8cc71a3cf53e3558209a99790222 b8f0207d793680d75bedb911ca3999065039669c -- \
-            app/src/main/java/com/stupidsavacan/clocky/widget/DigitalWidgetConfigActivity.kt \
             app/src/main/res/layout/clocky_digital_widget_config.xml \
             app/src/main/res/values/clocky_widget_config_strings.xml \
             app/src/main/res/values-ja/clocky_widget_config_strings.xml \
-            > /tmp/size-ui.patch
-          git apply --3way --index /tmp/size-ui.patch
+            > /tmp/size-resources.patch
+          git apply --3way --index /tmp/size-resources.patch
+
+      - name: Integrate Activity against letter-spacing-aware main
+        run: |
+          python3 tools/ci/apply_widget_size_config_activity_v2.py
+          git add app/src/main/java/com/stupidsavacan/clocky/widget/DigitalWidgetConfigActivity.kt
 
       - name: Verify merged diff
         run: |
           git diff --check --cached
           git diff --cached -- app/src/main/java/com/stupidsavacan/clocky/widget/DigitalWidgetConfigActivity.kt
           git diff --cached -- app/src/main/res/layout/clocky_digital_widget_config.xml
+          git diff --cached -- app/src/main/res/values/clocky_widget_config_strings.xml
 
       - name: Commit merged size UI
         run: |
           rm .github/workflows/apply-widget-size-config-v2.yml
-          git add app/src/main/java/com/stupidsavacan/clocky/widget/DigitalWidgetConfigActivity.kt \
-                  app/src/main/res/layout/clocky_digital_widget_config.xml \
-                  app/src/main/res/values/clocky_widget_config_strings.xml \
-                  app/src/main/res/values-ja/clocky_widget_config_strings.xml \
+          git add tools/ci/apply_widget_size_config_activity_v2.py \
                   .github/workflows/apply-widget-size-config-v2.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
