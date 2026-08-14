@@ -6,5 +6,9 @@
     <string name="clocky_time_weight">時刻の太さ</string>
     <string name="clocky_date_weight">日付の太さ</string>
     <string name="clocky_widget_date_preview">8月14日 金</string>
+    <string name="clocky_profile_overrides_title">サイズ別の上書き</string>
+    <string name="clocky_profile_overrides_summary">上書きをOFFにすると上の共通値を継承します。ONにすると、そのウィジェット高さ専用の時刻・日付ウェイトを設定できます。</string>
+    <string name="clocky_four_by_one_override">コンパクト / 4×1 の太さ</string>
+    <string name="clocky_four_by_two_override">通常 / 4×2 の太さ</string>
     <string name="clocky_widget_save">ウィジェットを保存</string>
 </resources>
