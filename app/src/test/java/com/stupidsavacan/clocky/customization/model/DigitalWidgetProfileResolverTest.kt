@@ -8,34 +8,19 @@ import org.junit.Test
 class DigitalWidgetProfileResolverTest {
     @Test
     fun compactBoundaryMapsToFourByOne() {
-        assertEquals(
-            DigitalWidgetProfile.FOUR_BY_ONE,
-            DigitalWidgetProfileResolver.profileForHeightDp(59),
-        )
-        assertEquals(
-            DigitalWidgetProfile.FOUR_BY_ONE,
-            DigitalWidgetProfileResolver.profileForHeightDp(94),
-        )
+        assertEquals(DigitalWidgetProfile.FOUR_BY_ONE, DigitalWidgetProfileResolver.profileForHeightDp(59))
+        assertEquals(DigitalWidgetProfile.FOUR_BY_ONE, DigitalWidgetProfileResolver.profileForHeightDp(94))
     }
 
     @Test
     fun regularHeightMapsToFourByTwo() {
-        assertEquals(
-            DigitalWidgetProfile.FOUR_BY_TWO,
-            DigitalWidgetProfileResolver.profileForHeightDp(95),
-        )
-        assertEquals(
-            DigitalWidgetProfile.FOUR_BY_TWO,
-            DigitalWidgetProfileResolver.profileForHeightDp(129),
-        )
+        assertEquals(DigitalWidgetProfile.FOUR_BY_TWO, DigitalWidgetProfileResolver.profileForHeightDp(95))
+        assertEquals(DigitalWidgetProfile.FOUR_BY_TWO, DigitalWidgetProfileResolver.profileForHeightDp(129))
     }
 
     @Test
     fun missingHostHeightFallsBackToRegularProfile() {
-        assertEquals(
-            DigitalWidgetProfile.FOUR_BY_TWO,
-            DigitalWidgetProfileResolver.profileForHeightDp(0),
-        )
+        assertEquals(DigitalWidgetProfile.FOUR_BY_TWO, DigitalWidgetProfileResolver.profileForHeightDp(0))
     }
 
     @Test
@@ -87,5 +72,39 @@ class DigitalWidgetProfileResolverTest {
 
         assertFalse(DigitalWidgetProfileResolver.resolveWeights(settings, 59).dateEnabled)
         assertTrue(DigitalWidgetProfileResolver.resolveWeights(settings, 129).dateEnabled)
+    }
+
+    @Test
+    fun profileSizesOverrideBaseIndependently() {
+        val settings = WidgetSettings(
+            appWidgetId = 11,
+            time = TimeSettings(sizeSp = 64f),
+            date = DateSettings(sizeSp = 14f),
+            fourByOne = ProfileOverride(timeSizeSp = 52f),
+            fourByTwo = ProfileOverride(dateSizeSp = 16f),
+        )
+
+        val compact = DigitalWidgetProfileResolver.resolveSizes(settings, 59)
+        assertEquals(DigitalWidgetProfile.FOUR_BY_ONE, compact.profile)
+        assertEquals(52f, compact.timeSizeSp)
+        assertEquals(14f, compact.dateSizeSp)
+
+        val regular = DigitalWidgetProfileResolver.resolveSizes(settings, 129)
+        assertEquals(DigitalWidgetProfile.FOUR_BY_TWO, regular.profile)
+        assertEquals(64f, regular.timeSizeSp)
+        assertEquals(16f, regular.dateSizeSp)
+    }
+
+    @Test
+    fun resolvedSizesNeverDropBelowOneSp() {
+        val settings = WidgetSettings(
+            appWidgetId = 12,
+            time = TimeSettings(sizeSp = 0.25f),
+            date = DateSettings(sizeSp = -5f),
+        )
+
+        val resolved = DigitalWidgetProfileResolver.resolveSizes(settings, 129)
+        assertEquals(1f, resolved.timeSizeSp)
+        assertEquals(1f, resolved.dateSizeSp)
     }
 }
