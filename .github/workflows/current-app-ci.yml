@@ -1,5 +1,5 @@
 name: Current App CI
-# Validates the latest standalone-port remediation head.
+# Validates the second standalone-port remediation head.
 
 on:
   push:
