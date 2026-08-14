@@ -48,6 +48,7 @@ object DigitalWidgetWeightRenderer {
         clockSizePx: Float,
         dateSizePx: Float,
         dateFormat: CharSequence,
+        dateEnabled: Boolean = true,
     ) {
         val sdkInt = Build.VERSION.SDK_INT
         val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)
@@ -59,6 +60,7 @@ object DigitalWidgetWeightRenderer {
             effectiveWeight = time.effective,
             sizePx = clockSizePx,
             dateFormat = null,
+            enabled = true,
         )
         applyGroup(
             remoteViews = remoteViews,
@@ -66,21 +68,24 @@ object DigitalWidgetWeightRenderer {
             effectiveWeight = date.effective,
             sizePx = dateSizePx,
             dateFormat = dateFormat,
+            enabled = dateEnabled,
         )
     }
 
-    /** Apply the same resolved weight to the in-process measurement views. */
+    /** Apply the same resolved weight and date visibility to the in-process measurement views. */
     fun applySizerWeights(
         clock: TextClock,
         date: TextClock,
         requestedTimeWeight: Int,
         requestedDateWeight: Int,
+        dateEnabled: Boolean = true,
     ) {
         val sdkInt = Build.VERSION.SDK_INT
         val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)
         val dateWeight = RemoteViewsFontWeightPolicy.resolve(requestedDateWeight, sdkInt)
         clock.typeface = typefaceFor(time.effective)
         date.typeface = typefaceFor(dateWeight.effective)
+        date.visibility = if (dateEnabled) View.VISIBLE else View.GONE
     }
 
     fun effectiveWeight(requestedWeight: Int, sdkInt: Int = Build.VERSION.SDK_INT): Int =
@@ -92,11 +97,13 @@ object DigitalWidgetWeightRenderer {
         effectiveWeight: Int,
         sizePx: Float,
         dateFormat: CharSequence?,
+        enabled: Boolean,
     ) {
         val selectedIndex = RemoteViewsFontWeightPolicy.canonicalIndex(effectiveWeight)
         ids.forEachIndexed { index, id ->
-            remoteViews.setViewVisibility(id, if (index == selectedIndex) View.VISIBLE else View.GONE)
-            if (index == selectedIndex) {
+            val visible = enabled && index == selectedIndex
+            remoteViews.setViewVisibility(id, if (visible) View.VISIBLE else View.GONE)
+            if (visible) {
                 remoteViews.setTextViewTextSize(id, android.util.TypedValue.COMPLEX_UNIT_PX, sizePx)
             }
             if (dateFormat != null) {
