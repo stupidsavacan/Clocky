@@ -1,6 +1,8 @@
 package com.stupidsavacan.clocky.customization.model
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DigitalWidgetProfileResolverTest {
@@ -55,5 +57,35 @@ class DigitalWidgetProfileResolverTest {
         assertEquals(DigitalWidgetProfile.FOUR_BY_TWO, regular.profile)
         assertEquals(400, regular.timeWeight)
         assertEquals(650, regular.dateWeight)
+    }
+
+    @Test
+    fun dateVisibilityInheritsBaseWhenProfileDoesNotOverrideIt() {
+        val hidden = WidgetSettings(
+            appWidgetId = 8,
+            date = DateSettings(enabled = false),
+            fourByOne = ProfileOverride(timeWeight = 575),
+        )
+        val visible = WidgetSettings(
+            appWidgetId = 9,
+            date = DateSettings(enabled = true),
+            fourByTwo = ProfileOverride(dateWeight = 650),
+        )
+
+        assertFalse(DigitalWidgetProfileResolver.resolveWeights(hidden, 59).dateEnabled)
+        assertTrue(DigitalWidgetProfileResolver.resolveWeights(visible, 129).dateEnabled)
+    }
+
+    @Test
+    fun profileDateVisibilityOverridesBaseIndependently() {
+        val settings = WidgetSettings(
+            appWidgetId = 10,
+            date = DateSettings(enabled = true),
+            fourByOne = ProfileOverride(dateEnabled = false),
+            fourByTwo = ProfileOverride(dateEnabled = true),
+        )
+
+        assertFalse(DigitalWidgetProfileResolver.resolveWeights(settings, 59).dateEnabled)
+        assertTrue(DigitalWidgetProfileResolver.resolveWeights(settings, 129).dateEnabled)
     }
 }

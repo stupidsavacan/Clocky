@@ -378,6 +378,7 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     nextAlarmTime,
                     resolvedWeights.timeWeight,
                     resolvedWeights.dateWeight,
+                    resolvedWeights.dateEnabled,
             )
             if (LOGGER.isVerboseLoggable) {
                 LOGGER.v(sizes.toString())
@@ -392,6 +393,7 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     clockSizePx = sizes.mClockFontSizePx.toFloat(),
                     dateSizePx = sizes.mFontSizePx.toFloat(),
                     dateFormat = dateFormat,
+                    dateEnabled = resolvedWeights.dateEnabled,
             )
             rv.setTextViewTextSize(R.id.nextAlarm, COMPLEX_UNIT_PX, sizes.mFontSizePx.toFloat())
 
@@ -430,6 +432,7 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             nextAlarmTime: String?,
             requestedTimeWeight: Int,
             requestedDateWeight: Int,
+            dateEnabled: Boolean,
         ): Sizes {
             // Inflate a test layout to compute sizes at different font sizes.
             val inflater: LayoutInflater = LayoutInflater.from(context)
@@ -443,7 +446,7 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             date.setFormat12Hour(dateFormat)
             date.setFormat24Hour(dateFormat)
             DigitalWidgetWeightRenderer.applySizerWeights(
-                    clock, date, requestedTimeWeight, requestedDateWeight)
+                    clock, date, requestedTimeWeight, requestedDateWeight, dateEnabled)
 
             // Configure the next alarm views to display the next alarm time or be gone.
             val nextAlarmIcon: TextView = sizer.findViewById(R.id.nextAlarmIcon) as TextView

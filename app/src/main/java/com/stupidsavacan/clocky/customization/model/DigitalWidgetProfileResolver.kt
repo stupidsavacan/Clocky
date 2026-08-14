@@ -10,6 +10,7 @@ data class ResolvedWidgetWeights(
     val profile: DigitalWidgetProfile,
     val timeWeight: Int,
     val dateWeight: Int,
+    val dateEnabled: Boolean,
 )
 
 /**
@@ -42,6 +43,7 @@ object DigitalWidgetProfileResolver {
             profile = profile,
             timeWeight = override?.timeWeight ?: settings.time.requestedWeight,
             dateWeight = override?.dateWeight ?: settings.date.requestedWeight,
+            dateEnabled = override?.dateEnabled ?: settings.date.enabled,
         )
     }
 }
