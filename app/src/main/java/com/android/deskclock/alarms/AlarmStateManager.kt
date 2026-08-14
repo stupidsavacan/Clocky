@@ -154,7 +154,7 @@ class AlarmStateManager : BroadcastReceiver() {
             val pendingIntent: PendingIntent? =
                     PendingIntent.getService(context, instance.hashCode(),
                     createStateChangeIntent(context, ALARM_MANAGER_TAG, instance, null),
-                    PendingIntent.FLAG_NO_CREATE)
+                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
 
             pendingIntent?.let {
                 val am: AlarmManager = context.getSystemService(ALARM_SERVICE) as AlarmManager
