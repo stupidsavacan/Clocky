@@ -106,13 +106,21 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
 
         timeSlider.addOnChangeListener { _, value, _ ->
             refreshTime(value.toInt())
-            if (!fourByOne.enabled.isChecked) setProfileTimeWeight(fourByOne, value.toInt())
-            if (!fourByTwo.enabled.isChecked) setProfileTimeWeight(fourByTwo, value.toInt())
+            if (!fourByOne.enabled.isChecked || fourByOne.timeInherited) {
+                setProfileTimeWeight(fourByOne, value.toInt())
+            }
+            if (!fourByTwo.enabled.isChecked || fourByTwo.timeInherited) {
+                setProfileTimeWeight(fourByTwo, value.toInt())
+            }
         }
         dateSlider.addOnChangeListener { _, value, _ ->
             refreshDate(value.toInt())
-            if (!fourByOne.enabled.isChecked) setProfileDateWeight(fourByOne, value.toInt())
-            if (!fourByTwo.enabled.isChecked) setProfileDateWeight(fourByTwo, value.toInt())
+            if (!fourByOne.enabled.isChecked || fourByOne.dateInherited) {
+                setProfileDateWeight(fourByOne, value.toInt())
+            }
+            if (!fourByTwo.enabled.isChecked || fourByTwo.dateInherited) {
+                setProfileDateWeight(fourByTwo, value.toInt())
+            }
         }
 
         saveButton.setOnClickListener {
@@ -123,11 +131,27 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             val updated = WidgetProfileWeightEditor.apply(
                 settings = withBaseWeights,
                 fourByOneEnabled = fourByOne.enabled.isChecked,
-                fourByOneTimeWeight = fourByOne.timeSlider.value.toInt(),
-                fourByOneDateWeight = fourByOne.dateSlider.value.toInt(),
+                fourByOneTimeWeight = if (fourByOne.timeInherited) {
+                    null
+                } else {
+                    fourByOne.timeSlider.value.toInt()
+                },
+                fourByOneDateWeight = if (fourByOne.dateInherited) {
+                    null
+                } else {
+                    fourByOne.dateSlider.value.toInt()
+                },
                 fourByTwoEnabled = fourByTwo.enabled.isChecked,
-                fourByTwoTimeWeight = fourByTwo.timeSlider.value.toInt(),
-                fourByTwoDateWeight = fourByTwo.dateSlider.value.toInt(),
+                fourByTwoTimeWeight = if (fourByTwo.timeInherited) {
+                    null
+                } else {
+                    fourByTwo.timeSlider.value.toInt()
+                },
+                fourByTwoDateWeight = if (fourByTwo.dateInherited) {
+                    null
+                } else {
+                    fourByTwo.dateSlider.value.toInt()
+                },
             )
             store.save(updated)
             requestWidgetRefresh(appWidgetId)
@@ -159,18 +183,33 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         state: WidgetProfileWeightEditor.ProfileState,
     ) {
         controls.enabled.isChecked = state.enabled
+        controls.timeInherited = state.timeInherited
+        controls.dateInherited = state.dateInherited
         controls.container.visibility = if (state.enabled) View.VISIBLE else View.GONE
         setProfileTimeWeight(controls, state.timeWeight)
         setProfileDateWeight(controls, state.dateWeight)
 
-        controls.timeSlider.addOnChangeListener { _, value, _ ->
+        controls.timeSlider.addOnChangeListener { _, value, fromUser ->
             controls.timeValue.text = value.toInt().toString()
+            if (fromUser && controls.enabled.isChecked) {
+                controls.timeInherited = false
+            }
         }
-        controls.dateSlider.addOnChangeListener { _, value, _ ->
+        controls.dateSlider.addOnChangeListener { _, value, fromUser ->
             controls.dateValue.text = value.toInt().toString()
+            if (fromUser && controls.enabled.isChecked) {
+                controls.dateInherited = false
+            }
         }
         controls.enabled.setOnCheckedChangeListener { _, checked ->
             controls.container.visibility = if (checked) View.VISIBLE else View.GONE
+            if (checked) {
+                controls.timeInherited = false
+                controls.dateInherited = false
+            } else {
+                controls.timeInherited = true
+                controls.dateInherited = true
+            }
         }
     }
 
@@ -210,5 +249,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         val dateSlider: Slider,
         val timeValue: TextView,
         val dateValue: TextView,
+        var timeInherited: Boolean = true,
+        var dateInherited: Boolean = true,
     )
 }
