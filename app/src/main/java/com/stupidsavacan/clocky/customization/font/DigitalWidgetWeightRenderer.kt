@@ -5,6 +5,7 @@ import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
 import android.widget.TextClock
+import androidx.annotation.RequiresApi
 
 import com.android.deskclock.R
 
@@ -107,12 +108,17 @@ object DigitalWidgetWeightRenderer {
 
     private fun typefaceFor(weight: Int, sdkInt: Int): Typeface {
         if (sdkInt >= Build.VERSION_CODES.P) {
-            val base = Typeface.create("sans-serif", Typeface.NORMAL)
-            return Typeface.create(base, weight.coerceIn(100, 900), false)
+            return createWeightedTypeface(weight)
         }
 
         val spec = legacyTypefaceSpec(weight)
         return Typeface.create(spec.familyName, spec.style)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    private fun createWeightedTypeface(weight: Int): Typeface {
+        val base = Typeface.create("sans-serif", Typeface.NORMAL)
+        return Typeface.create(base, weight.coerceIn(100, 900), false)
     }
 
     internal fun legacyTypefaceSpec(weight: Int): LegacyTypefaceSpec = when (weight) {
