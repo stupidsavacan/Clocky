@@ -107,7 +107,8 @@ object DigitalWidgetWeightRenderer {
 
     private fun typefaceFor(weight: Int, sdkInt: Int): Typeface {
         if (sdkInt >= Build.VERSION_CODES.P) {
-            return Typeface.create("sans-serif", weight.coerceIn(100, 900), false)
+            val base = Typeface.create("sans-serif", Typeface.NORMAL)
+            return Typeface.create(base, weight.coerceIn(100, 900), false)
         }
 
         val spec = legacyTypefaceSpec(weight)
