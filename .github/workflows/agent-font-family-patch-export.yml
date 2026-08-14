@@ -24,38 +24,22 @@ jobs:
           set -euo pipefail
           git diff --check
           git status --short
-          test -f app/src/main/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicy.kt
-          test -f app/src/test/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicyTest.kt
 
-      - name: Package patched sources
+      - name: Emit patched files
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p patch-export
-          cp --parents \
-            app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt \
-            app/src/main/java/com/stupidsavacan/clocky/customization/font/DigitalWidgetWeightRenderer.kt \
-            app/src/main/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicy.kt \
-            app/src/main/java/com/stupidsavacan/clocky/customization/position/DigitalWidgetOffsetRenderer.kt \
-            app/src/main/res/layout/digital_widget.xml \
-            app/src/test/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicyTest.kt \
-            patch-export/
-          tar -C patch-export -czf font-family-patch.tgz app
-          sha256sum font-family-patch.tgz
-
-      - name: Emit patch archive fallback
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo 'CLOCKY_FONT_PATCH_BASE64_BEGIN'
-          base64 font-family-patch.tgz
-          echo 'CLOCKY_FONT_PATCH_BASE64_END'
-
-      - name: Upload patched sources
-        continue-on-error: true
-        uses: actions/upload-artifact@v4
-        with:
-          name: agent-font-family-patch-${{ github.sha }}
-          path: font-family-patch.tgz
-          if-no-files-found: error
-          retention-days: 1
+          emit() {
+            local label="$1"
+            local path="$2"
+            echo "CLOCKY_FILE_${label}_BEGIN"
+            base64 -w0 "$path"
+            echo
+            echo "CLOCKY_FILE_${label}_END"
+          }
+          emit PROVIDER app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt
+          emit RENDERER app/src/main/java/com/stupidsavacan/clocky/customization/font/DigitalWidgetWeightRenderer.kt
+          emit POLICY app/src/main/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicy.kt
+          emit OFFSET app/src/main/java/com/stupidsavacan/clocky/customization/position/DigitalWidgetOffsetRenderer.kt
+          emit LAYOUT app/src/main/res/layout/digital_widget.xml
+          emit TEST app/src/test/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicyTest.kt
