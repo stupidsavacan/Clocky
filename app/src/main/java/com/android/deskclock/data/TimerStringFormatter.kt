@@ -107,13 +107,13 @@ object TimerStringFormatter {
         } else if (showSeconds) {
             formatStringId = R.string.timer_notifications_seconds
         } else if (!shouldShowSeconds) {
-            formatStringId = R.string.timer_notifications_less_min
+            return context.getString(R.string.timer_notifications_less_min)
         }
 
-        return when (formatStringId) {
-            -1 -> null
-            R.string.timer_notifications_less_min -> context.getString(formatStringId)
-            else -> String.format(context.getString(formatStringId), hourSeq, minSeq,
+        return if (formatStringId == -1) {
+            null
+        } else {
+            String.format(context.getString(formatStringId), hourSeq, minSeq,
                     remainingSuffix, secSeq)
         }
     }
