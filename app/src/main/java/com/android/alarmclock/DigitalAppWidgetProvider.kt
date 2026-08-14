@@ -61,6 +61,7 @@ import com.android.deskclock.data.DataModel
 import com.android.deskclock.uidata.UiDataModel
 import com.android.deskclock.worldclock.CitySelectionActivity
 import com.stupidsavacan.clocky.customization.font.DigitalWidgetWeightRenderer
+import com.stupidsavacan.clocky.customization.format.DigitalWidgetFormatPolicy
 import com.stupidsavacan.clocky.customization.position.DigitalWidgetOffsetRenderer
 import com.stupidsavacan.clocky.customization.model.DigitalWidgetProfileResolver
 import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
@@ -353,8 +354,10 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                 rv.setOnClickPendingIntent(R.id.digital_widget, pi)
             }
 
-            // Configure child views of the remote view.
+            // Preserve the existing locale-driven formats unless an explicit hour mode exists.
             val dateFormat: CharSequence = getDateFormat(context)
+            val timeFormatOverride: CharSequence? =
+                    DigitalWidgetFormatPolicy.timeOverride(widgetSettings.time.hourMode)
 
             val nextAlarmTime: String? = Utils.getNextAlarm(context)
             if (TextUtils.isEmpty(nextAlarmTime)) {
@@ -414,6 +417,7 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     context,
                     template,
                     nextAlarmTime,
+                    timeFormatOverride,
                     resolvedWeights.timeWeight,
                     resolvedWeights.dateWeight,
                     resolvedWeights.dateEnabled,
@@ -435,6 +439,7 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     clockSizePx = sizes.mClockFontSizePx.toFloat(),
                     dateSizePx = sizes.mFontSizePx.toFloat(),
                     dateFormat = dateFormat,
+                    timeFormatOverride = timeFormatOverride,
                     dateEnabled = resolvedWeights.dateEnabled,
                     timeLetterSpacing = widgetSettings.time.letterSpacing,
                     dateLetterSpacing = widgetSettings.date.letterSpacing,
@@ -481,6 +486,7 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             context: Context,
             template: Sizes,
             nextAlarmTime: String?,
+            timeFormatOverride: CharSequence?,
             requestedTimeWeight: Int,
             requestedDateWeight: Int,
             dateEnabled: Boolean,
@@ -500,6 +506,10 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             val clock: TextClock = sizer.findViewById(R.id.clock) as TextClock
             date.setFormat12Hour(dateFormat)
             date.setFormat24Hour(dateFormat)
+            if (timeFormatOverride != null) {
+                clock.setFormat12Hour(timeFormatOverride)
+                clock.setFormat24Hour(timeFormatOverride)
+            }
             DigitalWidgetWeightRenderer.applySizerWeights(
                     clock,
                     date,

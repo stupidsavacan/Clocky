@@ -64,6 +64,7 @@ object DigitalWidgetWeightRenderer {
         clockSizePx: Float,
         dateSizePx: Float,
         dateFormat: CharSequence,
+        timeFormatOverride: CharSequence? = null,
         dateEnabled: Boolean = true,
         timeLetterSpacing: Float = 0f,
         dateLetterSpacing: Float = 0f,
@@ -81,7 +82,7 @@ object DigitalWidgetWeightRenderer {
             legacySelectedId = legacyViewId(timeFontFamily, time.effective, isDate = false),
             effectiveWeight = time.effective,
             sizePx = clockSizePx,
-            dateFormat = null,
+            dateFormat = timeFormatOverride,
             enabled = true,
             letterSpacing = timeLetterSpacing,
         )
