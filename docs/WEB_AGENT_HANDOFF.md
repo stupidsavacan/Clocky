@@ -2,36 +2,39 @@
 
 GitHubを唯一の正本として、通常ChatのWeb/GitHub作業を継続するための引き継ぎメモです。作業開始時は、この文書のSHAやrun番号を盲信せず、必ずGitHubから `main` / open PR / Actions を再取得してください。
 
-## Latest confirmed main baseline
+## Latest confirmed functional main baseline
 
-- main: `d2161533c0737e7ee5f26e60ee0a2dea73b1bd5a` (PR #25 merge)
-- Current App CI #171: https://github.com/stupidsavacan/Clocky/actions/runs/31796560329 — **success**
-  - exact checkout: `d2161533c0737e7ee5f26e60ee0a2dea73b1bd5a`
+- functional main before this docs sync: `59a3cf486f34687399b82875bec24bd8d3b63439` (PR #29 merge)
+- Current App CI #180: `31822461864` — **completed/success**
+  - checkout: `59a3cf486f34687399b82875bec24bd8d3b63439`
   - dependency resolution / `compileDebugKotlin` / unit tests / `lintDebug` / lint gate / `assembleDebug` / APK hash: success
   - lint text errors: 0
   - lint XML errors: 0
   - debug APK: `app/build/outputs/apk/debug/app-debug.apk`
-  - debug APK SHA-256: `3abc0e34ee91b77cc3fd49563c20cb589d76edd164dfe021601bbbd187eec82e`
-  - APK/report artifact upload failed only because GitHub Actions artifact storage quota was exhausted. This is nonfatal under the existing project policy because build/test/lint/assemble/hash succeeded.
-- Reference APK Guard #328: https://github.com/stupidsavacan/Clocky/actions/runs/31796560267 — **success**
-- At the migration investigation start point there were no open PRs. Re-query before creating or merging work because concurrent changes are possible.
+  - debug APK SHA-256: `0660fdbac1fa63eabbe79e2c2b15cdb613ddca962f67f9c0fb1cd1fb53a96f87`
+  - APK/report artifact uploads failed only because GitHub Actions artifact storage quota was exhausted. This is nonfatal under the existing project policy because build/test/lint/assemble/hash succeeded.
+- Reference APK Guard #355: `31822461749` — **completed/success**
 
-PR #25 head previously produced SHA-256 `819589049299b2d0f647e456d5d49711d65b7c152efa2341fb27a77d353493f2`; do not confuse that PR-head artifact with the newer post-merge main hash above.
+The latest functional APK hash above is the source-of-truth hash for the PR #29 main state. A later docs-only merge does not by itself create a newer functional APK unless Current App CI actually runs for that docs commit.
 
 ## Recent PR status
 
 - #20 — closed, not merged; superseded by #22 because its old base could revert letter-spacing UI.
 - #21 — merged; Digital Widget letter-spacing rendering + settings UI.
 - #22 — merged; size settings UI integrated on top of letter spacing.
-- #23 — merged as `ed3095048e2a7bcc3fd7e7b3062641e32d170bfa`; Digital Widget model-backed X/Y offsets connected to rendering.
-- #24 — merged as `41c8747fe20a4f21313a39865b0ab3c7c046515b`; README/backlog/handoff post-#23 docs sync.
-- #25 — merged as `d2161533c0737e7ee5f26e60ee0a2dea73b1bd5a`; non-finite base/profile X/Y values are normalized to 0dp before persistence while nullable profile inheritance is preserved.
+- #23 — merged; Digital Widget model-backed X/Y offsets connected to rendering.
+- #24 — merged; README/backlog/handoff post-#23 docs sync.
+- #25 — merged; non-finite base/profile X/Y normalized to 0dp while nullable inheritance is preserved.
+- #26 — merged; post-merge Reference APK Guard is correctly recorded as `31800832387`.
+- #27 — merged; repository-MVP-compatible five-family time/date font rendering while preserving the existing requested-weight path.
+- #28 — merged; explicit hour-mode rendering: follow system, forced 12h `h:mm`, forced 24h `HH:mm`.
+- #29 — merged; consolidated per-widget settings are deleted when the launcher removes that widget.
 
 ## Implemented Digital customization path
 
 Do not duplicate these features:
 
-- per-widget settings store wired into the Digital AppWidget provider
+- per-widget schema-versioned settings store wired into the Digital AppWidget provider
 - independent time/date weight rendering
 - base/profile weight editor
 - date visibility rendering + base/profile settings
@@ -42,90 +45,138 @@ Do not duplicate these features:
 - independent time/date X/Y offset resolution
 - API 31+ RemoteViews X/Y translation
 - API 23–30 effective 0dp offset fallback while preserving requested X/Y settings
-- non-finite base/profile X/Y normalized to 0dp before persistence and sanitized again at the renderer boundary
-- resolver/editor/renderer/model regression tests for the merged path
+- non-finite base/profile X/Y normalization/sanitization
+- repository-MVP's five proven font families: `sans-serif-light`, `sans-serif-rounded`, `serif`, `sans-serif-condensed`, `monospace`
+- explicit time hour mode: system-following / 12h `h:mm` / 24h `HH:mm`
+- widget-removal lifecycle cleanup through the current settings store
+- resolver/editor/renderer/model regression tests for the merged paths
 
-X/Y **editing UI** is not implemented. Renderer/model support does not define its editor range/interactions.
+X/Y **editing UI** is still not implemented because repository sources do not define its range/interaction semantics.
 
-## Current repository facts that must not be guessed
+## Current settings store facts
 
-- `docs/spec/` contains only `FONT_WEIGHT.md` at the last confirmed inventory point.
-- `WidgetSettingsStore` is the new source of truth and persists schema-versioned JSON per `appWidgetId` in `clocky_widget_settings`.
-- Current key shape is `widget.<appWidgetId>.settings`; current store code writes schema `1`.
-- Model/storage fields alone are not sufficient evidence for new color/opacity, alignment, hour-mode/leading-zero, background, or X/Y editor semantics.
-- `docs/parity/WIDGET_PARITY_SPEC.md` describes intended dimensions but does not by itself define all alpha-composition, RTL/alignment, background/API-fallback or editor interaction rules needed for implementation.
-- Do not write new settings back into the old MVP primitive key space. Legacy keys, when eventually migrated, are import-only input.
+- SharedPreferences file: `clocky_widget_settings`
+- key: `widget.<appWidgetId>.settings`
+- current JSON schema field: `1`
+- current settings are the sole write-side source of truth
+- legacy primitive keys are import-only input if a future migration reader is added; never dual-write current values into them
 
-## Old MVP settings migration investigation — blocked on authoritative source readability
+Model/storage fields alone are not sufficient evidence for renderer/editor behavior. In particular, do not guess missing date-format override semantics, alpha composition, RTL alignment behavior, background fallback/API behavior, or X/Y editor interaction rules.
 
-Architecture explicitly names `ci/Clocky_MVP_source.zip` as the retained runnable MVP source bundle and source of truth for the old primitive key names until a migration reader exists.
+## Repository-owned MVP source contract — decoded and verified
 
-Latest GitHub facts for that bundle:
+The old migration investigation is **not blocked on ZIP readability anymore**. The authoritative repository-owned bundle was read and its relevant plain-text source was inspected.
+
+Source provenance:
 
 - path: `ci/Clocky_MVP_source.zip`
 - size: **14,299 bytes**
 - Git blob SHA: **`6d63be2463ec408824a9b06eec282153c1a2df55`**
-- commit `23338240ae55a358c0fae0b443b383cd13169628` (`Update MVP source bundle`) updated that binary after the earlier Base64 helper was committed.
+- relevant source files inside the bundle:
+  - `WidgetPrefs.java`
+  - `WidgetConfigActivity.java`
+  - `ClockWidgetRenderer.java`
 
-A stale helper exists at `ci/source-b64/part-00.txt`, but it predates the final source-bundle update and therefore **must not be substituted for the final ZIP** when proving migration semantics. Historical `agent/mvp-*` branches checked during the investigation did not expose the final complete settings source as authoritative plain text.
+Verified legacy SharedPreferences contract:
 
-The connected GitHub reader can enumerate the final ZIP's exact SHA/size but rejects the binary blob because the read path accepts UTF-8 text only. Therefore the Web-only investigation cannot prove the complete final old-MVP mapping from the authoritative source bundle. In particular, do not infer or implement any of the following from the stale helper or memory alone:
+- file: `clocky_widgets`
+- per-widget prefix: `w_<appWidgetId>_`
+- integer keys: `timeFont`, `dateFont`, `timeSize`, `dateSize`, `timeX`, `timeY`, `dateX`, `dateY`, `align`, `bg`, `hourMode`, `dateFormat`
+- boolean key: `showDate`
+- string keys: `timeColor`, `dateColor`
+- **there is no persisted legacy `leadingZero` key**
+- **there are no profile-specific legacy preference keys**
 
-- complete SharedPreferences file/key list and exact value types/defaults
-- old enum/integer mappings and invalid-value behavior
-- background-mode mapping
-- ARGB alpha versus any separate opacity semantics
-- date-format mapping
-- whether every setting is strictly scoped by `appWidgetId`
-- whether the final old source had profile-specific persistence
-- exact one-time/idempotent migration behavior needed to avoid legacy values being re-imported after the new setting is edited/deleted
+Verified font-index mapping:
 
-**Decision:** no partial migration reader is added until those facts can be proven from the final source. This avoids silently corrupting or reviving settings through guessed mappings.
+```text
+0 sans-serif-light
+1 sans-serif-rounded
+2 serif
+3 sans-serif-condensed
+4 monospace
+```
 
-### Minimum Desktop-side evidence needed to unblock migration
+Verified date-format mapping:
 
-No APK, proprietary assets, device data, JKS/password, or private logs are needed. From the repository-owned `ci/Clocky_MVP_source.zip`, extract only the plain-text source files that define:
+```text
+0 M月d日(E)
+1 EEE, MMM d
+2 yyyy.MM.dd
+3 EEE d MMM
+```
 
-1. SharedPreferences name and per-widget key construction;
-2. every persisted setting key, value type and default;
-3. enum/integer/string mapping for alignment, hour mode, date format and background;
-4. color/alpha/opacity interpretation;
-5. save/load/delete/reset behavior and whether legacy values can reappear;
-6. any profile/size-specific persistence semantics.
+Verified legacy hour mode:
 
-Record the extracted file paths plus their text (or add a reviewable plain-text provenance note generated directly from those source files) so a future Web agent can map old values to `WidgetSettings` without guessing. Do not provide or commit proprietary reference APK/assets.
+```text
+0 follow device/system
+1 explicit 24h -> HH:mm
+2 explicit 12h -> h:mm
+```
 
-## Next Web-safe audit
+Verified alignment/background intent:
 
-After re-fetching GitHub state:
+- alignment index 0 = START, 1 = CENTER_HORIZONTAL, 2 = END
+- background index 0 = transparent layout, 1 = dark layout, 2 = light layout
+- old background layouts also participate in fallback color/adaptive-padding behavior
 
-1. Inventory current customization model/storage tests for deterministic serialization/normalization gaps.
-2. Inspect the fact that JSON writes a schema field and verify whether repository docs/tests define behavior for unsupported/missing schema before changing decoder behavior.
-3. Audit renderer/config activity tests for already-defined branches in weight/date visibility/size/letter spacing/X/Y behavior.
-4. Audit README/backlog/architecture paths and claims against the current tree; correct stale documentation without inventing missing files or semantics.
-5. Only implement parity fields when current repository sources define their exact behavior. Otherwise leave them explicitly blocked rather than guessing.
-6. Keep PRs single-purpose, re-check open PRs immediately before branching/merging, and verify required Actions before merge.
+## Migration status — source decoded, full importer intentionally deferred
 
-## Desktop-only / not verified by Web work
+Do **not** describe migration as blocked by source readability. The blocker is current-model/render **representability**.
+
+A complete old primitive-key importer is intentionally not added until all persisted old semantics can be represented without guessing. Remaining exact blockers:
+
+1. **Date format default/override:** current `DateSettings.formatPattern` is non-null and defaults to `EEE, MMM d`, while the current provider derives its default date format from locale. There is no explicit “no override” state.
+2. **Color/opacity:** current model stores ARGB plus separate opacity, but repository contracts do not define whether/how ARGB alpha composes with separate opacity.
+3. **RTL alignment:** old values are START/CENTER/END while current enum is LEFT/CENTER/RIGHT; exact RTL semantics are not defined.
+4. **Background mapping:** old transparent/dark/light layouts include fallback colors/adaptive padding, while the current background model/API fallback/radius/padding mapping is not fully specified.
+5. **Leading zero:** current model has a field, but old MVP persisted no key. Never synthesize a legacy value; preserve the current default unless a separate current feature contract says otherwise.
+
+Future importer rules:
+
+1. Existing consolidated JSON always wins.
+2. Read only exact proven legacy keys/types/mappings.
+3. Normalize and save through the current `WidgetSettingsStore`.
+4. After successful import, remove or permanently ignore that widget's old keys so stale values cannot be resurrected.
+5. Never dual-write current values to the old primitive key space.
+6. Do not invent profile data or a leading-zero legacy value.
+
+## Remaining Web-safe work boundary
+
+At this handoff, no additional clear implementation item should be coded from the existing repository contracts without first defining missing semantics. Re-audit GitHub before acting because new commits/specs may change that.
+
+Potential future Web-safe work becomes actionable only when the repository defines one of these contracts precisely:
+
+- X/Y editor range and interaction behavior
+- date-format “default/no override” representation
+- ARGB-alpha × separate-opacity composition
+- LEFT/RIGHT versus START/END behavior in RTL
+- background transparent/dark/light mapping, fallback colors, padding/radius and API fallbacks
+- any explicit current leading-zero behavior beyond the model field
+
+Unsupported/missing JSON-schema behavior is also not currently a defined contract; do not invent decoder policy merely because a schema field exists.
+
+## Device/reference-only / not verified by Web work
 
 Web/GitHub validation must not be described as device validation. The following remain outside this workflow:
 
 - ADB
 - physical device testing
 - emulator testing
-- launcher E2E / resize interaction E2E
+- launcher add/reconfigure/resize interaction E2E
 - Google Clock reference APK or proprietary assets
 - JKS/password/release signing
 - private dumps/logs
 - production release decisions
 
-For UI/rendering work, GitHub Actions can validate compile/unit/lint/assemble/hash, but actual launcher appearance, clipping, host-specific RemoteViews behavior, resize interactions and touch UX remain device/reference verification items.
-
-### Current device/reference checklist
+Current device/reference checklist:
 
 - [ ] API 31+ real launcher: verify independent time/date X/Y translation and clipping.
 - [ ] API 23–30 real launcher: verify effective 0dp X/Y fallback visually.
-- [ ] Resize between compact/regular profiles: verify host-size transitions and per-field inheritance behavior.
-- [ ] Verify Digital weight/date visibility/size/letter-spacing controls visually and interactively.
+- [ ] Resize between compact/regular profiles: verify host-size transitions and inheritance.
+- [ ] Verify Digital weight/date visibility/size/letter-spacing/font-family/hour-mode controls visually and interactively where applicable.
+- [ ] Validate launcher add/remove/reconfigure behavior around persisted settings.
 - [ ] Validate targetSdk 35 runtime-sensitive Alarm/Timer/notification/full-screen/direct-boot behavior.
 - [ ] Perform Google Clock side-by-side geometry/parity measurement only in an allowed device/reference workflow.
+
+GitHub Actions proves compile/test/lint/assemble/hash status only; it does not prove launcher appearance, clipping, host-specific RemoteViews behavior, touch UX, or physical-device parity.
