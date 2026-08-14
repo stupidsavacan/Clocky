@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="clocky_widget_config_label">Clocky widget settings</string>
+    <string name="clocky_widget_weight_title">Font weight</string>
+    <string name="clocky_widget_weight_summary">Set the time and date weights independently. Clocky preserves the exact value from 100 to 900.</string>
+    <string name="clocky_time_weight">Time weight</string>
+    <string name="clocky_date_weight">Date weight</string>
+    <string name="clocky_widget_date_preview">Fri, Aug 14</string>
+    <string name="clocky_widget_save">Save widget</string>
+</resources>
