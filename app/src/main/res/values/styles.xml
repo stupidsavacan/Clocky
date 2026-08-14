@@ -133,4 +133,108 @@
         <item name="android:numbersTextColor">?android:attr/textColorPrimary</item>
     </style>
 
+    <!-- Clocky selectable font-weight faces for RemoteViews.
+         android:textFontWeight is honored on API 28+; fontFamily/textStyle provide
+         a best-effort fallback on older supported Android versions. -->
+    <style name="widget_big_weight_base">
+        <item name="android:textSize">@dimen/big_font_size</item>
+        <item name="android:shadowRadius">@dimen/widget_shadow_radius</item>
+        <item name="android:shadowColor">@color/widget_shadow_color</item>
+        <item name="android:shadowDy">@dimen/widget_shadow_dy</item>
+    </style>
+
+    <style name="widget_big_weight_100" parent="widget_big_weight_base">
+        <item name="android:fontFamily">sans-serif-thin</item>
+        <item name="android:textFontWeight" tools:targetApi="28">100</item>
+    </style>
+
+    <style name="widget_label_weight_100" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-thin</item>
+        <item name="android:textFontWeight" tools:targetApi="28">100</item>
+    </style>
+
+    <style name="widget_big_weight_200" parent="widget_big_weight_base">
+        <item name="android:fontFamily">sans-serif-thin</item>
+        <item name="android:textFontWeight" tools:targetApi="28">200</item>
+    </style>
+
+    <style name="widget_label_weight_200" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-thin</item>
+        <item name="android:textFontWeight" tools:targetApi="28">200</item>
+    </style>
+
+    <style name="widget_big_weight_300" parent="widget_big_weight_base">
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:textFontWeight" tools:targetApi="28">300</item>
+    </style>
+
+    <style name="widget_label_weight_300" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:textFontWeight" tools:targetApi="28">300</item>
+    </style>
+
+    <style name="widget_big_weight_400" parent="widget_big_weight_base">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textFontWeight" tools:targetApi="28">400</item>
+    </style>
+
+    <style name="widget_label_weight_400" parent="widget_label">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textFontWeight" tools:targetApi="28">400</item>
+    </style>
+
+    <style name="widget_big_weight_500" parent="widget_big_weight_base">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textFontWeight" tools:targetApi="28">500</item>
+    </style>
+
+    <style name="widget_label_weight_500" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textFontWeight" tools:targetApi="28">500</item>
+    </style>
+
+    <style name="widget_big_weight_600" parent="widget_big_weight_base">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textFontWeight" tools:targetApi="28">600</item>
+    </style>
+
+    <style name="widget_label_weight_600" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textFontWeight" tools:targetApi="28">600</item>
+    </style>
+
+    <style name="widget_big_weight_700" parent="widget_big_weight_base">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textFontWeight" tools:targetApi="28">700</item>
+    </style>
+
+    <style name="widget_label_weight_700" parent="widget_label">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textFontWeight" tools:targetApi="28">700</item>
+    </style>
+
+    <style name="widget_big_weight_800" parent="widget_big_weight_base">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textFontWeight" tools:targetApi="28">800</item>
+    </style>
+
+    <style name="widget_label_weight_800" parent="widget_label">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textFontWeight" tools:targetApi="28">800</item>
+    </style>
+
+    <style name="widget_big_weight_900" parent="widget_big_weight_base">
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textFontWeight" tools:targetApi="28">900</item>
+    </style>
+
+    <style name="widget_label_weight_900" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textFontWeight" tools:targetApi="28">900</item>
+    </style>
+
 </resources>

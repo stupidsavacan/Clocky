@@ -60,6 +60,7 @@ import com.android.deskclock.alarms.AlarmStateManager
 import com.android.deskclock.data.DataModel
 import com.android.deskclock.uidata.UiDataModel
 import com.android.deskclock.worldclock.CitySelectionActivity
+import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
 
 import java.util.Calendar
 import java.util.Date
@@ -324,6 +325,10 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             // Create a remote view for the digital clock.
             val packageName: String = context.getPackageName()
             val rv = RemoteViews(packageName, R.layout.digital_widget)
+            val settings = SharedPreferencesWidgetSettingsStore(context).load(widgetId)
+            val weightSelection = DigitalWidgetWeightVariants.select(
+                    settings.time.requestedWeight, settings.date.requestedWeight)
+            DigitalWidgetWeightVariants.apply(rv, weightSelection, settings.date.enabled)
 
             // Tapping on the widget opens the app (if not on the lock screen).
             if (Utils.isWidgetClickable(wm, widgetId)) {
@@ -335,8 +340,10 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
 
             // Configure child views of the remote view.
             val dateFormat: CharSequence = getDateFormat(context)
-            rv.setCharSequence(R.id.date, "setFormat12Hour", dateFormat)
-            rv.setCharSequence(R.id.date, "setFormat24Hour", dateFormat)
+            if (settings.date.enabled) {
+                rv.setCharSequence(weightSelection.dateViewId, "setFormat12Hour", dateFormat)
+                rv.setCharSequence(weightSelection.dateViewId, "setFormat24Hour", dateFormat)
+            }
 
             val nextAlarmTime: String? = Utils.getNextAlarm(context)
             if (TextUtils.isEmpty(nextAlarmTime)) {
@@ -366,16 +373,18 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             val template = Sizes(targetWidthPx, targetHeightPx, largestClockFontSizePx)
 
             // Compute optimal font sizes and icon sizes to fit within the widget bounds.
-            val sizes = optimizeSizes(context, template, nextAlarmTime)
+            val sizes = optimizeSizes(context, template, nextAlarmTime, weightSelection, settings.date.enabled)
             if (LOGGER.isVerboseLoggable) {
                 LOGGER.v(sizes.toString())
             }
 
             // Apply the computed sizes to the remote views.
             rv.setImageViewBitmap(R.id.nextAlarmIcon, sizes.mIconBitmap)
-            rv.setTextViewTextSize(R.id.date, COMPLEX_UNIT_PX, sizes.mFontSizePx.toFloat())
+            if (settings.date.enabled) {
+                rv.setTextViewTextSize(weightSelection.dateViewId, COMPLEX_UNIT_PX, sizes.mFontSizePx.toFloat())
+            }
             rv.setTextViewTextSize(R.id.nextAlarm, COMPLEX_UNIT_PX, sizes.mFontSizePx.toFloat())
-            rv.setTextViewTextSize(R.id.clock, COMPLEX_UNIT_PX, sizes.mClockFontSizePx.toFloat())
+            rv.setTextViewTextSize(weightSelection.timeViewId, COMPLEX_UNIT_PX, sizes.mClockFontSizePx.toFloat())
 
             val smallestWorldCityListSizePx: Int =
                     resources.getDimensionPixelSize(R.dimen.widget_min_world_city_list_size)
@@ -409,18 +418,23 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
         private fun optimizeSizes(
             context: Context,
             template: Sizes,
-            nextAlarmTime: String?
+            nextAlarmTime: String?,
+            weightSelection: DigitalWidgetWeightSelection,
+            dateEnabled: Boolean
         ): Sizes {
             // Inflate a test layout to compute sizes at different font sizes.
             val inflater: LayoutInflater = LayoutInflater.from(context)
             @SuppressLint("InflateParams") val sizer: View =
                     inflater.inflate(R.layout.digital_widget_sizer, null /* root */)
+            DigitalWidgetWeightVariants.apply(sizer, weightSelection, dateEnabled)
 
             // Configure the date to display the current date string.
             val dateFormat: CharSequence = getDateFormat(context)
-            val date: TextClock = sizer.findViewById(R.id.date) as TextClock
-            date.setFormat12Hour(dateFormat)
-            date.setFormat24Hour(dateFormat)
+            val date: TextClock = sizer.findViewById(weightSelection.dateViewId) as TextClock
+            if (dateEnabled) {
+                date.setFormat12Hour(dateFormat)
+                date.setFormat24Hour(dateFormat)
+            }
 
             // Configure the next alarm views to display the next alarm time or be gone.
             val nextAlarmIcon: TextView = sizer.findViewById(R.id.nextAlarmIcon) as TextView
@@ -436,13 +450,13 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             }
 
             // Measure the widget at the largest possible size.
-            var high = measure(template, template.largestClockFontSizePx, sizer)
+            var high = measure(template, template.largestClockFontSizePx, sizer, weightSelection)
             if (!high.hasViolations()) {
                 return high
             }
 
             // Measure the widget at the smallest possible size.
-            var low = measure(template, template.smallestClockFontSizePx, sizer)
+            var low = measure(template, template.smallestClockFontSizePx, sizer, weightSelection)
             if (low.hasViolations()) {
                 return low
             }
@@ -453,7 +467,7 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                 if (midFontSize == low.clockFontSizePx) {
                     return low
                 }
-                val midSize = measure(template, midFontSize, sizer)
+                val midSize = measure(template, midFontSize, sizer, weightSelection)
                 if (midSize.hasViolations()) {
                     high = midSize
                 } else {
@@ -473,13 +487,13 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
          * the offscreen `sizer` view. Measure the `sizer` view and return the resulting
          * size measurements.
          */
-        private fun measure(template: Sizes, clockFontSize: Int, sizer: View): Sizes {
+        private fun measure(template: Sizes, clockFontSize: Int, sizer: View, weightSelection: DigitalWidgetWeightSelection): Sizes {
             // Create a copy of the given template sizes.
             val measuredSizes = template.newSize()
 
             // Configure the clock to display the widest time string.
-            val date: TextClock = sizer.findViewById(R.id.date) as TextClock
-            val clock: TextClock = sizer.findViewById(R.id.clock) as TextClock
+            val date: TextClock = sizer.findViewById(weightSelection.dateViewId) as TextClock
+            val clock: TextClock = sizer.findViewById(weightSelection.timeViewId) as TextClock
             val nextAlarm: TextView = sizer.findViewById(R.id.nextAlarm) as TextView
             val nextAlarmIcon: TextView = sizer.findViewById(R.id.nextAlarmIcon) as TextView
 
