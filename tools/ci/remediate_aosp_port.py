@@ -12,13 +12,15 @@ ROOT = Path(__file__).resolve().parents[2]
 def replace_once(path: str, old: str, new: str) -> None:
     target = ROOT / path
     text = target.read_text(encoding="utf-8")
-    if old in text:
-        text = text.replace(old, new, 1)
-        target.write_text(text, encoding="utf-8")
-        print(f"updated {path}")
-        return
+    # Check the desired form first. Some replacements intentionally contain the old
+    # text as a suffix (for example, inserting an import immediately before another
+    # import); checking `old` first would therefore apply the edit repeatedly.
     if new in text:
         print(f"already remediated {path}")
+        return
+    if old in text:
+        target.write_text(text.replace(old, new, 1), encoding="utf-8")
+        print(f"updated {path}")
         return
     raise RuntimeError(f"expected pattern not found in {path}: {old[:100]!r}")
 
@@ -26,18 +28,39 @@ def replace_once(path: str, old: str, new: str) -> None:
 def replace_all(path: str, old: str, new: str) -> None:
     target = ROOT / path
     text = target.read_text(encoding="utf-8")
+    if old not in text and new in text:
+        print(f"already remediated {path}")
+        return
     if old in text:
         count = text.count(old)
         target.write_text(text.replace(old, new), encoding="utf-8")
         print(f"updated {path}: {count} replacements")
         return
-    if new in text:
-        print(f"already remediated {path}")
-        return
     raise RuntimeError(f"expected pattern not found in {path}: {old!r}")
 
 
+def dedupe_exact_line(path: str, line: str) -> None:
+    """Keep the first exact occurrence of `line` and remove accidental duplicates."""
+    target = ROOT / path
+    lines = target.read_text(encoding="utf-8").splitlines(keepends=True)
+    seen = False
+    changed = False
+    output: list[str] = []
+    for item in lines:
+        if item.rstrip("\r\n") == line:
+            if seen:
+                changed = True
+                continue
+            seen = True
+        output.append(item)
+    if changed:
+        target.write_text("".join(output), encoding="utf-8")
+        print(f"deduplicated {path}: {line}")
+
+
 alarm_activity = "app/src/main/java/com/android/deskclock/alarms/AlarmActivity.kt"
+dedupe_exact_line(alarm_activity, "import android.os.Build")
+dedupe_exact_line(alarm_activity, "import androidx.core.content.ContextCompat")
 replace_once(
     alarm_activity,
     "package com.android.deskclock.alarms\n\nimport android.accessibilityservice.AccessibilityServiceInfo",
@@ -196,6 +219,10 @@ replace_once(
 )
 
 manifest = "app/src/main/AndroidManifest.xml"
+dedupe_exact_line(
+    manifest,
+    '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />',
+)
 replace_once(
     manifest,
     "    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\" />\n",
