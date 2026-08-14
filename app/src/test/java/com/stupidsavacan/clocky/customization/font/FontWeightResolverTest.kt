@@ -47,6 +47,20 @@ class FontWeightResolverTest {
     }
 
     @Test
+    fun preservesExactStaticFaceWhenAvailable() {
+        val resolved = FontWeightResolver.resolve(
+            600,
+            FontCapabilities(staticWeights = setOf(400, 600, 700)),
+        )
+
+        assertEquals(600, resolved.requested)
+        assertEquals(600, resolved.effective)
+        assertTrue(resolved.exact)
+        assertNull(resolved.variationSettings)
+        assertEquals("static-face-exact", resolved.reason)
+    }
+
+    @Test
     fun choosesNearestStaticFaceWithLowerWeightAsTieBreaker() {
         val resolved = FontWeightResolver.resolve(
             550,
