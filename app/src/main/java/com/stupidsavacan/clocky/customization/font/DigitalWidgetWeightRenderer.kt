@@ -79,8 +79,8 @@ object DigitalWidgetWeightRenderer {
         val sdkInt = Build.VERSION.SDK_INT
         val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)
         val dateWeight = RemoteViewsFontWeightPolicy.resolve(requestedDateWeight, sdkInt)
-        clock.typeface = typefaceFor(time.effective, sdkInt)
-        date.typeface = typefaceFor(dateWeight.effective, sdkInt)
+        clock.typeface = typefaceFor(time.effective)
+        date.typeface = typefaceFor(dateWeight.effective)
     }
 
     fun effectiveWeight(requestedWeight: Int, sdkInt: Int = Build.VERSION.SDK_INT): Int =
@@ -106,8 +106,8 @@ object DigitalWidgetWeightRenderer {
         }
     }
 
-    private fun typefaceFor(weight: Int, sdkInt: Int): Typeface {
-        if (sdkInt >= Build.VERSION_CODES.P) {
+    private fun typefaceFor(weight: Int): Typeface {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             return createWeightedTypeface(weight)
         }
 
