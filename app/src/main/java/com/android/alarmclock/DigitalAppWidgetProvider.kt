@@ -61,6 +61,7 @@ import com.android.deskclock.data.DataModel
 import com.android.deskclock.uidata.UiDataModel
 import com.android.deskclock.worldclock.CitySelectionActivity
 import com.stupidsavacan.clocky.customization.font.DigitalWidgetWeightRenderer
+import com.stupidsavacan.clocky.customization.model.DigitalWidgetProfileResolver
 import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
 
 import java.util.Calendar
@@ -350,6 +351,10 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             }
 
             val options = options ?: wm.getAppWidgetOptions(widgetId)
+            val resolvedWeights = DigitalWidgetProfileResolver.resolveWeights(
+                    widgetSettings,
+                    options.getInt(OPTION_APPWIDGET_MIN_HEIGHT),
+            )
 
             // Fetch the widget size selected by the user.
             val resources: Resources = context.getResources()
@@ -371,8 +376,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     context,
                     template,
                     nextAlarmTime,
-                    widgetSettings.time.requestedWeight,
-                    widgetSettings.date.requestedWeight,
+                    resolvedWeights.timeWeight,
+                    resolvedWeights.dateWeight,
             )
             if (LOGGER.isVerboseLoggable) {
                 LOGGER.v(sizes.toString())
@@ -382,8 +387,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             rv.setImageViewBitmap(R.id.nextAlarmIcon, sizes.mIconBitmap)
             DigitalWidgetWeightRenderer.applyRemoteViews(
                     remoteViews = rv,
-                    requestedTimeWeight = widgetSettings.time.requestedWeight,
-                    requestedDateWeight = widgetSettings.date.requestedWeight,
+                    requestedTimeWeight = resolvedWeights.timeWeight,
+                    requestedDateWeight = resolvedWeights.dateWeight,
                     clockSizePx = sizes.mClockFontSizePx.toFloat(),
                     dateSizePx = sizes.mFontSizePx.toFloat(),
                     dateFormat = dateFormat,
