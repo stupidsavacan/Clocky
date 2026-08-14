@@ -14,7 +14,13 @@ This branch establishes a standalone Gradle-buildable AOSP DeskClock foundation 
 - debug APK assembly
 - APK SHA-256 recording
 
-The final pre-PR application state passed compile, unit tests, lint, assemble, hashing, and artifact upload in Current App CI run `31779022372`.
+The final pre-PR application state passed compile, unit tests, lint, assemble, and hashing in Current App CI run `31779022372` (run #25) at commit `8c1722ba98acf3270596606fe124d46261e34003`.
+
+Lint reported `0` text errors and `0` XML errors. The assembled debug APK SHA-256 was:
+
+`74591259f2b8a3a8320477255f665872ad3f166acf9bf24df5cc82f46b5074bd`
+
+The GitHub Actions artifact upload steps did **not** succeed because the repository had reached its Actions artifact storage quota. Those upload failures were intentionally non-fatal and do not change the compile/test/lint/assemble result. No downloadable Actions artifact is claimed for this run.
 
 ## Compatibility remediation included
 
