@@ -85,10 +85,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:contentDescription="@string/clocky_time_weight"
-            app:labelBehavior="withinBounds"
-            app:stepSize="1"
-            app:valueFrom="100"
-            app:valueTo="900" />
+            android:stepSize="1"
+            android:valueFrom="100"
+            android:valueTo="900"
+            app:labelBehavior="withinBounds" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -119,10 +119,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:contentDescription="@string/clocky_date_weight"
-            app:labelBehavior="withinBounds"
-            app:stepSize="1"
-            app:valueFrom="100"
-            app:valueTo="900" />
+            android:stepSize="1"
+            android:valueFrom="100"
+            android:valueTo="900"
+            app:labelBehavior="withinBounds" />
 
         <Button
             android:id="@+id/clocky_widget_save"
