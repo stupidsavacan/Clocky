@@ -75,8 +75,8 @@ class LabelDialogFragment : DialogFragment() {
                 .create()
         val context: Context = dialog.context
 
-        val colorControlActivated = ThemeUtils.resolveColor(context, R.attr.colorControlActivated)
-        val colorControlNormal = ThemeUtils.resolveColor(context, R.attr.colorControlNormal)
+        val colorControlActivated = ThemeUtils.resolveColor(context, android.R.attr.colorControlActivated)
+        val colorControlNormal = ThemeUtils.resolveColor(context, android.R.attr.colorControlNormal)
 
         mLabelBox = AppCompatEditText(context)
         mLabelBox?.setSupportBackgroundTintList(ColorStateList(

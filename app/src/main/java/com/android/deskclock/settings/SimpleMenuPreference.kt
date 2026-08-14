@@ -43,7 +43,7 @@ class SimpleMenuPreference(
     }
 
     constructor(context: Context?, attrs: AttributeSet?) :
-            this(context, attrs, R.attr.dropdownPreferenceStyle) {
+            this(context, attrs, android.R.attr.dropdownPreferenceStyle) {
     }
 
     constructor(context: Context?, attrs: AttributeSet?, defStyle: Int) :

@@ -57,7 +57,7 @@ internal class RingtoneViewHolder private constructor(itemView: View)
             if (!itemHolder.hasPermissions()) {
                 mImageView.setImageResource(R.drawable.ic_ringtone_not_found)
                 val colorAccent = ThemeUtils.resolveColor(itemView.getContext(),
-                        R.attr.colorAccent)
+                        android.R.attr.colorAccent)
                 mImageView.setColorFilter(colorAccent, PorterDuff.Mode.SRC_ATOP)
             } else {
                 mImageView.setImageResource(R.drawable.placeholder_album_artwork)

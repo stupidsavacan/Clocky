@@ -479,8 +479,8 @@ class ClockFragment : DeskClockFragment(UiDataModel.Tab.CLOCKS) {
         }
 
         companion object {
-            private const val MAIN_CLOCK = R.layout.main_clock_frame
-            private const val WORLD_CLOCK = R.layout.world_clock_item
+            private val MAIN_CLOCK = R.layout.main_clock_frame
+            private val WORLD_CLOCK = R.layout.world_clock_item
         }
     }
 }

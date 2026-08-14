@@ -68,7 +68,7 @@ class ExpandedAlarmViewHolder private constructor(itemView: View, private val mH
         val context: Context = itemView.getContext()
         itemView.setBackground(LayerDrawable(arrayOf(
                 ContextCompat.getDrawable(context, R.drawable.alarm_background_expanded),
-                ThemeUtils.resolveDrawable(context, R.attr.selectableItemBackground)
+                ThemeUtils.resolveDrawable(context, android.R.attr.selectableItemBackground)
         )))
 
         // Build button for each day.
