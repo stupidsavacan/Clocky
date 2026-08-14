@@ -3,8 +3,6 @@ name: Current App CI
 
 on:
   push:
-    branches:
-      - agent/compile-bootstrap
     paths:
       - 'app/**'
       - 'build.gradle.kts'
