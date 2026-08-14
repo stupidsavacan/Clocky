@@ -2,9 +2,17 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="clocky_widget_config_label" tools:ignore="MissingTranslation">Clocky widget settings</string>
     <string name="clocky_widget_weight_title" tools:ignore="MissingTranslation">Font weight</string>
-    <string name="clocky_widget_weight_summary" tools:ignore="MissingTranslation">Set the time and date weights independently. Clocky preserves the exact value from 100 to 900.</string>
+    <string name="clocky_widget_weight_summary" tools:ignore="MissingTranslation">Set base time and date weights, then optionally override them for compact and regular widget heights. Clocky preserves exact values from 100 to 900.</string>
     <string name="clocky_time_weight" tools:ignore="MissingTranslation">Time weight</string>
     <string name="clocky_date_weight" tools:ignore="MissingTranslation">Date weight</string>
     <string name="clocky_widget_date_preview" tools:ignore="MissingTranslation">Fri, Aug 14</string>
+    <string name="clocky_base_weight_section" tools:ignore="MissingTranslation">Base weights</string>
+    <string name="clocky_compact_weight_section" tools:ignore="MissingTranslation">Compact (4×1)</string>
+    <string name="clocky_compact_weight_summary" tools:ignore="MissingTranslation">Used when the widget minimum height is 94 dp or less. Launcher grid labels can vary.</string>
+    <string name="clocky_regular_weight_section" tools:ignore="MissingTranslation">Regular (4×2)</string>
+    <string name="clocky_regular_weight_summary" tools:ignore="MissingTranslation">Used when the widget minimum height is above 94 dp. Launcher grid labels can vary.</string>
+    <string name="clocky_override_time_weight" tools:ignore="MissingTranslation">Override time weight</string>
+    <string name="clocky_override_date_weight" tools:ignore="MissingTranslation">Override date weight</string>
+    <string name="clocky_profile_inherit_summary" tools:ignore="MissingTranslation">Turn an override off to inherit the base weight above.</string>
     <string name="clocky_widget_save" tools:ignore="MissingTranslation">Save widget</string>
 </resources>

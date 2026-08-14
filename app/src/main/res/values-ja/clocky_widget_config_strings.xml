@@ -2,9 +2,17 @@
 <resources>
     <string name="clocky_widget_config_label">Clocky ウィジェット設定</string>
     <string name="clocky_widget_weight_title">文字の太さ</string>
-    <string name="clocky_widget_weight_summary">時刻と日付の太さを別々に設定できます。100〜900の値をそのまま保存します。</string>
+    <string name="clocky_widget_weight_summary">時刻と日付の基本の太さを設定し、必要ならコンパクト/標準サイズごとに上書きできます。100〜900の値をそのまま保存します。</string>
     <string name="clocky_time_weight">時刻の太さ</string>
     <string name="clocky_date_weight">日付の太さ</string>
     <string name="clocky_widget_date_preview">8月14日 金</string>
+    <string name="clocky_base_weight_section">基本の太さ</string>
+    <string name="clocky_compact_weight_section">コンパクト（4×1）</string>
+    <string name="clocky_compact_weight_summary">ウィジェットの最小高さが94dp以下のとき使用します。ランチャーのグリッド表記とは一致しない場合があります。</string>
+    <string name="clocky_regular_weight_section">標準（4×2）</string>
+    <string name="clocky_regular_weight_summary">ウィジェットの最小高さが94dpを超えるとき使用します。ランチャーのグリッド表記とは一致しない場合があります。</string>
+    <string name="clocky_override_time_weight">時刻の太さを上書き</string>
+    <string name="clocky_override_date_weight">日付の太さを上書き</string>
+    <string name="clocky_profile_inherit_summary">上書きをOFFにすると、上の基本値を継承します。</string>
     <string name="clocky_widget_save">ウィジェットを保存</string>
 </resources>

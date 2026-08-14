@@ -12,14 +12,18 @@ import androidx.appcompat.app.AppCompatActivity
 import com.android.alarmclock.DigitalAppWidgetProvider
 import com.android.deskclock.R
 import com.google.android.material.slider.Slider
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.stupidsavacan.clocky.customization.font.DigitalWidgetWeightRenderer
+import com.stupidsavacan.clocky.customization.model.withWeightOverrides
 import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
 
 /**
- * Minimal Clocky-owned configuration surface for the AOSP digital widget.
+ * Clocky-owned configuration surface for the AOSP digital widget.
  *
- * The user-facing value is always an integer in 100..900. The store preserves that exact request;
- * the RemoteViews renderer decides what effective face can be displayed on the current API level.
+ * Base time/date weights are always stored as exact 100..900 requests. Compact (4x1) and regular
+ * (4x2) profile weights are optional: an unchecked override inherits the base value, while a
+ * checked override stores its own exact request. RemoteViews decides the effective face at render
+ * time for the current Android version.
  */
 class DigitalWidgetConfigActivity : AppCompatActivity() {
     private var appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -50,6 +54,27 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         val dateValue: TextView = findViewById(R.id.clocky_date_weight_value)
         val timeSlider: Slider = findViewById(R.id.clocky_time_weight_slider)
         val dateSlider: Slider = findViewById(R.id.clocky_date_weight_slider)
+
+        val compactTime = profileControl(
+            switchId = R.id.clocky_compact_time_override_switch,
+            valueId = R.id.clocky_compact_time_weight_value,
+            sliderId = R.id.clocky_compact_time_weight_slider,
+        )
+        val compactDate = profileControl(
+            switchId = R.id.clocky_compact_date_override_switch,
+            valueId = R.id.clocky_compact_date_weight_value,
+            sliderId = R.id.clocky_compact_date_weight_slider,
+        )
+        val regularTime = profileControl(
+            switchId = R.id.clocky_regular_time_override_switch,
+            valueId = R.id.clocky_regular_time_weight_value,
+            sliderId = R.id.clocky_regular_time_weight_slider,
+        )
+        val regularDate = profileControl(
+            switchId = R.id.clocky_regular_date_override_switch,
+            valueId = R.id.clocky_regular_date_weight_value,
+            sliderId = R.id.clocky_regular_date_weight_slider,
+        )
         val saveButton: Button = findViewById(R.id.clocky_widget_save)
 
         timeSlider.value = current.time.requestedWeight.toFloat()
@@ -68,6 +93,27 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         refreshTime(current.time.requestedWeight)
         refreshDate(current.date.requestedWeight)
 
+        bindProfileControl(
+            control = compactTime,
+            initialOverrideWeight = current.fourByOne?.timeWeight,
+            baseSlider = timeSlider,
+        )
+        bindProfileControl(
+            control = compactDate,
+            initialOverrideWeight = current.fourByOne?.dateWeight,
+            baseSlider = dateSlider,
+        )
+        bindProfileControl(
+            control = regularTime,
+            initialOverrideWeight = current.fourByTwo?.timeWeight,
+            baseSlider = timeSlider,
+        )
+        bindProfileControl(
+            control = regularDate,
+            initialOverrideWeight = current.fourByTwo?.dateWeight,
+            baseSlider = dateSlider,
+        )
+
         timeSlider.addOnChangeListener { _, value, _ -> refreshTime(value.toInt()) }
         dateSlider.addOnChangeListener { _, value, _ -> refreshDate(value.toInt()) }
 
@@ -75,6 +121,14 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             val updated = current.copy(
                 time = current.time.copy(requestedWeight = timeSlider.value.toInt()),
                 date = current.date.copy(requestedWeight = dateSlider.value.toInt()),
+                fourByOne = current.fourByOne.withWeightOverrides(
+                    timeWeight = compactTime.overrideValue(),
+                    dateWeight = compactDate.overrideValue(),
+                ),
+                fourByTwo = current.fourByTwo.withWeightOverrides(
+                    timeWeight = regularTime.overrideValue(),
+                    dateWeight = regularDate.overrideValue(),
+                ),
             )
             store.save(updated)
             requestWidgetRefresh(appWidgetId)
@@ -82,6 +136,39 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
             setResult(RESULT_OK, result)
             finish()
+        }
+    }
+
+    private fun profileControl(switchId: Int, valueId: Int, sliderId: Int): ProfileWeightControl =
+        ProfileWeightControl(
+            toggle = findViewById(switchId),
+            value = findViewById(valueId),
+            slider = findViewById(sliderId),
+        )
+
+    private fun bindProfileControl(
+        control: ProfileWeightControl,
+        initialOverrideWeight: Int?,
+        baseSlider: Slider,
+    ) {
+        control.toggle.isChecked = initialOverrideWeight != null
+        control.slider.value = (initialOverrideWeight ?: baseSlider.value.toInt()).toFloat()
+        control.slider.isEnabled = control.toggle.isChecked
+        control.value.text = control.slider.value.toInt().toString()
+
+        control.slider.addOnChangeListener { _, value, _ ->
+            control.value.text = value.toInt().toString()
+        }
+        control.toggle.setOnCheckedChangeListener { _, checked ->
+            control.slider.isEnabled = checked
+            if (!checked) {
+                control.slider.value = baseSlider.value
+            }
+        }
+        baseSlider.addOnChangeListener { _, value, _ ->
+            if (!control.toggle.isChecked) {
+                control.slider.value = value
+            }
         }
     }
 
@@ -102,5 +189,14 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             val spec = DigitalWidgetWeightRenderer.legacyTypefaceSpec(effective)
             Typeface.create(spec.familyName, spec.style)
         }
+    }
+
+    private data class ProfileWeightControl(
+        val toggle: SwitchMaterial,
+        val value: TextView,
+        val slider: Slider,
+    ) {
+        fun overrideValue(): Int? =
+            if (toggle.isChecked) slider.value.toInt() else null
     }
 }
