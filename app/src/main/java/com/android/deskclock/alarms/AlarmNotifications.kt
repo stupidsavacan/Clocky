@@ -162,7 +162,7 @@ internal object AlarmNotifications {
             val channel = NotificationChannel(
                     ALARM_LOW_PRIORITY_NOTIFICATION_CHANNEL_ID,
                     context.getString(R.string.default_label),
-                    NotificationManagerCompat.IMPORTANCE_DEFAULT)
+                    NotificationManager.IMPORTANCE_DEFAULT)
             nm.createNotificationChannel(channel)
         }
         val notification: Notification = builder.build()
@@ -217,7 +217,7 @@ internal object AlarmNotifications {
             val channel = NotificationChannel(
                     ALARM_HIGH_PRIORITY_NOTIFICATION_CHANNEL_ID,
                     context.getString(R.string.default_label),
-                    NotificationManagerCompat.IMPORTANCE_HIGH)
+                    NotificationManager.IMPORTANCE_HIGH)
             nm.createNotificationChannel(channel)
         }
         val notification: Notification = builder.build()
@@ -295,7 +295,7 @@ internal object AlarmNotifications {
             val channel = NotificationChannel(
                     ALARM_NOTIFICATION_CHANNEL_ID,
                     context.getString(R.string.default_label),
-                    NotificationManagerCompat.IMPORTANCE_HIGH)
+                    NotificationManager.IMPORTANCE_HIGH)
             nm.createNotificationChannel(channel)
         }
 
@@ -339,7 +339,7 @@ internal object AlarmNotifications {
             val channel = NotificationChannel(
                     ALARM_NOTIFICATION_CHANNEL_ID,
                     context.getString(R.string.default_label),
-                    NotificationManagerCompat.IMPORTANCE_HIGH)
+                    NotificationManager.IMPORTANCE_HIGH)
             nm.createNotificationChannel(channel)
         }
 
@@ -357,7 +357,7 @@ internal object AlarmNotifications {
                 val channel = NotificationChannel(
                         ALARM_MISSED_NOTIFICATION_CHANNEL_ID,
                         context.getString(R.string.default_label),
-                        NotificationManagerCompat.IMPORTANCE_HIGH)
+                        NotificationManager.IMPORTANCE_HIGH)
                 nm.createNotificationChannel(channel)
             }
             summary = NotificationCompat.Builder(context, ALARM_NOTIFICATION_CHANNEL_ID)
@@ -422,7 +422,7 @@ internal object AlarmNotifications {
             val channel = NotificationChannel(
                     ALARM_SNOOZE_NOTIFICATION_CHANNEL_ID,
                     context.getString(R.string.default_label),
-                    NotificationManagerCompat.IMPORTANCE_DEFAULT)
+                    NotificationManager.IMPORTANCE_DEFAULT)
             nm.createNotificationChannel(channel)
         }
         val notification: Notification = builder.build()
@@ -482,7 +482,7 @@ internal object AlarmNotifications {
             val channel = NotificationChannel(
                     ALARM_MISSED_NOTIFICATION_CHANNEL_ID,
                     context.getString(R.string.default_label),
-                    NotificationManagerCompat.IMPORTANCE_DEFAULT)
+                    NotificationManager.IMPORTANCE_DEFAULT)
             nm.createNotificationChannel(channel)
         }
         val notification: Notification = builder.build()

@@ -316,7 +316,17 @@ object Utils {
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun updateNextAlarm(am: AlarmManager, info: AlarmClockInfo, op: PendingIntent) {
-        am.setAlarmClock(info, op)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()) {
+            try {
+                am.setAlarmClock(info, op)
+                return
+            } catch (_: SecurityException) {
+                // Permission can be revoked between the capability check and the call.
+            }
+        }
+
+        // Preserve a best-effort alarm instead of crashing when exact-alarm access is denied.
+        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, info.triggerTime, op)
     }
 
     fun isAlarmWithin24Hours(alarmInstance: AlarmInstance): Boolean {

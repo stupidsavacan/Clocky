@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
@@ -55,15 +56,21 @@
             </intent-filter>
         </receiver>
         <receiver android:name=".alarms.AlarmStateManager" android:directBootAware="true" />
-        <service android:name=".alarms.AlarmService" android:directBootAware="true" />
+        <service android:name=".alarms.AlarmService" android:directBootAware="true" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="user_visible_alarm_ringing" />
+        </service>
         <activity android:name=".timer.ExpiredTimersActivity" android:configChanges="screenSize|keyboardHidden|keyboard|navigation" android:directBootAware="true" android:excludeFromRecents="true" android:launchMode="singleInstance" android:resizeableActivity="false" android:showOnLockScreen="true" android:taskAffinity="" />
         <receiver android:name="com.android.deskclock.timer.TimerReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="times_up" />
             </intent-filter>
         </receiver>
-        <service android:name=".timer.TimerService" android:description="@string/timer_service_desc" android:directBootAware="true" />
-        <service android:name=".stopwatch.StopwatchService" android:description="@string/stopwatch_service_desc" android:directBootAware="true" />
+        <service android:name=".timer.TimerService" android:description="@string/timer_service_desc" android:directBootAware="true" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="user_visible_countdown_timer" />
+        </service>
+        <service android:name=".stopwatch.StopwatchService" android:description="@string/stopwatch_service_desc" android:directBootAware="true" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="user_visible_stopwatch" />
+        </service>
         <activity android:name=".ScreensaverActivity" android:excludeFromRecents="true" android:resizeableActivity="false" android:taskAffinity="" />
         <activity android:name=".settings.ScreensaverSettingsActivity" android:excludeFromRecents="true" android:label="@string/screensaver_settings" android:taskAffinity="" android:theme="@style/Theme.DeskClock.Settings" />
         <service android:name=".Screensaver" android:label="@string/app_label" android:exported="true" android:permission="android.permission.BIND_DREAM_SERVICE">
