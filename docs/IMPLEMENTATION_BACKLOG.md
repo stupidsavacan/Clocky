@@ -89,7 +89,7 @@ Do not guess missing Google Clock measurements from Web-only work.
 - [x] Google-like preset identity.
 - [x] Requested→effective Font Weight resolver for variable/static capabilities.
 
-### F4 Digital renderer/editor — implemented on main through PR #23
+### F4 Digital renderer/editor — implemented on main through PR #25
 
 - [x] Wire per-widget settings store into the Digital AppWidget provider path.
 - [x] Render independent time/date weight.
@@ -100,8 +100,9 @@ Do not guess missing Google Clock measurements from Web-only work.
 - [x] Render independent time/date X/Y offsets on API 31+ via RemoteViews translation.
 - [x] Preserve requested X/Y settings but use effective 0dp offsets on API 23–30.
 - [x] Sanitize non-finite offset values at the renderer boundary.
+- [x] Normalize non-finite base/profile X/Y values to 0dp before persistence while preserving nullable profile inheritance.
 - [x] Provide settings UI for weight, date visibility, size and letter spacing.
-- [x] Add resolver/editor/renderer regression tests for the merged Digital customization path.
+- [x] Add resolver/editor/renderer/model regression tests for the merged Digital customization path.
 
 ### F4 remaining Web-safe candidates — require source-defined semantics before implementation
 
@@ -119,14 +120,23 @@ Do not guess missing Google Clock measurements from Web-only work.
 - [ ] Verify the API 23–30 effective-0dp fallback visually.
 - [ ] Verify resize/profile transitions and touch/config UX on device.
 
-## F5 — existing MVP integration design — complete
+## F5 — existing MVP integration design — design complete; primitive-key migration blocked
 
-- [x] Map old per-widget settings to the new Clocky settings owner.
+- [x] Map old per-widget settings to the new Clocky settings owner at the architecture level.
 - [x] Retain 4×2 + compact concepts as size profiles.
 - [x] Retain independent time/date styling.
 - [x] Assign Alarm/Timer/Stopwatch/World Clock state ownership to the AOSP domain layer.
 - [x] Forbid widget-only duplicate timer/stopwatch state.
 - [x] Preserve signing/release discipline separately from the source port.
+- [ ] Implement one-time old-MVP primitive SharedPreferences import into `WidgetSettings`.
+
+### F5 migration blocker
+
+`docs/architecture/MVP_INTEGRATION.md` makes `ci/Clocky_MVP_source.zip` the authority for the old key names until a migration reader exists. The latest retained bundle is 14,299 bytes with Git blob `6d63be2463ec408824a9b06eec282153c1a2df55`.
+
+The connected GitHub Web reader can identify that exact binary but cannot decode/materialize it through its UTF-8-only file/blob read path. `ci/source-b64/part-00.txt` predates commit `23338240ae55a358c0fae0b443b383cd13169628` (`Update MVP source bundle`), so it is not authoritative for the final source bundle. Do **not** implement a partial migration from that stale helper or remembered key mappings.
+
+To unblock this Web-safe task, extract only the repository-owned plain-text source from the final ZIP that defines SharedPreferences name/key construction, all persisted keys/types/defaults, enum/date/background/color semantics, save/load/delete/reset behavior and any profile persistence. No APK/reference assets/device data/signing material are required. See `docs/WEB_AGENT_HANDOFF.md` for the precise minimum evidence list.
 
 ## F6 — GitHub build/test gate — complete for current main
 
@@ -164,6 +174,6 @@ A green GitHub build does **not** imply launcher/device parity.
 
 ## Current definition of success
 
-The repository has passed the old “pre-build foundation” gate: the standalone app now resolves dependencies, compiles, tests, lints, assembles a debug APK and records its hash in GitHub Actions. The Digital Widget customization path currently includes weight, date visibility, size, letter spacing and model-backed X/Y rendering with regression coverage.
+The repository has passed the old “pre-build foundation” gate: the standalone app now resolves dependencies, compiles, tests, lints, assembles a debug APK and records its hash in GitHub Actions. The Digital Widget customization path currently includes weight, date visibility, size, letter spacing and model-backed X/Y rendering with regression coverage, including persistence-time non-finite X/Y normalization.
 
-Product success still requires the remaining runtime families/behaviors and real-device/launcher parity testing. Web-only work must keep those device-only claims explicitly unverified.
+Product success still requires the remaining runtime families/behaviors and real-device/launcher parity testing. Old-MVP primitive-key migration also remains intentionally unimplemented until the final retained source bundle's mapping can be reviewed as authoritative plain text. Web-only work must keep those device-only and source-blocked claims explicitly unverified.
