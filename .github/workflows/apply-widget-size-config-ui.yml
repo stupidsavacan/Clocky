@@ -1,0 +1,40 @@
+name: Apply widget size config UI patch
+
+on:
+  push:
+    branches:
+      - agent/widget-size-config-ui
+    paths:
+      - '.github/workflows/apply-widget-size-config-ui.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/widget-size-config-ui
+          fetch-depth: 0
+      - name: Apply deterministic UI patch
+        run: python3 tools/ci/apply_widget_size_config_ui.py
+      - name: Validate diff
+        run: git diff --check
+      - name: Commit UI patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No UI changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            app/src/main/java/com/stupidsavacan/clocky/widget/DigitalWidgetConfigActivity.kt \
+            app/src/main/res/layout/clocky_digital_widget_config.xml \
+            app/src/main/res/values/clocky_widget_config_strings.xml \
+            app/src/main/res/values-ja/clocky_widget_config_strings.xml
+          git commit -m "Digital Widgetのsize設定UIを追加"
+          git push origin HEAD:agent/widget-size-config-ui
