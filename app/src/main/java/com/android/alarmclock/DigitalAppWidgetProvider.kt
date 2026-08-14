@@ -215,9 +215,11 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
     private class Sizes(
         val mTargetWidthPx: Int,
         val mTargetHeightPx: Int,
-        val largestClockFontSizePx: Int
+        private val requestedClockFontSizePx: Int,
+        private val requestedDateFontSizePx: Int,
     ) {
-        val smallestClockFontSizePx = 1
+        val largestFontScalePermille = 1000
+        val smallestFontScalePermille = 1
         var mIconBitmap: Bitmap? = null
 
         var mMeasuredWidthPx = 0
@@ -234,11 +236,17 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
         var mIconFontSizePx = 0
         var mIconPaddingPx = 0
 
-        var clockFontSizePx: Int
-            get() = mClockFontSizePx
-            set(clockFontSizePx) {
-                mClockFontSizePx = clockFontSizePx
-                mFontSizePx = Math.max(1, Math.round(clockFontSizePx / 7.5f))
+        var fontScalePermille: Int = largestFontScalePermille
+            set(scalePermille) {
+                field = scalePermille.coerceIn(smallestFontScalePermille, largestFontScalePermille)
+                mClockFontSizePx = Math.max(
+                        1,
+                        Math.round(requestedClockFontSizePx * field / 1000f),
+                )
+                mFontSizePx = Math.max(
+                        1,
+                        Math.round(requestedDateFontSizePx * field / 1000f),
+                )
                 mIconFontSizePx = (mFontSizePx * 1.4f).toInt()
                 mIconPaddingPx = mFontSizePx / 3
             }
@@ -254,7 +262,12 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
         }
 
         fun newSize(): Sizes {
-            return Sizes(mTargetWidthPx, mTargetHeightPx, largestClockFontSizePx)
+            return Sizes(
+                    mTargetWidthPx,
+                    mTargetHeightPx,
+                    requestedClockFontSizePx,
+                    requestedDateFontSizePx,
+            )
         }
 
         override fun toString(): String {
@@ -274,6 +287,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                         mMeasuredHeightPx, mTargetHeightPx)
             }
             append(builder, "Clock font: %dpx\n", mClockFontSizePx)
+            append(builder, "Date font: %dpx\n", mFontSizePx)
+            append(builder, "Font scale: %d/1000\n", fontScalePermille)
             return builder.toString()
         }
 
@@ -355,6 +370,10 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     widgetSettings,
                     options.getInt(OPTION_APPWIDGET_MIN_HEIGHT),
             )
+            val resolvedSizes = DigitalWidgetProfileResolver.resolveSizes(
+                    widgetSettings,
+                    options.getInt(OPTION_APPWIDGET_MIN_HEIGHT),
+            )
 
             // Fetch the widget size selected by the user.
             val resources: Resources = context.getResources()
@@ -365,11 +384,25 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             val maxHeightPx = (density * options.getInt(OPTION_APPWIDGET_MAX_HEIGHT)).toInt()
             val targetWidthPx = if (portrait) minWidthPx else maxWidthPx
             val targetHeightPx = if (portrait) maxHeightPx else minHeightPx
-            val largestClockFontSizePx: Int =
-                    resources.getDimensionPixelSize(R.dimen.widget_max_clock_font_size)
+            val scaledDensity: Float = resources.getDisplayMetrics().scaledDensity
+            val requestedClockFontSizePx = Math.max(
+                    1,
+                    Math.round(resolvedSizes.timeSizeSp * scaledDensity),
+            )
+            val requestedDateFontSizePx = Math.max(
+                    1,
+                    Math.round(resolvedSizes.dateSizeSp * scaledDensity),
+            )
 
-            // Create a size template that describes the widget bounds.
-            val template = Sizes(targetWidthPx, targetHeightPx, largestClockFontSizePx)
+            // Start at the exact Clocky-requested sizes. If they do not fit the widget bounds,
+            // the existing binary search scales time and date down together while preserving the
+            // user-requested ratio.
+            val template = Sizes(
+                    targetWidthPx,
+                    targetHeightPx,
+                    requestedClockFontSizePx,
+                    requestedDateFontSizePx,
+            )
 
             // Compute optimal font sizes and icon sizes to fit within the widget bounds.
             val sizes = optimizeSizes(
@@ -458,25 +491,26 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                 nextAlarmIcon.setTypeface(UiDataModel.uiDataModel.alarmIconTypeface)
             }
 
-            // Measure the widget at the largest possible size.
-            var high = measure(template, template.largestClockFontSizePx, sizer)
+            // First try the exact Clocky-requested sizes.
+            var high = measure(template, template.largestFontScalePermille, sizer)
             if (!high.hasViolations()) {
                 return high
             }
 
-            // Measure the widget at the smallest possible size.
-            var low = measure(template, template.smallestClockFontSizePx, sizer)
+            // Verify that the smallest common scale fits before searching between both ends.
+            var low = measure(template, template.smallestFontScalePermille, sizer)
             if (low.hasViolations()) {
                 return low
             }
 
-            // Binary search between the smallest and largest sizes until an optimum size is found.
-            while (low.clockFontSizePx != high.clockFontSizePx) {
-                val midFontSize: Int = (low.clockFontSizePx + high.clockFontSizePx) / 2
-                if (midFontSize == low.clockFontSizePx) {
+            // Binary search a common scale so independent time/date requested sizes retain their
+            // ratio while the complete widget remains inside the host bounds.
+            while (low.fontScalePermille != high.fontScalePermille) {
+                val midScale: Int = (low.fontScalePermille + high.fontScalePermille) / 2
+                if (midScale == low.fontScalePermille) {
                     return low
                 }
-                val midSize = measure(template, midFontSize, sizer)
+                val midSize = measure(template, midScale, sizer)
                 if (midSize.hasViolations()) {
                     high = midSize
                 } else {
@@ -492,11 +526,10 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
         }
 
         /**
-         * Compute all font and icon sizes based on the given `clockFontSize` and apply them to
-         * the offscreen `sizer` view. Measure the `sizer` view and return the resulting
-         * size measurements.
+         * Compute all font and icon sizes at a common fraction of the Clocky-requested time/date
+         * sizes, apply them to the offscreen `sizer`, and return the resulting measurements.
          */
-        private fun measure(template: Sizes, clockFontSize: Int, sizer: View): Sizes {
+        private fun measure(template: Sizes, scalePermille: Int, sizer: View): Sizes {
             // Create a copy of the given template sizes.
             val measuredSizes = template.newSize()
 
@@ -506,8 +539,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             val nextAlarm: TextView = sizer.findViewById(R.id.nextAlarm) as TextView
             val nextAlarmIcon: TextView = sizer.findViewById(R.id.nextAlarmIcon) as TextView
 
-            // Adjust the font sizes.
-            measuredSizes.clockFontSizePx = clockFontSize
+            // Adjust both fonts by the same scale to preserve the requested time/date ratio.
+            measuredSizes.fontScalePermille = scalePermille
             clock.setText(getLongestTimeString(clock))
             clock.setTextSize(COMPLEX_UNIT_PX, measuredSizes.mClockFontSizePx.toFloat())
             date.setTextSize(COMPLEX_UNIT_PX, measuredSizes.mFontSizePx.toFloat())
