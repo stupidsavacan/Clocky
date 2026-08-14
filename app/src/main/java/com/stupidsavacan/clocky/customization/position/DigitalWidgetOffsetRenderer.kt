@@ -25,6 +25,11 @@ object DigitalWidgetOffsetRenderer {
         R.id.clock_w700,
         R.id.clock_w800,
         R.id.clock_w900,
+        R.id.clock_legacy_sans_light,
+        R.id.clock_legacy_sans_rounded,
+        R.id.clock_legacy_serif,
+        R.id.clock_legacy_sans_condensed,
+        R.id.clock_legacy_monospace,
     )
 
     private val dateViewIds = intArrayOf(
@@ -37,6 +42,11 @@ object DigitalWidgetOffsetRenderer {
         R.id.date_w700,
         R.id.date_w800,
         R.id.date_w900,
+        R.id.date_legacy_sans_light,
+        R.id.date_legacy_sans_rounded,
+        R.id.date_legacy_serif,
+        R.id.date_legacy_sans_condensed,
+        R.id.date_legacy_monospace,
     )
 
     data class EffectiveOffsets(
