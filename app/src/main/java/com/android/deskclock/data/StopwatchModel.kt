@@ -25,6 +25,8 @@ import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationManagerCompat
 
+import com.android.deskclock.NotificationUtils
+
 import kotlin.math.max
 
 /**
@@ -221,7 +223,7 @@ internal class StopwatchModel(
         val notification: Notification =
                 mNotificationBuilder.build(mContext, mNotificationModel, stopwatch)
         mNotificationBuilder.buildChannel(mContext, mNotificationManager)
-        mNotificationManager.notify(mNotificationModel.stopwatchNotificationId, notification)
+        NotificationUtils.notifyIfAllowed(mContext, mNotificationManager, mNotificationModel.stopwatchNotificationId, notification)
     }
 
     private val mutableLaps: MutableList<Lap>

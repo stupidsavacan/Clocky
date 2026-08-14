@@ -22,12 +22,12 @@ import android.view.View
 import androidx.annotation.Keep
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 
-import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.R as MaterialR
 
 import kotlin.math.min
 
 /**
- * Custom [CoordinatorLayout.Behavior] that slides with the [Snackbar].
+ * Custom [CoordinatorLayout.Behavior] that slides with Material snackbars.
  */
 @Keep
 class SnackbarSlidingBehavior(
@@ -39,7 +39,7 @@ class SnackbarSlidingBehavior(
         child: View,
         dependency: View
     ): Boolean {
-        return dependency is Snackbar.SnackbarLayout
+        return dependency.findViewById<View?>(MaterialR.id.snackbar_text) != null
     }
 
     override fun onDependentViewChanged(

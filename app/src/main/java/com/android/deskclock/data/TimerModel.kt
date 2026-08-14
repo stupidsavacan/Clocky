@@ -35,6 +35,7 @@ import androidx.core.app.NotificationManagerCompat
 
 import com.android.deskclock.AlarmAlertWakeLock
 import com.android.deskclock.LogUtils
+import com.android.deskclock.NotificationUtils
 import com.android.deskclock.R
 import com.android.deskclock.Utils
 import com.android.deskclock.events.Events
@@ -720,7 +721,7 @@ internal class TimerModel(
             return
         }
 
-        mNotificationManager.notify(notificationId, notification)
+        NotificationUtils.notifyIfAllowed(mContext, mNotificationManager, notificationId, notification)
     }
 
     /**
@@ -745,7 +746,7 @@ internal class TimerModel(
                 mNotificationModel, missed)
         val notificationId = mNotificationModel.missedTimerNotificationId
         mNotificationBuilder.buildChannel(mContext, mNotificationManager)
-        mNotificationManager.notify(notificationId, notification)
+        NotificationUtils.notifyIfAllowed(mContext, mNotificationManager, notificationId, notification)
     }
 
     /**

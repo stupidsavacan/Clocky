@@ -35,6 +35,7 @@ import com.android.deskclock.AlarmClockFragment
 import com.android.deskclock.AlarmUtils
 import com.android.deskclock.DeskClock
 import com.android.deskclock.LogUtils
+import com.android.deskclock.NotificationUtils
 import com.android.deskclock.provider.Alarm
 import com.android.deskclock.provider.AlarmInstance
 import com.android.deskclock.provider.ClockContract.InstancesColumns
@@ -166,7 +167,7 @@ internal object AlarmNotifications {
             nm.createNotificationChannel(channel)
         }
         val notification: Notification = builder.build()
-        nm.notify(id, notification)
+        NotificationUtils.notifyIfAllowed(context, nm, id, notification)
         updateUpcomingAlarmGroupNotification(context, -1, notification)
     }
 
@@ -221,7 +222,7 @@ internal object AlarmNotifications {
             nm.createNotificationChannel(channel)
         }
         val notification: Notification = builder.build()
-        nm.notify(id, notification)
+        NotificationUtils.notifyIfAllowed(context, nm, id, notification)
         updateUpcomingAlarmGroupNotification(context, -1, notification)
     }
 
@@ -321,7 +322,7 @@ internal object AlarmNotifications {
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setLocalOnly(true)
                     .build()
-            nm.notify(ALARM_GROUP_NOTIFICATION_ID, summary)
+            NotificationUtils.notifyIfAllowed(context, nm, ALARM_GROUP_NOTIFICATION_ID, summary)
         }
     }
 
@@ -372,7 +373,7 @@ internal object AlarmNotifications {
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setLocalOnly(true)
                     .build()
-            nm.notify(ALARM_GROUP_MISSED_NOTIFICATION_ID, summary)
+            NotificationUtils.notifyIfAllowed(context, nm, ALARM_GROUP_MISSED_NOTIFICATION_ID, summary)
         }
     }
 
@@ -426,7 +427,7 @@ internal object AlarmNotifications {
             nm.createNotificationChannel(channel)
         }
         val notification: Notification = builder.build()
-        nm.notify(id, notification)
+        NotificationUtils.notifyIfAllowed(context, nm, id, notification)
         updateUpcomingAlarmGroupNotification(context, -1, notification)
     }
 
@@ -486,7 +487,7 @@ internal object AlarmNotifications {
             nm.createNotificationChannel(channel)
         }
         val notification: Notification = builder.build()
-        nm.notify(id, notification)
+        NotificationUtils.notifyIfAllowed(context, nm, id, notification)
         updateMissedAlarmGroupNotification(context, -1, notification)
     }
 

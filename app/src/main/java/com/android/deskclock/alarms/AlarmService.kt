@@ -95,7 +95,7 @@ class AlarmService : Service() {
 
         AlarmKlaxon.stop(this)
         mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE)
-        sendBroadcast(Intent(ALARM_DONE_ACTION))
+        sendBroadcast(Intent(ALARM_DONE_ACTION).setPackage(packageName))
 
         stopForeground(true /* removeNotification */)
 
