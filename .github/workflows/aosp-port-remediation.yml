@@ -8,6 +8,7 @@ on:
       - 'tools/ci/remediate_aosp_port.py'
       - 'tools/ci/remediate_runtime_lint.py'
       - 'tools/ci/remediate_resource_lint.py'
+      - 'tools/ci/remediate_pending_intent_flags.py'
       - '.github/workflows/aosp-port-remediation.yml'
   workflow_dispatch:
 
@@ -32,6 +33,9 @@ jobs:
 
       - name: Apply targeted resource lint fixes
         run: python tools/ci/remediate_resource_lint.py
+
+      - name: Apply PendingIntent mutability fixes
+        run: python tools/ci/remediate_pending_intent_flags.py
 
       - name: Validate patch
         run: git diff --check
