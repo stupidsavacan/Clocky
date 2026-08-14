@@ -95,14 +95,15 @@ class DeskClockBackupAgent : BackupAgent() {
         // Create an Intent to send into DeskClock indicating restore is complete.
         val restoreIntent = PendingIntent.getBroadcast(this, 0,
                 Intent(ACTION_COMPLETE_RESTORE).setClass(this, AlarmInitReceiver::class.java),
-                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_CANCEL_CURRENT)
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_CANCEL_CURRENT or
+                        PendingIntent.FLAG_IMMUTABLE)
 
         // Deliver the Intent 10 seconds from now.
         val triggerAtMillis = SystemClock.elapsedRealtime() + 10000
 
         // Schedule the Intent delivery in AlarmManager.
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAtMillis, restoreIntent)
+        alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAtMillis, restoreIntent)
 
         LOGGER.i("Waiting for %s to complete the data restore", ACTION_COMPLETE_RESTORE)
     }

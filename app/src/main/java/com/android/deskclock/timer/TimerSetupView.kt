@@ -98,9 +98,9 @@ class TimerSetupView @JvmOverloads constructor(
         // control color when there is valid input.
         val dividerContext = mDividerView.context
         val colorControlActivated = ThemeUtils.resolveColor(dividerContext,
-                R.attr.colorControlActivated)
+                android.R.attr.colorControlActivated)
         val colorControlDisabled = ThemeUtils.resolveColor(dividerContext,
-                R.attr.colorControlNormal, intArrayOf(android.R.attr.state_enabled.inv()))
+                android.R.attr.colorControlNormal, intArrayOf(android.R.attr.state_enabled.inv()))
         ViewCompat.setBackgroundTintList(mDividerView,
                 ColorStateList(
                         arrayOf(intArrayOf(android.R.attr.state_activated), intArrayOf()),

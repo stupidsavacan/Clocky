@@ -35,6 +35,7 @@ import androidx.core.app.NotificationManagerCompat
 
 import com.android.deskclock.AlarmAlertWakeLock
 import com.android.deskclock.LogUtils
+import com.android.deskclock.NotificationUtils
 import com.android.deskclock.R
 import com.android.deskclock.Utils
 import com.android.deskclock.events.Events
@@ -634,7 +635,8 @@ internal class TimerModel(
         if (nextExpiringTimer == null) {
             // Cancel the existing timer expiration callback.
             val pi: PendingIntent? = PendingIntent.getService(mContext,
-                    0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_NO_CREATE)
+                    0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_NO_CREATE or
+                            PendingIntent.FLAG_IMMUTABLE)
             if (pi != null) {
                 mAlarmManager.cancel(pi)
                 pi.cancel()
@@ -642,7 +644,8 @@ internal class TimerModel(
         } else {
             // Update the existing timer expiration callback.
             val pi: PendingIntent = PendingIntent.getService(mContext,
-                    0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT)
+                    0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT or
+                            PendingIntent.FLAG_IMMUTABLE)
             schedulePendingIntent(mAlarmManager, nextExpiringTimer.expirationTime, pi)
         }
     }
@@ -720,7 +723,7 @@ internal class TimerModel(
             return
         }
 
-        mNotificationManager.notify(notificationId, notification)
+        NotificationUtils.notifyIfAllowed(mContext, mNotificationManager, notificationId, notification)
     }
 
     /**
@@ -745,7 +748,7 @@ internal class TimerModel(
                 mNotificationModel, missed)
         val notificationId = mNotificationModel.missedTimerNotificationId
         mNotificationBuilder.buildChannel(mContext, mNotificationManager)
-        mNotificationManager.notify(notificationId, notification)
+        NotificationUtils.notifyIfAllowed(mContext, mNotificationManager, notificationId, notification)
     }
 
     /**
@@ -809,11 +812,25 @@ internal class TimerModel(
         private val MISSED_THRESHOLD: Long = -MINUTE_IN_MILLIS
 
         fun schedulePendingIntent(am: AlarmManager, triggerTime: Long, pi: PendingIntent) {
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S ||
+                    am.canScheduleExactAlarms()) {
+                try {
+                    if (Utils.isMOrLater) {
+                        // Ensure the timer fires even if the device is dozing.
+                        am.setExactAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
+                    } else {
+                        am.setExact(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
+                    }
+                    return
+                } catch (_: SecurityException) {
+                    // Exact-alarm access can be revoked after the capability check.
+                }
+            }
+
             if (Utils.isMOrLater) {
-                // Ensure the timer fires even if the device is dozing.
-                am.setExactAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
+                am.setAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
             } else {
-                am.setExact(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
+                am.set(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)
             }
         }
     }

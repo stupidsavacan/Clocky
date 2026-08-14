@@ -26,6 +26,7 @@ import android.os.Binder
 import android.os.IBinder
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
+import androidx.core.content.ContextCompat
 
 import com.android.deskclock.AlarmAlertWakeLock
 import com.android.deskclock.LogUtils
@@ -94,7 +95,7 @@ class AlarmService : Service() {
 
         AlarmKlaxon.stop(this)
         mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE)
-        sendBroadcast(Intent(ALARM_DONE_ACTION))
+        sendBroadcast(Intent(ALARM_DONE_ACTION).setPackage(packageName))
 
         stopForeground(true /* removeNotification */)
 
@@ -141,7 +142,8 @@ class AlarmService : Service() {
         // Register the broadcast receiver
         val filter = IntentFilter(ALARM_SNOOZE_ACTION)
         filter.addAction(ALARM_DISMISS_ACTION)
-        registerReceiver(mActionsReceiver, filter, Context.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(
+                this, mActionsReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         mIsRegistered = true
     }
 

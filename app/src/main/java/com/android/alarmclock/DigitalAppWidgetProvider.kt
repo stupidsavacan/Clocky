@@ -186,8 +186,10 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
 
         // Schedule the next day-change callback; at least one city is displayed.
         val pi: PendingIntent =
-                PendingIntent.getBroadcast(context, 0, DAY_CHANGE_INTENT, FLAG_UPDATE_CURRENT)
-        getAlarmManager(context).setExact(AlarmManager.RTC, nextDay.time, pi)
+                PendingIntent.getBroadcast(context, 0, DAY_CHANGE_INTENT,
+                        FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        // Day-boundary refresh does not require exact-alarm privilege.
+        getAlarmManager(context).set(AlarmManager.RTC, nextDay.time, pi)
     }
 
     /**
@@ -195,7 +197,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
      */
     private fun removeDayChangeCallback(context: Context) {
         val pi: PendingIntent? =
-                PendingIntent.getBroadcast(context, 0, DAY_CHANGE_INTENT, FLAG_NO_CREATE)
+                PendingIntent.getBroadcast(context, 0, DAY_CHANGE_INTENT,
+                        FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
         if (pi != null) {
             getAlarmManager(context).cancel(pi)
             pi.cancel()
@@ -325,7 +328,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             // Tapping on the widget opens the app (if not on the lock screen).
             if (Utils.isWidgetClickable(wm, widgetId)) {
                 val openApp = Intent(context, DeskClock::class.java)
-                val pi: PendingIntent = PendingIntent.getActivity(context, 0, openApp, 0)
+                val pi: PendingIntent = PendingIntent.getActivity(
+                        context, 0, openApp, PendingIntent.FLAG_IMMUTABLE)
                 rv.setOnClickPendingIntent(R.id.digital_widget, pi)
             }
 
@@ -389,7 +393,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                 // Tapping on the widget opens the city selection activity (if not on the lock screen).
                 if (Utils.isWidgetClickable(wm, widgetId)) {
                     val selectCity = Intent(context, CitySelectionActivity::class.java)
-                    val pi: PendingIntent = PendingIntent.getActivity(context, 0, selectCity, 0)
+                    val pi: PendingIntent = PendingIntent.getActivity(
+                            context, 0, selectCity, PendingIntent.FLAG_MUTABLE)
                     rv.setPendingIntentTemplate(R.id.world_city_list, pi)
                 }
             }

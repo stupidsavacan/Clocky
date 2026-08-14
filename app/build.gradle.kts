@@ -63,4 +63,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.gridlayout:gridlayout:1.0.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+
+    // Pure JVM tests cover deterministic Clocky logic; device/launcher behavior stays a Desktop handoff.
+    testImplementation("junit:junit:4.13.2")
 }

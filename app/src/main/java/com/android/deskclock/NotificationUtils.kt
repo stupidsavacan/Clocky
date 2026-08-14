@@ -16,11 +16,16 @@
 
 package com.android.deskclock
 
+import android.Manifest
+import android.app.Notification
 import android.app.NotificationChannel
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.ArraySet
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationManagerCompat.IMPORTANCE_HIGH
 import androidx.core.app.NotificationManagerCompat.IMPORTANCE_LOW
 
@@ -95,6 +100,22 @@ object NotificationUtils {
     }
 
     @JvmStatic
+    fun notifyIfAllowed(
+        context: Context,
+        manager: NotificationManagerCompat,
+        id: Int,
+        notification: Notification
+    ) {
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        if (allowed) {
+            manager.notify(id, notification)
+        }
+    }
+
+    @JvmStatic
     fun createChannel(context: Context, id: String) {
         if (!Utils.isOOrLater) {
             return
@@ -128,6 +149,7 @@ object NotificationUtils {
         }
     }
 
+    @android.annotation.TargetApi(android.os.Build.VERSION_CODES.O)
     private fun getAllExistingChannelIds(nm: NotificationManagerCompat): Set<String> {
         val result: MutableSet<String> = ArraySet()
         for (channel in nm.getNotificationChannels()) {

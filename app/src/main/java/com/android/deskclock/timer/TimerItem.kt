@@ -68,7 +68,7 @@ class TimerItem @JvmOverloads constructor(
         mTimerTextController = TimerTextController(mTimerText)
 
         val c = mTimerText.context
-        val colorAccent = ThemeUtils.resolveColor(c, R.attr.colorAccent)
+        val colorAccent = ThemeUtils.resolveColor(c, android.R.attr.colorAccent)
         val textColorPrimary = ThemeUtils.resolveColor(c, attr.textColorPrimary)
         mTimerText.setTextColor(ColorStateList(
                 arrayOf(intArrayOf(-attr.state_activated, -attr.state_pressed),

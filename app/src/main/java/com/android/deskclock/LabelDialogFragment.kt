@@ -35,6 +35,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
+import androidx.core.view.ViewCompat
 
 import com.android.deskclock.data.DataModel
 import com.android.deskclock.data.Timer
@@ -75,13 +76,15 @@ class LabelDialogFragment : DialogFragment() {
                 .create()
         val context: Context = dialog.context
 
-        val colorControlActivated = ThemeUtils.resolveColor(context, R.attr.colorControlActivated)
-        val colorControlNormal = ThemeUtils.resolveColor(context, R.attr.colorControlNormal)
+        val colorControlActivated = ThemeUtils.resolveColor(context, android.R.attr.colorControlActivated)
+        val colorControlNormal = ThemeUtils.resolveColor(context, android.R.attr.colorControlNormal)
 
         mLabelBox = AppCompatEditText(context)
-        mLabelBox?.setSupportBackgroundTintList(ColorStateList(
-                arrayOf(intArrayOf(android.R.attr.state_activated), intArrayOf()),
-                intArrayOf(colorControlActivated, colorControlNormal)))
+        mLabelBox?.let {
+            ViewCompat.setBackgroundTintList(it, ColorStateList(
+                    arrayOf(intArrayOf(android.R.attr.state_activated), intArrayOf()),
+                    intArrayOf(colorControlActivated, colorControlNormal)))
+        }
         mLabelBox?.setOnEditorActionListener(ImeDoneListener())
         mLabelBox?.addTextChangedListener(TextChangeListener())
         mLabelBox?.setSingleLine()

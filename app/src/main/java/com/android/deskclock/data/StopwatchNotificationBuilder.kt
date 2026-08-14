@@ -48,7 +48,7 @@ internal class StopwatchNotificationBuilder {
             val channel = NotificationChannel(
                     STOPWATCH_NOTIFICATION_CHANNEL_ID,
                     context.getString(R.string.default_label),
-                    NotificationManagerCompat.IMPORTANCE_DEFAULT)
+                    android.app.NotificationManager.IMPORTANCE_DEFAULT)
             notificationManager.createNotificationChannel(channel)
         }
     }
@@ -140,7 +140,7 @@ internal class StopwatchNotificationBuilder {
                 .setCustomContentView(content)
                 .setContentIntent(pendingShowApp)
                 .setAutoCancel(stopwatch.isPaused)
-                .setPriority(NotificationManagerCompat.IMPORTANCE_HIGH)
+                .setPriority(android.app.NotificationManager.IMPORTANCE_HIGH)
                 .setSmallIcon(R.drawable.stat_notify_stopwatch)
                 .setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setColor(ContextCompat.getColor(context, R.color.default_background))

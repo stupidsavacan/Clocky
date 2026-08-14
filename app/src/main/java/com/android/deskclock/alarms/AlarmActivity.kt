@@ -16,6 +16,7 @@
 
 package com.android.deskclock.alarms
 
+import android.annotation.SuppressLint
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_GENERIC
 import android.animation.Animator
@@ -36,6 +37,7 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
 import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -49,6 +51,7 @@ import android.view.accessibility.AccessibilityManager
 import android.widget.ImageView
 import android.widget.TextClock
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.animation.PathInterpolatorCompat
 
@@ -148,7 +151,7 @@ class AlarmActivity : BaseActivity(), View.OnClickListener, View.OnTouchListener
         // Get the volume/camera button behavior setting
         mVolumeBehavior = DataModel.dataModel.alarmVolumeButtonBehavior
 
-        if (Utils.isOOrLater) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
@@ -164,8 +167,8 @@ class AlarmActivity : BaseActivity(), View.OnClickListener, View.OnTouchListener
         // Hide navigation bar to minimize accidental tap on Home key
         hideNavigationBar()
 
-        // Close dialogs and window shade, so this is fully visible
-        sendBroadcast(Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS))
+        // A regular third-party app cannot close system dialogs; rely on the lock-screen
+        // presentation flags above instead of requesting a privileged system permission.
 
         // Honor rotation on tablets; fix the orientation on phones.
         if (!getResources().getBoolean(R.bool.rotateAlarmAlert)) {
@@ -238,7 +241,8 @@ class AlarmActivity : BaseActivity(), View.OnClickListener, View.OnTouchListener
             val filter = IntentFilter(AlarmService.ALARM_DONE_ACTION)
             filter.addAction(AlarmService.ALARM_SNOOZE_ACTION)
             filter.addAction(AlarmService.ALARM_DISMISS_ACTION)
-            registerReceiver(mReceiver, filter, Context.RECEIVER_EXPORTED)
+            ContextCompat.registerReceiver(
+                    this, mReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
             mReceiverRegistered = true
         }
         bindAlarmService()
@@ -290,8 +294,9 @@ class AlarmActivity : BaseActivity(), View.OnClickListener, View.OnTouchListener
         return super.dispatchKeyEvent(keyEvent)
     }
 
+    @SuppressLint("MissingSuperCall")
     override fun onBackPressed() {
-        // Don't allow back to dismiss.
+        // Intentionally consume Back while an alarm is firing.
     }
 
     override fun onClick(view: View) {
@@ -471,7 +476,7 @@ class AlarmActivity : BaseActivity(), View.OnClickListener, View.OnTouchListener
         mAlarmHandled = true
         LOGGER.v("Snoozed: %s", mAlarmInstance)
 
-        val colorAccent = ThemeUtils.resolveColor(this, R.attr.colorAccent)
+        val colorAccent = ThemeUtils.resolveColor(this, android.R.attr.colorAccent)
         setAnimatedFractions(1.0f /* snoozeFraction */, 0.0f /* dismissFraction */)
 
         val snoozeMinutes = DataModel.dataModel.snoozeLength

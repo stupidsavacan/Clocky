@@ -24,8 +24,8 @@ import android.os.Looper
 import android.provider.Settings
 import android.text.format.DateFormat
 import android.util.AttributeSet
-import android.widget.TextView
 import androidx.annotation.VisibleForTesting
+import androidx.appcompat.widget.AppCompatTextView
 
 import com.android.deskclock.Utils
 import com.android.deskclock.data.DataModel
@@ -38,10 +38,10 @@ import java.util.TimeZone
  * format specifiers. [android.widget.TextClock] doesn't support a non-ticking clock.
  */
 class TextTime @JvmOverloads constructor(
-    context: Context?,
+    context: Context,
     attrs: AttributeSet? = null,
     defStyle: Int = 0
-) : TextView(context, attrs, defStyle) {
+) : AppCompatTextView(context, attrs, defStyle) {
     private var mFormat12: CharSequence? = Utils.get12ModeFormat(0.3f, false)
     private var mFormat24: CharSequence? = Utils.get24ModeFormat(false)
     private var mFormat: CharSequence? = null
