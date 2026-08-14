@@ -1,5 +1,5 @@
 name: Current App CI
-# Validates runtime-relevant lint remediation on the standalone port.
+# Validates the fully remediated standalone AOSP port head.
 
 on:
   push:
