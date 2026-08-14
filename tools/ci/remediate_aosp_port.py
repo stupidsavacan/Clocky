@@ -80,6 +80,19 @@ replace_once(
     "    }",
 )
 
+alarm_service = "app/src/main/java/com/android/deskclock/alarms/AlarmService.kt"
+replace_once(
+    alarm_service,
+    "import android.telephony.TelephonyManager\n\nimport com.android.deskclock.AlarmAlertWakeLock",
+    "import android.telephony.TelephonyManager\nimport androidx.core.content.ContextCompat\n\nimport com.android.deskclock.AlarmAlertWakeLock",
+)
+replace_once(
+    alarm_service,
+    "        registerReceiver(mActionsReceiver, filter, Context.RECEIVER_EXPORTED)\n",
+    "        ContextCompat.registerReceiver(\n"
+    "                this, mActionsReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)\n",
+)
+
 utils = "app/src/main/java/com/android/deskclock/Utils.kt"
 replace_once(
     utils,
@@ -100,6 +113,86 @@ replace_once(
     "        // Preserve a best-effort alarm instead of crashing when exact-alarm access is denied.\n"
     "        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, info.triggerTime, op)\n"
     "    }",
+)
+
+alarm_state_manager = "app/src/main/java/com/android/deskclock/alarms/AlarmStateManager.kt"
+replace_once(
+    alarm_state_manager,
+    "            val am: AlarmManager = context.getSystemService(ALARM_SERVICE) as AlarmManager\n"
+    "            if (Utils.isMOrLater) {\n"
+    "                // Ensure the alarm fires even if the device is dozing.\n"
+    "                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)\n"
+    "            } else {\n"
+    "                am.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)\n"
+    "            }",
+    "            val am: AlarmManager = context.getSystemService(ALARM_SERVICE) as AlarmManager\n"
+    "            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S ||\n"
+    "                    am.canScheduleExactAlarms()) {\n"
+    "                try {\n"
+    "                    if (Utils.isMOrLater) {\n"
+    "                        // Ensure the alarm fires even if the device is dozing.\n"
+    "                        am.setExactAndAllowWhileIdle(\n"
+    "                                AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)\n"
+    "                    } else {\n"
+    "                        am.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)\n"
+    "                    }\n"
+    "                    return\n"
+    "                } catch (_: SecurityException) {\n"
+    "                    // Exact-alarm access can be revoked after the capability check.\n"
+    "                }\n"
+    "            }\n\n"
+    "            // Keep the state machine alive with best-effort timing instead of crashing.\n"
+    "            if (Utils.isMOrLater) {\n"
+    "                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)\n"
+    "            } else {\n"
+    "                am.set(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)\n"
+    "            }",
+)
+
+timer_model = "app/src/main/java/com/android/deskclock/data/TimerModel.kt"
+replace_once(
+    timer_model,
+    "        fun schedulePendingIntent(am: AlarmManager, triggerTime: Long, pi: PendingIntent) {\n"
+    "            if (Utils.isMOrLater) {\n"
+    "                // Ensure the timer fires even if the device is dozing.\n"
+    "                am.setExactAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)\n"
+    "            } else {\n"
+    "                am.setExact(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)\n"
+    "            }\n"
+    "        }",
+    "        fun schedulePendingIntent(am: AlarmManager, triggerTime: Long, pi: PendingIntent) {\n"
+    "            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S ||\n"
+    "                    am.canScheduleExactAlarms()) {\n"
+    "                try {\n"
+    "                    if (Utils.isMOrLater) {\n"
+    "                        // Ensure the timer fires even if the device is dozing.\n"
+    "                        am.setExactAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)\n"
+    "                    } else {\n"
+    "                        am.setExact(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)\n"
+    "                    }\n"
+    "                    return\n"
+    "                } catch (_: SecurityException) {\n"
+    "                    // Exact-alarm access can be revoked after the capability check.\n"
+    "                }\n"
+    "            }\n\n"
+    "            if (Utils.isMOrLater) {\n"
+    "                am.setAndAllowWhileIdle(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)\n"
+    "            } else {\n"
+    "                am.set(ELAPSED_REALTIME_WAKEUP, triggerTime, pi)\n"
+    "            }\n"
+    "        }",
+)
+
+replace_once(
+    "app/src/main/java/com/android/deskclock/DeskClockBackupAgent.kt",
+    "        alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAtMillis, restoreIntent)\n",
+    "        alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAtMillis, restoreIntent)\n",
+)
+replace_once(
+    "app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt",
+    "        getAlarmManager(context).setExact(AlarmManager.RTC, nextDay.time, pi)\n",
+    "        // Day-boundary refresh does not require exact-alarm privilege.\n"
+    "        getAlarmManager(context).set(AlarmManager.RTC, nextDay.time, pi)\n",
 )
 
 manifest = "app/src/main/AndroidManifest.xml"
@@ -135,6 +228,34 @@ replace_all(
     "app/src/main/java/com/android/deskclock/alarms/AlarmNotifications.kt",
     "NotificationManagerCompat.IMPORTANCE_",
     "NotificationManager.IMPORTANCE_",
+)
+replace_all(
+    "app/src/main/java/com/android/deskclock/data/StopwatchNotificationBuilder.kt",
+    "NotificationManagerCompat.IMPORTANCE_",
+    "android.app.NotificationManager.IMPORTANCE_",
+)
+replace_all(
+    "app/src/main/java/com/android/deskclock/data/TimerNotificationBuilder.kt",
+    "NotificationManagerCompat.IMPORTANCE_",
+    "android.app.NotificationManager.IMPORTANCE_",
+)
+
+replace_once(
+    "app/src/main/java/com/android/deskclock/NotificationUtils.kt",
+    "    private fun getAllExistingChannelIds(nm: NotificationManagerCompat): Set<String> {\n",
+    "    @android.annotation.TargetApi(android.os.Build.VERSION_CODES.O)\n"
+    "    private fun getAllExistingChannelIds(nm: NotificationManagerCompat): Set<String> {\n",
+)
+replace_once(
+    "app/src/main/java/com/android/deskclock/settings/SettingsActivity.kt",
+    "                listPref.setSummary(Utils.getNumberFormattedQuantityString(getActivity()!!,\n",
+    "                listPref.setSummary(Utils.getNumberFormattedQuantityString(requireActivity(),\n",
+)
+replace_once(
+    "app/src/main/java/com/android/deskclock/provider/Alarm.kt",
+    "        val CREATOR: Parcelable.Creator<Alarm> = object : Parcelable.Creator<Alarm> {\n",
+    "        @JvmField\n"
+    "        val CREATOR: Parcelable.Creator<Alarm> = object : Parcelable.Creator<Alarm> {\n",
 )
 
 print("AOSP standalone remediation complete")
