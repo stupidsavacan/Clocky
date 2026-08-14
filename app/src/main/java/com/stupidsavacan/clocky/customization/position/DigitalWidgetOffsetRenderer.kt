@@ -15,6 +15,30 @@ import com.stupidsavacan.clocky.customization.model.ResolvedWidgetOffsets
 object DigitalWidgetOffsetRenderer {
     const val MIN_TRANSLATION_SDK = 31
 
+    private val timeViewIds = intArrayOf(
+        R.id.clock_w100,
+        R.id.clock_w200,
+        R.id.clock_w300,
+        R.id.clock_w400,
+        R.id.clock_w500,
+        R.id.clock_w600,
+        R.id.clock_w700,
+        R.id.clock_w800,
+        R.id.clock_w900,
+    )
+
+    private val dateViewIds = intArrayOf(
+        R.id.date_w100,
+        R.id.date_w200,
+        R.id.date_w300,
+        R.id.date_w400,
+        R.id.date_w500,
+        R.id.date_w600,
+        R.id.date_w700,
+        R.id.date_w800,
+        R.id.date_w900,
+    )
+
     data class EffectiveOffsets(
         val timeXDp: Float,
         val timeYDp: Float,
@@ -47,27 +71,31 @@ object DigitalWidgetOffsetRenderer {
             return effective
         }
 
-        remoteViews.setFloat(
-            R.id.clock_weight_container,
-            "setTranslationX",
-            effective.timeXDp * density,
+        applyGroupTranslation(
+            remoteViews = remoteViews,
+            ids = timeViewIds,
+            xPx = effective.timeXDp * density,
+            yPx = effective.timeYDp * density,
         )
-        remoteViews.setFloat(
-            R.id.clock_weight_container,
-            "setTranslationY",
-            effective.timeYDp * density,
-        )
-        remoteViews.setFloat(
-            R.id.date_weight_container,
-            "setTranslationX",
-            effective.dateXDp * density,
-        )
-        remoteViews.setFloat(
-            R.id.date_weight_container,
-            "setTranslationY",
-            effective.dateYDp * density,
+        applyGroupTranslation(
+            remoteViews = remoteViews,
+            ids = dateViewIds,
+            xPx = effective.dateXDp * density,
+            yPx = effective.dateYDp * density,
         )
         return effective
+    }
+
+    private fun applyGroupTranslation(
+        remoteViews: RemoteViews,
+        ids: IntArray,
+        xPx: Float,
+        yPx: Float,
+    ) {
+        ids.forEach { id ->
+            remoteViews.setFloat(id, "setTranslationX", xPx)
+            remoteViews.setFloat(id, "setTranslationY", yPx)
+        }
     }
 
     private fun finiteOrZero(value: Float): Float = if (value.isFinite()) value else 0f
