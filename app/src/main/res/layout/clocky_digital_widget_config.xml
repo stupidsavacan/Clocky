@@ -124,6 +124,174 @@
             android:valueTo="900"
             app:labelBehavior="withinBounds" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="@string/clocky_profile_overrides_title"
+            android:textAppearance="?attr/textAppearanceHeadline6" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/clocky_profile_overrides_summary"
+            android:textAppearance="?attr/textAppearanceBody2" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/clocky_four_by_one_enabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/clocky_four_by_one_override" />
+
+        <LinearLayout
+            android:id="@+id/clocky_four_by_one_controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/clocky_time_weight" />
+
+                <TextView
+                    android:id="@+id/clocky_four_by_one_time_weight_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="48dp"
+                    android:gravity="end"
+                    android:text="400" />
+            </LinearLayout>
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/clocky_four_by_one_time_weight_slider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/clocky_time_weight"
+                android:stepSize="1"
+                android:valueFrom="100"
+                android:valueTo="900"
+                app:labelBehavior="withinBounds" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/clocky_date_weight" />
+
+                <TextView
+                    android:id="@+id/clocky_four_by_one_date_weight_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="48dp"
+                    android:gravity="end"
+                    android:text="400" />
+            </LinearLayout>
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/clocky_four_by_one_date_weight_slider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/clocky_date_weight"
+                android:stepSize="1"
+                android:valueFrom="100"
+                android:valueTo="900"
+                app:labelBehavior="withinBounds" />
+        </LinearLayout>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/clocky_four_by_two_enabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/clocky_four_by_two_override" />
+
+        <LinearLayout
+            android:id="@+id/clocky_four_by_two_controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/clocky_time_weight" />
+
+                <TextView
+                    android:id="@+id/clocky_four_by_two_time_weight_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="48dp"
+                    android:gravity="end"
+                    android:text="400" />
+            </LinearLayout>
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/clocky_four_by_two_time_weight_slider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/clocky_time_weight"
+                android:stepSize="1"
+                android:valueFrom="100"
+                android:valueTo="900"
+                app:labelBehavior="withinBounds" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/clocky_date_weight" />
+
+                <TextView
+                    android:id="@+id/clocky_four_by_two_date_weight_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="48dp"
+                    android:gravity="end"
+                    android:text="400" />
+            </LinearLayout>
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/clocky_four_by_two_date_weight_slider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/clocky_date_weight"
+                android:stepSize="1"
+                android:valueFrom="100"
+                android:valueTo="900"
+                app:labelBehavior="withinBounds" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/clocky_widget_save"
             android:layout_width="match_parent"

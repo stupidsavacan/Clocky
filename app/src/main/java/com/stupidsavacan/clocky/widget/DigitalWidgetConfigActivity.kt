@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -12,14 +13,16 @@ import androidx.appcompat.app.AppCompatActivity
 import com.android.alarmclock.DigitalAppWidgetProvider
 import com.android.deskclock.R
 import com.google.android.material.slider.Slider
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.stupidsavacan.clocky.customization.font.DigitalWidgetWeightRenderer
 import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
+import com.stupidsavacan.clocky.customization.ui.WidgetProfileWeightEditor
 
 /**
- * Minimal Clocky-owned configuration surface for the AOSP digital widget.
+ * Clocky-owned configuration surface for the AOSP digital widget.
  *
- * The user-facing value is always an integer in 100..900. The store preserves that exact request;
- * the RemoteViews renderer decides what effective face can be displayed on the current API level.
+ * Base values are always integers in 100..900. Size-specific profiles can independently override
+ * those weights; disabling a profile weight override restores inheritance from the base values.
  */
 class DigitalWidgetConfigActivity : AppCompatActivity() {
     private var appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -50,6 +53,22 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         val dateValue: TextView = findViewById(R.id.clocky_date_weight_value)
         val timeSlider: Slider = findViewById(R.id.clocky_time_weight_slider)
         val dateSlider: Slider = findViewById(R.id.clocky_date_weight_slider)
+        val fourByOne = bindProfileControls(
+            switchId = R.id.clocky_four_by_one_enabled,
+            containerId = R.id.clocky_four_by_one_controls,
+            timeSliderId = R.id.clocky_four_by_one_time_weight_slider,
+            dateSliderId = R.id.clocky_four_by_one_date_weight_slider,
+            timeValueId = R.id.clocky_four_by_one_time_weight_value,
+            dateValueId = R.id.clocky_four_by_one_date_weight_value,
+        )
+        val fourByTwo = bindProfileControls(
+            switchId = R.id.clocky_four_by_two_enabled,
+            containerId = R.id.clocky_four_by_two_controls,
+            timeSliderId = R.id.clocky_four_by_two_time_weight_slider,
+            dateSliderId = R.id.clocky_four_by_two_date_weight_slider,
+            timeValueId = R.id.clocky_four_by_two_time_weight_value,
+            dateValueId = R.id.clocky_four_by_two_date_weight_value,
+        )
         val saveButton: Button = findViewById(R.id.clocky_widget_save)
 
         timeSlider.value = current.time.requestedWeight.toFloat()
@@ -68,13 +87,47 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         refreshTime(current.time.requestedWeight)
         refreshDate(current.date.requestedWeight)
 
-        timeSlider.addOnChangeListener { _, value, _ -> refreshTime(value.toInt()) }
-        dateSlider.addOnChangeListener { _, value, _ -> refreshDate(value.toInt()) }
+        configureProfileControls(
+            fourByOne,
+            WidgetProfileWeightEditor.state(
+                current.fourByOne,
+                current.time.requestedWeight,
+                current.date.requestedWeight,
+            ),
+        )
+        configureProfileControls(
+            fourByTwo,
+            WidgetProfileWeightEditor.state(
+                current.fourByTwo,
+                current.time.requestedWeight,
+                current.date.requestedWeight,
+            ),
+        )
+
+        timeSlider.addOnChangeListener { _, value, _ ->
+            refreshTime(value.toInt())
+            if (!fourByOne.enabled.isChecked) setProfileTimeWeight(fourByOne, value.toInt())
+            if (!fourByTwo.enabled.isChecked) setProfileTimeWeight(fourByTwo, value.toInt())
+        }
+        dateSlider.addOnChangeListener { _, value, _ ->
+            refreshDate(value.toInt())
+            if (!fourByOne.enabled.isChecked) setProfileDateWeight(fourByOne, value.toInt())
+            if (!fourByTwo.enabled.isChecked) setProfileDateWeight(fourByTwo, value.toInt())
+        }
 
         saveButton.setOnClickListener {
-            val updated = current.copy(
+            val withBaseWeights = current.copy(
                 time = current.time.copy(requestedWeight = timeSlider.value.toInt()),
                 date = current.date.copy(requestedWeight = dateSlider.value.toInt()),
+            )
+            val updated = WidgetProfileWeightEditor.apply(
+                settings = withBaseWeights,
+                fourByOneEnabled = fourByOne.enabled.isChecked,
+                fourByOneTimeWeight = fourByOne.timeSlider.value.toInt(),
+                fourByOneDateWeight = fourByOne.dateSlider.value.toInt(),
+                fourByTwoEnabled = fourByTwo.enabled.isChecked,
+                fourByTwoTimeWeight = fourByTwo.timeSlider.value.toInt(),
+                fourByTwoDateWeight = fourByTwo.dateSlider.value.toInt(),
             )
             store.save(updated)
             requestWidgetRefresh(appWidgetId)
@@ -83,6 +136,52 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             setResult(RESULT_OK, result)
             finish()
         }
+    }
+
+    private fun bindProfileControls(
+        switchId: Int,
+        containerId: Int,
+        timeSliderId: Int,
+        dateSliderId: Int,
+        timeValueId: Int,
+        dateValueId: Int,
+    ): ProfileControls = ProfileControls(
+        enabled = findViewById(switchId),
+        container = findViewById(containerId),
+        timeSlider = findViewById(timeSliderId),
+        dateSlider = findViewById(dateSliderId),
+        timeValue = findViewById(timeValueId),
+        dateValue = findViewById(dateValueId),
+    )
+
+    private fun configureProfileControls(
+        controls: ProfileControls,
+        state: WidgetProfileWeightEditor.ProfileState,
+    ) {
+        controls.enabled.isChecked = state.enabled
+        controls.container.visibility = if (state.enabled) View.VISIBLE else View.GONE
+        setProfileTimeWeight(controls, state.timeWeight)
+        setProfileDateWeight(controls, state.dateWeight)
+
+        controls.timeSlider.addOnChangeListener { _, value, _ ->
+            controls.timeValue.text = value.toInt().toString()
+        }
+        controls.dateSlider.addOnChangeListener { _, value, _ ->
+            controls.dateValue.text = value.toInt().toString()
+        }
+        controls.enabled.setOnCheckedChangeListener { _, checked ->
+            controls.container.visibility = if (checked) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun setProfileTimeWeight(controls: ProfileControls, weight: Int) {
+        controls.timeSlider.value = weight.coerceIn(100, 900).toFloat()
+        controls.timeValue.text = weight.coerceIn(100, 900).toString()
+    }
+
+    private fun setProfileDateWeight(controls: ProfileControls, weight: Int) {
+        controls.dateSlider.value = weight.coerceIn(100, 900).toFloat()
+        controls.dateValue.text = weight.coerceIn(100, 900).toString()
     }
 
     private fun requestWidgetRefresh(widgetId: Int) {
@@ -103,4 +202,13 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             Typeface.create(spec.familyName, spec.style)
         }
     }
+
+    private data class ProfileControls(
+        val enabled: SwitchMaterial,
+        val container: View,
+        val timeSlider: Slider,
+        val dateSlider: Slider,
+        val timeValue: TextView,
+        val dateValue: TextView,
+    )
 }
