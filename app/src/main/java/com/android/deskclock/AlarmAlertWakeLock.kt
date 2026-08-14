@@ -24,7 +24,7 @@ import android.os.PowerManager.WakeLock
  * Utility class to hold wake lock in app.
  */
 object AlarmAlertWakeLock {
-    private const val TAG = "AlarmAlertWakeLock"
+    private const val TAG = "Clocky:AlarmAlertWakeLock"
 
     private var sCpuWakeLock: WakeLock? = null
 
