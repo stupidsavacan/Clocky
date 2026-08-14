@@ -114,30 +114,45 @@ jobs:
           from pathlib import Path
           import xml.etree.ElementTree as ET
 
-          report = Path('app/build/reports/lint-results-debug.xml')
           output = Path('build/ci-metadata/lint-errors.txt')
-          if not report.exists():
-              output.write_text('lint XML report not found\n', encoding='utf-8')
-              print('lint XML report not found')
-              raise SystemExit(0)
+          text_report = Path(
+              'app/build/intermediates/lint_intermediate_text_report/debug/'
+              'lintReportDebug/lint-results-debug.txt'
+          )
+          xml_report = Path('app/build/reports/lint-results-debug.xml')
 
-          root = ET.parse(report).getroot()
-          errors = []
-          for issue in root.findall('issue'):
-              if issue.attrib.get('severity') != 'Error':
-                  continue
-              location = issue.find('location')
-              file_name = location.attrib.get('file', '-') if location is not None else '-'
-              line = location.attrib.get('line', '-') if location is not None else '-'
-              errors.append((
-                  issue.attrib.get('id', 'unknown'),
-                  file_name,
-                  line,
-                  issue.attrib.get('message', '').replace('\n', ' '),
-              ))
+          lines = []
+          if text_report.exists():
+              raw_lines = text_report.read_text(encoding='utf-8', errors='replace').splitlines()
+              text_errors = [line for line in raw_lines if ': Error:' in line]
+              lines.append(f'Lint text errors: {len(text_errors)}')
+              lines.extend(f'{i:03d}. {line}' for i, line in enumerate(text_errors, 1))
+          else:
+              lines.append('lint text report not found')
 
-          lines = [f'Lint errors: {len(errors)}']
-          lines.extend(f'{i:03d}. [{kind}] {file_name}:{line}: {message}' for i, (kind, file_name, line, message) in enumerate(errors, 1))
+          if xml_report.exists():
+              root = ET.parse(xml_report).getroot()
+              xml_errors = []
+              for issue in root.findall('issue'):
+                  if issue.attrib.get('severity') != 'Error':
+                      continue
+                  location = issue.find('location')
+                  file_name = location.attrib.get('file', '-') if location is not None else '-'
+                  line = location.attrib.get('line', '-') if location is not None else '-'
+                  xml_errors.append((
+                      issue.attrib.get('id', 'unknown'),
+                      file_name,
+                      line,
+                      issue.attrib.get('message', '').replace('\n', ' '),
+                  ))
+              lines.append(f'Lint XML errors: {len(xml_errors)}')
+              lines.extend(
+                  f'XML {i:03d}. [{kind}] {file_name}:{line}: {message}'
+                  for i, (kind, file_name, line, message) in enumerate(xml_errors, 1)
+              )
+          else:
+              lines.append('lint XML report not found')
+
           text = '\n'.join(lines) + '\n'
           output.write_text(text, encoding='utf-8')
           print(text)
