@@ -5,13 +5,16 @@ Clocky will use **AOSP DeskClock as the open-source functional base/reference** 
 ## Upstream pin
 
 - Project: `platform/packages/apps/DeskClock`
-- Branch inspected: `refs/heads/main`
-- Pinned upstream commit for the first porting pass: `04e481f37e0b52b74c5a5c7b78b662d1f94e3478`
+- Preferred archival baseline: tag `android-17.0.0_r1`
+- Pinned DeskClock commit for the first porting pass: `1f6ebf36d0c14f5e16265d80022cb6068d97cebd`
+- Also inspected current `refs/heads/main`: `04e481f37e0b52b74c5a5c7b78b662d1f94e3478`
 - Upstream build system: Soong (`Android.bp`)
 - Upstream application id/package namespace: `com.android.deskclock`
 - Upstream license: Apache License 2.0
 
-The pin is intentional: parity work must be reproducible. Updating the pin is a separate reviewable change.
+The pin is intentional: parity work must be reproducible. Updating it is a separate reviewable change.
+
+Upstream's own README says DeskClock is no longer actively supported and is retained as reference source, with possible future removal from the source manifest. Clocky must therefore **vendor/adapt a pinned snapshot** instead of relying on this repository remaining a maintained dependency.
 
 ## Why this is not a blind copy into `app/`
 
@@ -19,7 +22,7 @@ AOSP DeskClock is built as part of the Android platform and its `Android.bp` cur
 
 ## Functional areas to port/reuse
 
-AOSP main already separates clock concerns into useful packages including:
+AOSP separates clock concerns into useful packages including:
 
 - `alarms/`
 - `timer/`
