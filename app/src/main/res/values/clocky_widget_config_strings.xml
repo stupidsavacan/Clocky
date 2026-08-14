@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="clocky_widget_config_title">Digital widget appearance</string>
+    <string name="clocky_widget_config_weight_help">Choose any weight from 100 to 900. Clocky keeps the exact requested value even when an older Android version must render the nearest available face.</string>
+    <string name="clocky_widget_time_weight">Time weight</string>
+    <string name="clocky_widget_date_weight">Date weight</string>
+    <string name="clocky_widget_apply">Apply</string>
+</resources>
