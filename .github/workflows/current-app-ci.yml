@@ -89,6 +89,9 @@ jobs:
       - name: Resolve debug runtime dependencies
         run: ./gradlew --no-daemon --stacktrace :app:dependencies --configuration debugRuntimeClasspath
 
+      - name: Compile current app
+        run: ./gradlew --no-daemon --stacktrace :app:compileDebugKotlin
+
       - name: Unit tests
         run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
 
