@@ -1,0 +1,815 @@
+name: Phase 8-12 Clocky customization layer
+
+on:
+  push:
+    branches:
+      - agent/complete-12-phase-port
+    paths:
+      - '.github/workflows/phase-8-12-clocky-layer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Phase 8 - add Clocky widget settings model and store
+        shell: bash
+        run: |
+          set -euxo pipefail
+          BASE=app/src/main/java/com/stupidsavacan/clocky/customization
+          mkdir -p "$BASE/model" "$BASE/storage" "$BASE/font"
+
+          cat > "$BASE/model/WidgetSettings.kt" <<'EOF'
+          package com.stupidsavacan.clocky.customization.model
+
+          /** Clocky-owned settings layered on top of the AOSP DeskClock functional base. */
+          data class WidgetSettings(
+              val appWidgetId: Int,
+              val presetId: String = GOOGLE_CLOCK_PRESET_ID,
+              val time: TimeSettings = TimeSettings(),
+              val date: DateSettings = DateSettings(),
+              val background: BackgroundSettings = BackgroundSettings(),
+              val fourByTwo: ProfileOverride? = null,
+              val fourByOne: ProfileOverride? = null,
+          ) {
+              companion object {
+                  const val GOOGLE_CLOCK_PRESET_ID = "google-clock"
+              }
+          }
+
+          data class TimeSettings(
+              val fontFamily: String = "system-sans",
+              val requestedWeight: Int = 400,
+              val sizeSp: Float = 64f,
+              val letterSpacing: Float = 0f,
+              val argb: Int = 0xFFFFFFFF.toInt(),
+              val opacity: Float = 1f,
+              val xDp: Float = 0f,
+              val yDp: Float = 0f,
+              val alignment: HorizontalAlignment = HorizontalAlignment.CENTER,
+              val hourMode: HourMode = HourMode.FOLLOW_SYSTEM,
+              val leadingZero: Boolean = false,
+          )
+
+          data class DateSettings(
+              val enabled: Boolean = true,
+              val fontFamily: String = "system-sans",
+              val requestedWeight: Int = 400,
+              val sizeSp: Float = 14f,
+              val letterSpacing: Float = 0f,
+              val argb: Int = 0xFFFFFFFF.toInt(),
+              val opacity: Float = 1f,
+              val formatPattern: String = "EEE, MMM d",
+              val xDp: Float = 0f,
+              val yDp: Float = 0f,
+              val alignment: HorizontalAlignment = HorizontalAlignment.CENTER,
+          )
+
+          data class BackgroundSettings(
+              val argb: Int = 0x00000000,
+              val opacity: Float = 0f,
+              val cornerRadiusDp: Float = 0f,
+              val paddingDp: Float = 0f,
+          )
+
+          /** Nullable members inherit from the widget base settings. */
+          data class ProfileOverride(
+              val timeWeight: Int? = null,
+              val dateWeight: Int? = null,
+              val timeSizeSp: Float? = null,
+              val dateSizeSp: Float? = null,
+              val timeXDp: Float? = null,
+              val timeYDp: Float? = null,
+              val dateXDp: Float? = null,
+              val dateYDp: Float? = null,
+              val dateEnabled: Boolean? = null,
+          )
+
+          enum class HorizontalAlignment { LEFT, CENTER, RIGHT }
+          enum class HourMode { FOLLOW_SYSTEM, FORCE_12_HOUR, FORCE_24_HOUR }
+
+          fun WidgetSettings.normalized(): WidgetSettings = copy(
+              time = time.copy(
+                  requestedWeight = time.requestedWeight.coerceIn(100, 900),
+                  sizeSp = time.sizeSp.coerceAtLeast(1f),
+                  opacity = time.opacity.coerceIn(0f, 1f),
+              ),
+              date = date.copy(
+                  requestedWeight = date.requestedWeight.coerceIn(100, 900),
+                  sizeSp = date.sizeSp.coerceAtLeast(1f),
+                  opacity = date.opacity.coerceIn(0f, 1f),
+              ),
+              background = background.copy(
+                  opacity = background.opacity.coerceIn(0f, 1f),
+                  cornerRadiusDp = background.cornerRadiusDp.coerceAtLeast(0f),
+                  paddingDp = background.paddingDp.coerceAtLeast(0f),
+              ),
+              fourByTwo = fourByTwo?.normalized(),
+              fourByOne = fourByOne?.normalized(),
+          )
+
+          private fun ProfileOverride.normalized(): ProfileOverride = copy(
+              timeWeight = timeWeight?.coerceIn(100, 900),
+              dateWeight = dateWeight?.coerceIn(100, 900),
+              timeSizeSp = timeSizeSp?.coerceAtLeast(1f),
+              dateSizeSp = dateSizeSp?.coerceAtLeast(1f),
+          )
+          EOF
+
+          cat > "$BASE/storage/WidgetSettingsStore.kt" <<'EOF'
+          package com.stupidsavacan.clocky.customization.storage
+
+          import android.content.Context
+          import com.stupidsavacan.clocky.customization.model.BackgroundSettings
+          import com.stupidsavacan.clocky.customization.model.DateSettings
+          import com.stupidsavacan.clocky.customization.model.HorizontalAlignment
+          import com.stupidsavacan.clocky.customization.model.HourMode
+          import com.stupidsavacan.clocky.customization.model.ProfileOverride
+          import com.stupidsavacan.clocky.customization.model.TimeSettings
+          import com.stupidsavacan.clocky.customization.model.WidgetSettings
+          import com.stupidsavacan.clocky.customization.model.normalized
+          import org.json.JSONObject
+
+          interface WidgetSettingsStore {
+              fun load(appWidgetId: Int): WidgetSettings
+              fun save(settings: WidgetSettings)
+              fun delete(appWidgetId: Int)
+          }
+
+          class SharedPreferencesWidgetSettingsStore(context: Context) : WidgetSettingsStore {
+              private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+              override fun load(appWidgetId: Int): WidgetSettings {
+                  val raw = prefs.getString(key(appWidgetId), null)
+                      ?: return WidgetSettings(appWidgetId = appWidgetId)
+                  return runCatching { decode(appWidgetId, JSONObject(raw)).normalized() }
+                      .getOrElse { WidgetSettings(appWidgetId = appWidgetId) }
+              }
+
+              override fun save(settings: WidgetSettings) {
+                  val safe = settings.normalized()
+                  prefs.edit().putString(key(safe.appWidgetId), encode(safe).toString()).apply()
+              }
+
+              override fun delete(appWidgetId: Int) {
+                  prefs.edit().remove(key(appWidgetId)).apply()
+              }
+
+              private fun encode(s: WidgetSettings): JSONObject = JSONObject().apply {
+                  put("schema", SCHEMA_VERSION)
+                  put("presetId", s.presetId)
+                  put("time", JSONObject().apply {
+                      put("fontFamily", s.time.fontFamily)
+                      put("weight", s.time.requestedWeight)
+                      put("sizeSp", s.time.sizeSp.toDouble())
+                      put("letterSpacing", s.time.letterSpacing.toDouble())
+                      put("argb", s.time.argb.toLong())
+                      put("opacity", s.time.opacity.toDouble())
+                      put("xDp", s.time.xDp.toDouble())
+                      put("yDp", s.time.yDp.toDouble())
+                      put("alignment", s.time.alignment.name)
+                      put("hourMode", s.time.hourMode.name)
+                      put("leadingZero", s.time.leadingZero)
+                  })
+                  put("date", JSONObject().apply {
+                      put("enabled", s.date.enabled)
+                      put("fontFamily", s.date.fontFamily)
+                      put("weight", s.date.requestedWeight)
+                      put("sizeSp", s.date.sizeSp.toDouble())
+                      put("letterSpacing", s.date.letterSpacing.toDouble())
+                      put("argb", s.date.argb.toLong())
+                      put("opacity", s.date.opacity.toDouble())
+                      put("formatPattern", s.date.formatPattern)
+                      put("xDp", s.date.xDp.toDouble())
+                      put("yDp", s.date.yDp.toDouble())
+                      put("alignment", s.date.alignment.name)
+                  })
+                  put("background", JSONObject().apply {
+                      put("argb", s.background.argb.toLong())
+                      put("opacity", s.background.opacity.toDouble())
+                      put("cornerRadiusDp", s.background.cornerRadiusDp.toDouble())
+                      put("paddingDp", s.background.paddingDp.toDouble())
+                  })
+                  put("fourByTwo", encodeOverride(s.fourByTwo))
+                  put("fourByOne", encodeOverride(s.fourByOne))
+              }
+
+              private fun decode(id: Int, root: JSONObject): WidgetSettings {
+                  val t = root.optJSONObject("time") ?: JSONObject()
+                  val d = root.optJSONObject("date") ?: JSONObject()
+                  val b = root.optJSONObject("background") ?: JSONObject()
+                  return WidgetSettings(
+                      appWidgetId = id,
+                      presetId = root.optString("presetId", WidgetSettings.GOOGLE_CLOCK_PRESET_ID),
+                      time = TimeSettings(
+                          fontFamily = t.optString("fontFamily", "system-sans"),
+                          requestedWeight = t.optInt("weight", 400),
+                          sizeSp = t.optDouble("sizeSp", 64.0).toFloat(),
+                          letterSpacing = t.optDouble("letterSpacing", 0.0).toFloat(),
+                          argb = t.optLong("argb", 0xFFFFFFFFL).toInt(),
+                          opacity = t.optDouble("opacity", 1.0).toFloat(),
+                          xDp = t.optDouble("xDp", 0.0).toFloat(),
+                          yDp = t.optDouble("yDp", 0.0).toFloat(),
+                          alignment = enumValueOrDefault(t.optString("alignment"), HorizontalAlignment.CENTER),
+                          hourMode = enumValueOrDefault(t.optString("hourMode"), HourMode.FOLLOW_SYSTEM),
+                          leadingZero = t.optBoolean("leadingZero", false),
+                      ),
+                      date = DateSettings(
+                          enabled = d.optBoolean("enabled", true),
+                          fontFamily = d.optString("fontFamily", "system-sans"),
+                          requestedWeight = d.optInt("weight", 400),
+                          sizeSp = d.optDouble("sizeSp", 14.0).toFloat(),
+                          letterSpacing = d.optDouble("letterSpacing", 0.0).toFloat(),
+                          argb = d.optLong("argb", 0xFFFFFFFFL).toInt(),
+                          opacity = d.optDouble("opacity", 1.0).toFloat(),
+                          formatPattern = d.optString("formatPattern", "EEE, MMM d"),
+                          xDp = d.optDouble("xDp", 0.0).toFloat(),
+                          yDp = d.optDouble("yDp", 0.0).toFloat(),
+                          alignment = enumValueOrDefault(d.optString("alignment"), HorizontalAlignment.CENTER),
+                      ),
+                      background = BackgroundSettings(
+                          argb = b.optLong("argb", 0L).toInt(),
+                          opacity = b.optDouble("opacity", 0.0).toFloat(),
+                          cornerRadiusDp = b.optDouble("cornerRadiusDp", 0.0).toFloat(),
+                          paddingDp = b.optDouble("paddingDp", 0.0).toFloat(),
+                      ),
+                      fourByTwo = decodeOverride(root.opt("fourByTwo")),
+                      fourByOne = decodeOverride(root.opt("fourByOne")),
+                  )
+              }
+
+              private fun encodeOverride(v: ProfileOverride?): Any = v?.let {
+                  JSONObject().apply {
+                      putNullable("timeWeight", it.timeWeight)
+                      putNullable("dateWeight", it.dateWeight)
+                      putNullable("timeSizeSp", it.timeSizeSp)
+                      putNullable("dateSizeSp", it.dateSizeSp)
+                      putNullable("timeXDp", it.timeXDp)
+                      putNullable("timeYDp", it.timeYDp)
+                      putNullable("dateXDp", it.dateXDp)
+                      putNullable("dateYDp", it.dateYDp)
+                      putNullable("dateEnabled", it.dateEnabled)
+                  }
+              } ?: JSONObject.NULL
+
+              private fun decodeOverride(value: Any?): ProfileOverride? {
+                  val o = value as? JSONObject ?: return null
+                  fun optIntOrNull(k: String) = if (o.has(k) && !o.isNull(k)) o.getInt(k) else null
+                  fun optFloatOrNull(k: String) = if (o.has(k) && !o.isNull(k)) o.getDouble(k).toFloat() else null
+                  fun optBoolOrNull(k: String) = if (o.has(k) && !o.isNull(k)) o.getBoolean(k) else null
+                  return ProfileOverride(
+                      timeWeight = optIntOrNull("timeWeight"),
+                      dateWeight = optIntOrNull("dateWeight"),
+                      timeSizeSp = optFloatOrNull("timeSizeSp"),
+                      dateSizeSp = optFloatOrNull("dateSizeSp"),
+                      timeXDp = optFloatOrNull("timeXDp"),
+                      timeYDp = optFloatOrNull("timeYDp"),
+                      dateXDp = optFloatOrNull("dateXDp"),
+                      dateYDp = optFloatOrNull("dateYDp"),
+                      dateEnabled = optBoolOrNull("dateEnabled"),
+                  )
+              }
+
+              private fun JSONObject.putNullable(key: String, value: Any?) {
+                  put(key, value ?: JSONObject.NULL)
+              }
+
+              private inline fun <reified T : Enum<T>> enumValueOrDefault(raw: String, fallback: T): T =
+                  enumValues<T>().firstOrNull { it.name == raw } ?: fallback
+
+              private fun key(id: Int) = "widget.$id.settings"
+
+              companion object {
+                  private const val PREFS_NAME = "clocky_widget_settings"
+                  private const val SCHEMA_VERSION = 1
+              }
+          }
+          EOF
+
+      - name: Phase 9 - add Font Weight 100-900 resolver
+        shell: bash
+        run: |
+          BASE=app/src/main/java/com/stupidsavacan/clocky/customization/font
+          cat > "$BASE/FontWeightResolver.kt" <<'EOF'
+          package com.stupidsavacan.clocky.customization.font
+
+          import kotlin.math.abs
+
+          data class FontCapabilities(
+              val staticWeights: Set<Int> = CANONICAL_WEIGHTS,
+              val variableWeightRange: IntRange? = null,
+          )
+
+          data class ResolvedFontWeight(
+              val requested: Int,
+              val effective: Int,
+              val exact: Boolean,
+              val variationSettings: String?,
+              val reason: String,
+          )
+
+          object FontWeightResolver {
+              fun resolve(requestedWeight: Int, capabilities: FontCapabilities): ResolvedFontWeight {
+                  val requested = requestedWeight.coerceIn(100, 900)
+                  val variable = capabilities.variableWeightRange
+                  if (variable != null) {
+                      val effective = requested.coerceIn(variable.first, variable.last)
+                      return ResolvedFontWeight(
+                          requested = requested,
+                          effective = effective,
+                          exact = effective == requested,
+                          variationSettings = "'wght' $effective",
+                          reason = if (effective == requested) "variable-font-exact" else "variable-font-clamped",
+                      )
+                  }
+
+                  val available = capabilities.staticWeights
+                      .map { it.coerceIn(100, 900) }
+                      .distinct()
+                      .ifEmpty { CANONICAL_WEIGHTS.toList() }
+                  val effective = available.minWithOrNull(
+                      compareBy<Int> { abs(it - requested) }.thenBy { it }
+                  ) ?: 400
+                  return ResolvedFontWeight(
+                      requested = requested,
+                      effective = effective,
+                      exact = effective == requested,
+                      variationSettings = null,
+                      reason = if (effective == requested) "static-face-exact" else "nearest-static-face",
+                  )
+              }
+          }
+
+          val CANONICAL_WEIGHTS: Set<Int> = (100..900 step 100).toSet()
+          EOF
+
+          cat > "$BASE/WidgetWeightRenderContract.kt" <<'EOF'
+          package com.stupidsavacan.clocky.customization.font
+
+          /**
+           * Separates the value the user requests from what a concrete AppWidget renderer can apply.
+           * The storage/UI contract always remains 100..900 even if a RemoteViews backend quantizes it.
+           */
+          data class WidgetWeightRenderContract(
+              val requestedWeight: Int,
+              val resolved: ResolvedFontWeight,
+              val backend: Backend,
+          ) {
+              enum class Backend {
+                  VARIABLE_AXIS,
+                  STATIC_FACE,
+                  CANONICAL_REMOTE_VIEWS_FALLBACK,
+              }
+          }
+          EOF
+
+      - name: Phase 10 - write Google Clock UI/UX specification
+        shell: bash
+        run: |
+          mkdir -p docs/parity
+          cat > docs/parity/GOOGLE_CLOCK_UI_UX_SPEC.md <<'EOF'
+          # Google Clock UI/UX parity specification
+
+          ## Product rule
+
+          Clocky defaults should feel familiar to a Google Clock user while remaining independently implemented. The proprietary reference APK is an observation target only; AOSP/public Android code and Clocky-owned code provide the implementation.
+
+          ## Global interaction contract
+
+          1. Primary clock functions remain reachable from the main navigation without entering Clocky customisation.
+          2. Back behavior must return to the prior Clock surface before leaving the app.
+          3. Destructive actions require the same level of intent as the reference; Clocky must not introduce easier accidental deletion.
+          4. Controls that represent on/off state use immediate visual state feedback.
+          5. Time-sensitive surfaces update without requiring manual refresh.
+          6. Light/dark behavior follows the selected/system theme unless a Clocky-specific override is explicitly enabled.
+          7. RTL, font scale, TalkBack labels, and 12/24-hour formatting are first-class parity states.
+
+          ## Main navigation
+
+          Required destinations:
+
+          - Alarm
+          - Clock / world clocks
+          - Timer
+          - Stopwatch
+          - Settings entry
+
+          Acceptance:
+
+          - selected destination is visually unambiguous;
+          - switching destinations preserves running timers/stopwatch state;
+          - returning from settings restores the prior destination;
+          - configuration-only Clocky controls do not replace or hide core clock navigation.
+
+          ## Alarm UX
+
+          ### List state
+
+          - show alarm time prominently;
+          - enabled state is visible without opening alarm details;
+          - repeated days, label and next occurrence are secondary information;
+          - expand/edit interaction does not accidentally toggle the alarm.
+
+          ### Editing
+
+          - time selection;
+          - repeat days;
+          - label;
+          - ringtone/sound;
+          - vibration;
+          - delete;
+          - enable/disable.
+
+          ### Firing state
+
+          - full-screen/notification path as allowed by current Android APIs;
+          - clear dismiss and snooze actions;
+          - lock-screen behavior is tested separately from normal in-app behavior;
+          - app restart/device reboot must not silently lose scheduled alarms.
+
+          ## Clock / world clock UX
+
+          - current local clock remains visually primary;
+          - selected cities display city name plus local time;
+          - add-city flow supports search and selection;
+          - removing/reordering cities must not alter alarm data;
+          - locale/time-zone changes refresh displayed values.
+
+          ## Timer UX
+
+          Required states:
+
+          1. empty/setup;
+          2. running;
+          3. paused;
+          4. expired;
+          5. reset/deleted.
+
+          Required interactions:
+
+          - enter duration;
+          - start;
+          - pause/resume;
+          - add time where supported by the observed reference;
+          - reset/delete;
+          - expired notification/full-screen behavior according to public Android APIs.
+
+          Multiple timers must remain independent if the reference version supports them; exact presentation is frozen by the reference-capture protocol before visual parity is marked complete.
+
+          ## Stopwatch UX
+
+          - start, pause/resume and reset;
+          - lap creation while running;
+          - lap list remains associated with the current session;
+          - backgrounding the app must not reset elapsed time;
+          - Stopwatch AppWidget reflects the same logical session.
+
+          ## Settings UX
+
+          Preserve Google-like grouping for core clock settings, then place Clocky-specific customization in a clearly separate section. Core settings must not be hidden inside widget customization.
+
+          Clocky-specific entry points:
+
+          - widget preset/editor;
+          - typography;
+          - per-size layout overrides;
+          - import/export only when implemented later.
+
+          ## Motion
+
+          Match the reference's purpose, not proprietary animation files. Record for each transition:
+
+          - trigger;
+          - start/end state;
+          - approximate duration class (instant / short / medium);
+          - easing character;
+          - whether motion conveys selection, expansion, creation or deletion.
+
+          Recreate motion with Android/Material primitives.
+
+          ## Visual measurement sheet
+
+          Every reference capture records:
+
+          | Property | Required |
+          |---|---|
+          | viewport px + density | yes |
+          | screen/widget bounds | yes |
+          | content padding | yes |
+          | baseline/bounding boxes | yes |
+          | type size/weight estimate | yes |
+          | colors incl. alpha | yes |
+          | corner radii | yes |
+          | touch target bounds | yes |
+          | dark/light | yes |
+          | 12/24h | yes |
+          | locale/RTL | where applicable |
+
+          ## Parity acceptance
+
+          A surface can be marked Google-parity complete only when:
+
+          1. equivalent normal-user task flow exists;
+          2. all reference states in `REFERENCE_CAPTURE_PROTOCOL.md` are represented;
+          3. geometry/type/color deviations are recorded and intentional;
+          4. proprietary source/assets are not copied;
+          5. a real-device comparison is completed later.
+
+          This document completes the pre-build UI/UX contract; device-derived numeric constants remain measurements rather than assumptions.
+          EOF
+
+      - name: Phase 11 - complete widget parity specification
+        shell: bash
+        run: |
+          cat > docs/parity/WIDGET_PARITY_SPEC.md <<'EOF'
+          # Widget parity specification
+
+          ## Families
+
+          Clocky tracks five Google Clock reference widget families:
+
+          1. Digital
+          2. Digital Stacked
+          3. Digital Cities
+          4. Analog
+          5. Stopwatch
+
+          The AOSP snapshot already supplies a functional Digital/Analog baseline; the additional Google families are Clocky parity work built on the same app/domain state.
+
+          ## Shared widget contract
+
+          Every family must define:
+
+          - provider metadata and resize bounds;
+          - state source;
+          - update triggers;
+          - click destinations;
+          - 12/24-hour behavior where relevant;
+          - date/next-alarm behavior where relevant;
+          - light/dark behavior;
+          - accessibility content descriptions;
+          - restore/rebind behavior;
+          - RTL and font-scale behavior;
+          - Clocky customization capability or an explicit reason it is not applicable.
+
+          ## Digital
+
+          State:
+
+          - current local time;
+          - optional date according to reference breakpoint;
+          - next alarm according to reference state/breakpoint;
+          - host-provided width/height.
+
+          Update triggers:
+
+          - AppWidget update;
+          - date changed;
+          - locale changed;
+          - time/time-zone changed;
+          - next alarm changed;
+          - day boundary;
+          - world-city state only where displayed.
+
+          Known baseline capture:
+
+          - reference host: 720×1600 px / 280 dpi device;
+          - observed 4×2 HostView about 692×484 px (~395.4×276.6 dp);
+          - compact profile remains host-size-driven, not a hard-coded 4×1 pixel size.
+
+          Clocky extensions:
+
+          - time/date font family;
+          - requested weight 100–900 independently;
+          - size;
+          - letter spacing;
+          - color/opacity;
+          - X/Y offsets;
+          - alignment;
+          - background/padding/radius;
+          - size-specific overrides.
+
+          ## Digital Stacked
+
+          Required logical elements:
+
+          - hour/minute presentation matching observed stacked composition;
+          - date/secondary information only at observed breakpoints;
+          - 12/24-hour handling;
+          - resize behavior that recomposes rather than merely scales when the reference does so.
+
+          Clocky customisation applies independently to each text role where practical; linked editing may be offered as a convenience.
+
+          ## Digital Cities
+
+          Required state:
+
+          - local/current city role as observed;
+          - selected world-city rows;
+          - city name + time;
+          - time-zone and DST updates;
+          - empty/no-city state;
+          - click-through to Clock/world-city management.
+
+          City data must come from the AOSP/Clocky world-clock domain, not duplicated widget-only storage.
+
+          ## Analog
+
+          Required state:
+
+          - hour/minute hands;
+          - dial;
+          - system time/time-zone response;
+          - reference click destination;
+          - size-safe scaling.
+
+          Clocky extension target after parity:
+
+          - approved dial presets;
+          - color/opacity/background controls;
+          - optional hand styling where it does not compromise legibility.
+
+          ## Stopwatch
+
+          Required state:
+
+          - idle;
+          - running;
+          - paused;
+          - elapsed time synchronized with in-app Stopwatch state;
+          - action/tap behavior matching the reference flow.
+
+          The widget must not maintain an independent stopwatch clock. AOSP/Clocky stopwatch domain state is the single source of truth.
+
+          ## Resize matrix
+
+          For each family, capture and freeze these states before pixel-parity sign-off:
+
+          | Width class | Height class | Required record |
+          |---|---|---|
+          | minimum | minimum | visibility + composition |
+          | compact | normal | text scale + padding |
+          | normal | compact | horizontal/stacked decision |
+          | reference default | reference default | full geometry |
+          | expanded | expanded | maximum useful composition |
+
+          Host cell counts are descriptive only; implementation uses `AppWidgetManager` size options in dp.
+
+          ## Click matrix
+
+          | Element | Digital | Stacked | Cities | Analog | Stopwatch |
+          |---|---|---|---|---|---|
+          | main clock area | Clock app | Clock app | Clock app | Clock app | Stopwatch |
+          | city row | n/a | n/a | city/world-clock surface | n/a | n/a |
+          | next alarm | reference-captured destination | reference-captured | where shown | n/a | n/a |
+          | action controls | n/a | n/a | n/a | n/a | reference-captured action |
+
+          Exact PendingIntent destinations are frozen from observed behavior before implementation is marked parity-complete.
+
+          ## Definition of done
+
+          Pre-build specification is complete when every family has state, data source, update triggers, resize states, click roles, accessibility and Clocky-extension rules. Runtime parity remains unverified until APK/device testing.
+          EOF
+
+      - name: Phase 12 - write legacy MVP integration design
+        shell: bash
+        run: |
+          mkdir -p docs/architecture
+          cat > docs/architecture/MVP_INTEGRATION.md <<'EOF'
+          # Existing Clocky MVP → AOSP DeskClock integration
+
+          ## Goal
+
+          Preserve the customization ideas already proven by the Clocky MVP while replacing its minimal clock-only functional core with the vendored AOSP DeskClock domain/application base.
+
+          ## Source roles
+
+          ```text
+          third_party/aosp-deskclock/  immutable upstream provenance
+          app/                         standalone AOSP adaptation + Clocky product code
+          legacy/mvp-app-skeleton/     snapshot of pre-port Gradle/app skeleton
+          ci/Clocky_MVP_source.zip     previous runnable MVP source bundle retained for reference
+          ```
+
+          ## MVP capability mapping
+
+          | Existing MVP concept | New owner | Integration rule |
+          |---|---|---|
+          | per-appWidgetId settings | Clocky customization store | preserve semantic model; migrate keys when old schema is decoded |
+          | Digital time/date | AOSP Digital provider + Clocky render layer | AOSP supplies lifecycle/data; Clocky controls presentation |
+          | 4×2 baseline | size profile | becomes explicit profile override |
+          | compact/4×1 foundation | size profile | host-size-driven override, no hard-coded launcher assumption |
+          | time/date independent size | Clocky model | retained |
+          | font-family selection | Clocky typography layer | retained; only redistributable/system fonts |
+          | alignment | Clocky layout layer | retained |
+          | colors/background | Clocky style layer | retained |
+          | signed MVP pipeline | release tooling | keep signing identity policy separate from source port |
+
+          ## Integration boundaries
+
+          AOSP owns:
+
+          - alarms and scheduling;
+          - timer state;
+          - stopwatch state;
+          - world-clock/city data;
+          - main clock lifecycle;
+          - baseline Digital/Analog widget update mechanics.
+
+          Clocky owns:
+
+          - Google-like visual parity layer;
+          - widget settings/presets;
+          - typography including requested Weight 100–900;
+          - independent time/date styling;
+          - size-specific widget composition overrides;
+          - future preset/editor UX.
+
+          ## Do not merge responsibilities
+
+          - Do not create a second timer/stopwatch data store for widgets.
+          - Do not modify `third_party/aosp-deskclock/`; changes live in `app/`.
+          - Do not let Google-parity defaults become hard-coded obstacles to Clocky customization.
+          - Do not use old MVP code to replace more complete AOSP domain behavior unless a measured regression is documented.
+
+          ## Migration order after first compile
+
+          1. Make AOSP app tree compile with public SDK dependencies.
+          2. Verify Alarm/Timer/Stopwatch/World Clock baseline state survives process recreation.
+          3. Verify AOSP Digital/Analog providers register and update.
+          4. Introduce `WidgetSettingsStore` without changing default visuals.
+          5. Add Google-like preset geometry.
+          6. Layer old MVP presentation controls one at a time.
+          7. Add Weight renderer with requested/effective weight disclosure.
+          8. Add Stacked/Cities/Stopwatch reference families.
+
+          ## Migration compatibility
+
+          The new model uses schema-versioned JSON per `appWidgetId`. A future migration reader may import the MVP's earlier primitive SharedPreferences keys; until that reader is added, the old source bundle remains the source of truth for old key names.
+
+          ## Completion condition
+
+          Integration design is complete when every MVP capability has one new owner and there is no duplicate domain state between AOSP and Clocky. Runtime integration is intentionally deferred to compile/device phases.
+          EOF
+
+      - name: Create 12-phase completion ledger
+        shell: bash
+        run: |
+          mkdir -p docs/port
+          cat > docs/port/TWELVE_PHASE_LEDGER.md <<'EOF'
+          # Twelve-phase pre-build ledger
+
+          - [x] 1. Merge AOSP vendor PR into `main`
+          - [x] 2. Mirror vendored AOSP functional source into `app/`
+          - [x] 3. Create standalone Gradle configuration from AOSP Soong deps
+          - [x] 4. Copy/adapt Manifest for standalone application identity
+          - [x] 5. Mirror and count-verify AOSP resources/assets
+          - [x] 6. Run static platform/hidden-API risk scan
+          - [x] 7. Generate AndroidX/Material dependency map
+          - [x] 8. Add Clocky settings model + schema-versioned per-widget store
+          - [x] 9. Add requested Weight 100–900 resolver/render contract
+          - [x] 10. Freeze pre-build Google Clock UI/UX parity contract
+          - [x] 11. Complete five-family Widget parity specification
+          - [x] 12. Map existing MVP capabilities into AOSP + Clocky ownership
+
+          ## Boundary
+
+          These twelve phases are the work that can be completed **without generating an APK**. They do not claim compiler success or real-device parity. The next gate is compile/error remediation, followed by debug APK and device testing.
+          EOF
+
+      - name: Static sanity checks only
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f app/src/main/java/com/stupidsavacan/clocky/customization/model/WidgetSettings.kt
+          test -f app/src/main/java/com/stupidsavacan/clocky/customization/storage/WidgetSettingsStore.kt
+          test -f app/src/main/java/com/stupidsavacan/clocky/customization/font/FontWeightResolver.kt
+          test -f docs/parity/GOOGLE_CLOCK_UI_UX_SPEC.md
+          test -f docs/parity/WIDGET_PARITY_SPEC.md
+          test -f docs/architecture/MVP_INTEGRATION.md
+          grep -q 'requestedWeight' app/src/main/java/com/stupidsavacan/clocky/customization/model/WidgetSettings.kt
+          grep -q '100, 900' app/src/main/java/com/stupidsavacan/clocky/customization/font/FontWeightResolver.kt
+          git diff --check
+
+      - name: Commit Phase 8-12 outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/com/stupidsavacan docs
+          if git diff --cached --quiet; then
+            echo 'No generated changes'
+            exit 0
+          fi
+          git commit -m 'Phase 8-12: Clocky設定・Weight・Googleパリティ仕様を統合'
+          git push origin HEAD:agent/complete-12-phase-port
