@@ -18,6 +18,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import com.stupidsavacan.clocky.customization.font.DigitalWidgetWeightRenderer
 import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
 import com.stupidsavacan.clocky.customization.ui.WidgetProfileDateVisibilityEditor
+import com.stupidsavacan.clocky.customization.ui.WidgetProfileSizeEditor
 import com.stupidsavacan.clocky.customization.ui.WidgetProfileWeightEditor
 
 /**
@@ -56,6 +57,10 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         val dateValue: TextView = findViewById(R.id.clocky_date_weight_value)
         val timeSlider: Slider = findViewById(R.id.clocky_time_weight_slider)
         val dateSlider: Slider = findViewById(R.id.clocky_date_weight_slider)
+        val timeSizeValue: TextView = findViewById(R.id.clocky_time_size_value)
+        val dateSizeValue: TextView = findViewById(R.id.clocky_date_size_value)
+        val timeSizeSlider: Slider = findViewById(R.id.clocky_time_size_slider)
+        val dateSizeSlider: Slider = findViewById(R.id.clocky_date_size_slider)
         val dateEnabled: SwitchMaterial = findViewById(R.id.clocky_date_enabled)
         val fourByOne = bindProfileControls(
             switchId = R.id.clocky_four_by_one_enabled,
@@ -73,6 +78,22 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             timeValueId = R.id.clocky_four_by_two_time_weight_value,
             dateValueId = R.id.clocky_four_by_two_date_weight_value,
         )
+        val fourByOneSize = bindSizeProfileControls(
+            switchId = R.id.clocky_four_by_one_size_enabled,
+            containerId = R.id.clocky_four_by_one_size_controls,
+            timeSliderId = R.id.clocky_four_by_one_time_size_slider,
+            dateSliderId = R.id.clocky_four_by_one_date_size_slider,
+            timeValueId = R.id.clocky_four_by_one_time_size_value,
+            dateValueId = R.id.clocky_four_by_one_date_size_value,
+        )
+        val fourByTwoSize = bindSizeProfileControls(
+            switchId = R.id.clocky_four_by_two_size_enabled,
+            containerId = R.id.clocky_four_by_two_size_controls,
+            timeSliderId = R.id.clocky_four_by_two_time_size_slider,
+            dateSliderId = R.id.clocky_four_by_two_date_size_slider,
+            timeValueId = R.id.clocky_four_by_two_time_size_value,
+            dateValueId = R.id.clocky_four_by_two_date_size_value,
+        )
         val fourByOneDate = bindDateVisibilityControls(
             groupId = R.id.clocky_four_by_one_date_visibility,
             inheritId = R.id.clocky_four_by_one_date_inherit,
@@ -89,6 +110,8 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
 
         timeSlider.value = current.time.requestedWeight.toFloat()
         dateSlider.value = current.date.requestedWeight.toFloat()
+        prepareSizeSlider(timeSizeSlider, current.time.sizeSp)
+        prepareSizeSlider(dateSizeSlider, current.date.sizeSp)
         dateEnabled.isChecked = current.date.enabled
         datePreview.visibility = if (current.date.enabled) View.VISIBLE else View.GONE
 
@@ -102,8 +125,20 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             applyPreviewWeight(datePreview, weight)
         }
 
+        fun refreshTimeSize(sizeSp: Float) {
+            timeSizeValue.text = getString(R.string.clocky_size_sp_value, sizeSp)
+            timePreview.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, sizeSp)
+        }
+
+        fun refreshDateSize(sizeSp: Float) {
+            dateSizeValue.text = getString(R.string.clocky_size_sp_value, sizeSp)
+            datePreview.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, sizeSp)
+        }
+
         refreshTime(current.time.requestedWeight)
         refreshDate(current.date.requestedWeight)
+        refreshTimeSize(current.time.sizeSp)
+        refreshDateSize(current.date.sizeSp)
 
         configureProfileControls(
             fourByOne,
@@ -119,6 +154,22 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
                 current.fourByTwo,
                 current.time.requestedWeight,
                 current.date.requestedWeight,
+            ),
+        )
+        configureSizeProfileControls(
+            fourByOneSize,
+            WidgetProfileSizeEditor.state(
+                current.fourByOne,
+                current.time.sizeSp,
+                current.date.sizeSp,
+            ),
+        )
+        configureSizeProfileControls(
+            fourByTwoSize,
+            WidgetProfileSizeEditor.state(
+                current.fourByTwo,
+                current.time.sizeSp,
+                current.date.sizeSp,
             ),
         )
         configureDateVisibilityControls(
@@ -148,15 +199,37 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
                 setProfileDateWeight(fourByTwo, value.toInt())
             }
         }
+        timeSizeSlider.addOnChangeListener { _, value, _ ->
+            refreshTimeSize(value)
+            if (!fourByOneSize.enabled.isChecked || fourByOneSize.timeInherited) {
+                setProfileTimeSize(fourByOneSize, value)
+            }
+            if (!fourByTwoSize.enabled.isChecked || fourByTwoSize.timeInherited) {
+                setProfileTimeSize(fourByTwoSize, value)
+            }
+        }
+        dateSizeSlider.addOnChangeListener { _, value, _ ->
+            refreshDateSize(value)
+            if (!fourByOneSize.enabled.isChecked || fourByOneSize.dateInherited) {
+                setProfileDateSize(fourByOneSize, value)
+            }
+            if (!fourByTwoSize.enabled.isChecked || fourByTwoSize.dateInherited) {
+                setProfileDateSize(fourByTwoSize, value)
+            }
+        }
         dateEnabled.setOnCheckedChangeListener { _, checked ->
             datePreview.visibility = if (checked) View.VISIBLE else View.GONE
         }
 
         saveButton.setOnClickListener {
             val withBaseSettings = current.copy(
-                time = current.time.copy(requestedWeight = timeSlider.value.toInt()),
+                time = current.time.copy(
+                    requestedWeight = timeSlider.value.toInt(),
+                    sizeSp = timeSizeSlider.value,
+                ),
                 date = current.date.copy(
                     requestedWeight = dateSlider.value.toInt(),
+                    sizeSp = dateSizeSlider.value,
                     enabled = dateEnabled.isChecked,
                 ),
             )
@@ -185,8 +258,17 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
                     fourByTwo.dateSlider.value.toInt()
                 },
             )
-            val updated = WidgetProfileDateVisibilityEditor.apply(
+            val withProfileSizes = WidgetProfileSizeEditor.apply(
                 settings = withProfileWeights,
+                fourByOneEnabled = fourByOneSize.enabled.isChecked,
+                fourByOneTimeSizeSp = if (fourByOneSize.timeInherited) null else fourByOneSize.timeSlider.value,
+                fourByOneDateSizeSp = if (fourByOneSize.dateInherited) null else fourByOneSize.dateSlider.value,
+                fourByTwoEnabled = fourByTwoSize.enabled.isChecked,
+                fourByTwoTimeSizeSp = if (fourByTwoSize.timeInherited) null else fourByTwoSize.timeSlider.value,
+                fourByTwoDateSizeSp = if (fourByTwoSize.dateInherited) null else fourByTwoSize.dateSlider.value,
+            )
+            val updated = WidgetProfileDateVisibilityEditor.apply(
+                settings = withProfileSizes,
                 baseDateEnabled = dateEnabled.isChecked,
                 fourByOneMode = selectedDateVisibilityMode(fourByOneDate),
                 fourByTwoMode = selectedDateVisibilityMode(fourByTwoDate),
@@ -208,6 +290,22 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         timeValueId: Int,
         dateValueId: Int,
     ): ProfileControls = ProfileControls(
+        enabled = findViewById(switchId),
+        container = findViewById(containerId),
+        timeSlider = findViewById(timeSliderId),
+        dateSlider = findViewById(dateSliderId),
+        timeValue = findViewById(timeValueId),
+        dateValue = findViewById(dateValueId),
+    )
+
+    private fun bindSizeProfileControls(
+        switchId: Int,
+        containerId: Int,
+        timeSliderId: Int,
+        dateSliderId: Int,
+        timeValueId: Int,
+        dateValueId: Int,
+    ): SizeProfileControls = SizeProfileControls(
         enabled = findViewById(switchId),
         container = findViewById(containerId),
         timeSlider = findViewById(timeSliderId),
@@ -263,6 +361,43 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         }
     }
 
+    private fun configureSizeProfileControls(
+        controls: SizeProfileControls,
+        state: WidgetProfileSizeEditor.ProfileState,
+    ) {
+        controls.enabled.isChecked = state.enabled
+        controls.timeInherited = state.timeInherited
+        controls.dateInherited = state.dateInherited
+        controls.container.visibility = if (state.enabled) View.VISIBLE else View.GONE
+        prepareSizeSlider(controls.timeSlider, state.timeSizeSp)
+        prepareSizeSlider(controls.dateSlider, state.dateSizeSp)
+        setProfileTimeSize(controls, state.timeSizeSp)
+        setProfileDateSize(controls, state.dateSizeSp)
+
+        controls.timeSlider.addOnChangeListener { _, value, fromUser ->
+            controls.timeValue.text = getString(R.string.clocky_size_sp_value, value)
+            if (fromUser && controls.enabled.isChecked) {
+                controls.timeInherited = false
+            }
+        }
+        controls.dateSlider.addOnChangeListener { _, value, fromUser ->
+            controls.dateValue.text = getString(R.string.clocky_size_sp_value, value)
+            if (fromUser && controls.enabled.isChecked) {
+                controls.dateInherited = false
+            }
+        }
+        controls.enabled.setOnCheckedChangeListener { _, checked ->
+            controls.container.visibility = if (checked) View.VISIBLE else View.GONE
+            if (checked) {
+                controls.timeInherited = false
+                controls.dateInherited = false
+            } else {
+                controls.timeInherited = true
+                controls.dateInherited = true
+            }
+        }
+    }
+
     private fun configureDateVisibilityControls(
         controls: DateVisibilityControls,
         mode: WidgetProfileDateVisibilityEditor.Mode,
@@ -291,6 +426,23 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
     private fun setProfileDateWeight(controls: ProfileControls, weight: Int) {
         controls.dateSlider.value = weight.coerceIn(100, 900).toFloat()
         controls.dateValue.text = weight.coerceIn(100, 900).toString()
+    }
+
+    private fun prepareSizeSlider(slider: Slider, sizeSp: Float) {
+        val safe = sizeSp.coerceAtLeast(MIN_SIZE_SP)
+        slider.valueFrom = MIN_SIZE_SP
+        slider.valueTo = maxOf(DEFAULT_MAX_SIZE_SP, kotlin.math.ceil(safe.toDouble()).toFloat())
+        slider.value = safe
+    }
+
+    private fun setProfileTimeSize(controls: SizeProfileControls, sizeSp: Float) {
+        prepareSizeSlider(controls.timeSlider, sizeSp)
+        controls.timeValue.text = getString(R.string.clocky_size_sp_value, sizeSp)
+    }
+
+    private fun setProfileDateSize(controls: SizeProfileControls, sizeSp: Float) {
+        prepareSizeSlider(controls.dateSlider, sizeSp)
+        controls.dateValue.text = getString(R.string.clocky_size_sp_value, sizeSp)
     }
 
     private fun requestWidgetRefresh(widgetId: Int) {
@@ -323,10 +475,26 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         var dateInherited: Boolean = true,
     )
 
+    private data class SizeProfileControls(
+        val enabled: SwitchMaterial,
+        val container: View,
+        val timeSlider: Slider,
+        val dateSlider: Slider,
+        val timeValue: TextView,
+        val dateValue: TextView,
+        var timeInherited: Boolean = true,
+        var dateInherited: Boolean = true,
+    )
+
     private data class DateVisibilityControls(
         val group: RadioGroup,
         val inheritId: Int,
         val showId: Int,
         val hideId: Int,
     )
+
+    companion object {
+        private const val MIN_SIZE_SP = 1f
+        private const val DEFAULT_MAX_SIZE_SP = 256f
+    }
 }
