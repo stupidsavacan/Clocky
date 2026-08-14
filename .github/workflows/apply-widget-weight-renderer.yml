@@ -1,0 +1,37 @@
+name: Apply widget weight renderer
+
+on:
+  push:
+    branches:
+      - agent/widget-weight-renderer
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/widget-weight-renderer
+          fetch-depth: 0
+
+      - name: Apply deterministic provider wiring
+        run: python3 tools/ci/apply_widget_weight_renderer.py
+
+      - name: Validate diff
+        run: git diff --check
+
+      - name: Commit implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt tools/ci/apply_widget_weight_renderer.py .github/workflows/apply-widget-weight-renderer.yml
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Wire widget font weights into digital renderer"
+          git push origin HEAD:agent/widget-weight-renderer
