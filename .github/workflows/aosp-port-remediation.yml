@@ -7,6 +7,7 @@ on:
     paths:
       - 'tools/ci/remediate_aosp_port.py'
       - 'tools/ci/remediate_runtime_lint.py'
+      - 'tools/ci/remediate_resource_lint.py'
       - '.github/workflows/aosp-port-remediation.yml'
   workflow_dispatch:
 
@@ -28,6 +29,9 @@ jobs:
 
       - name: Apply runtime lint fixes
         run: python tools/ci/remediate_runtime_lint.py
+
+      - name: Apply targeted resource lint fixes
+        run: python tools/ci/remediate_resource_lint.py
 
       - name: Validate patch
         run: git diff --check
