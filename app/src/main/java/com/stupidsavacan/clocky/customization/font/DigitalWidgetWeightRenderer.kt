@@ -13,11 +13,9 @@ import com.android.deskclock.R
  *
  * RemoteViews cannot receive an arbitrary Typeface instance. The widget therefore exposes one
  * TextClock per canonical 100-step weight and toggles visibility. The requested 100..900 value is
- * preserved by WidgetSettings; only the renderer resolves to an available canonical face.
+ * preserved by WidgetSettings; only the renderer resolves to a face available on the device.
  */
 object DigitalWidgetWeightRenderer {
-    private val capabilities = FontCapabilities()
-
     private val timeViewIds = intArrayOf(
         R.id.clock_w100,
         R.id.clock_w200,
@@ -50,8 +48,9 @@ object DigitalWidgetWeightRenderer {
         dateSizePx: Float,
         dateFormat: CharSequence,
     ) {
-        val time = FontWeightResolver.resolve(requestedTimeWeight, capabilities)
-        val date = FontWeightResolver.resolve(requestedDateWeight, capabilities)
+        val sdkInt = Build.VERSION.SDK_INT
+        val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)
+        val date = RemoteViewsFontWeightPolicy.resolve(requestedDateWeight, sdkInt)
 
         applyGroup(
             remoteViews = remoteViews,
@@ -76,14 +75,15 @@ object DigitalWidgetWeightRenderer {
         requestedTimeWeight: Int,
         requestedDateWeight: Int,
     ) {
-        val time = FontWeightResolver.resolve(requestedTimeWeight, capabilities)
-        val dateWeight = FontWeightResolver.resolve(requestedDateWeight, capabilities)
-        clock.typeface = typefaceFor(time.effective)
-        date.typeface = typefaceFor(dateWeight.effective)
+        val sdkInt = Build.VERSION.SDK_INT
+        val time = RemoteViewsFontWeightPolicy.resolve(requestedTimeWeight, sdkInt)
+        val dateWeight = RemoteViewsFontWeightPolicy.resolve(requestedDateWeight, sdkInt)
+        clock.typeface = typefaceFor(time.effective, sdkInt)
+        date.typeface = typefaceFor(dateWeight.effective, sdkInt)
     }
 
-    fun effectiveWeight(requestedWeight: Int): Int =
-        FontWeightResolver.resolve(requestedWeight, capabilities).effective
+    fun effectiveWeight(requestedWeight: Int, sdkInt: Int = Build.VERSION.SDK_INT): Int =
+        RemoteViewsFontWeightPolicy.resolve(requestedWeight, sdkInt).effective
 
     private fun applyGroup(
         remoteViews: RemoteViews,
@@ -92,7 +92,7 @@ object DigitalWidgetWeightRenderer {
         sizePx: Float,
         dateFormat: CharSequence?,
     ) {
-        val selectedIndex = ((effectiveWeight.coerceIn(100, 900) - 100) / 100)
+        val selectedIndex = RemoteViewsFontWeightPolicy.canonicalIndex(effectiveWeight)
         ids.forEachIndexed { index, id ->
             remoteViews.setViewVisibility(id, if (index == selectedIndex) View.VISIBLE else View.GONE)
             if (index == selectedIndex) {
@@ -105,18 +105,27 @@ object DigitalWidgetWeightRenderer {
         }
     }
 
-    private fun typefaceFor(weight: Int): Typeface {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+    private fun typefaceFor(weight: Int, sdkInt: Int): Typeface {
+        if (sdkInt >= Build.VERSION_CODES.P) {
             return Typeface.create("sans-serif", weight.coerceIn(100, 900), false)
         }
-        return Typeface.create(legacyFamilyFor(weight), Typeface.NORMAL)
+
+        val spec = legacyTypefaceSpec(weight)
+        return Typeface.create(spec.familyName, spec.style)
     }
 
-    internal fun legacyFamilyFor(weight: Int): String = when (weight.coerceIn(100, 900)) {
-        in 100..200 -> "sans-serif-thin"
-        300 -> "sans-serif-light"
-        400 -> "sans-serif"
-        in 500..700 -> "sans-serif-medium"
-        else -> "sans-serif-black"
+    internal fun legacyTypefaceSpec(weight: Int): LegacyTypefaceSpec = when (weight) {
+        100 -> LegacyTypefaceSpec("sans-serif-thin", Typeface.NORMAL)
+        300 -> LegacyTypefaceSpec("sans-serif-light", Typeface.NORMAL)
+        400 -> LegacyTypefaceSpec("sans-serif", Typeface.NORMAL)
+        500 -> LegacyTypefaceSpec("sans-serif-medium", Typeface.NORMAL)
+        700 -> LegacyTypefaceSpec("sans-serif", Typeface.BOLD)
+        900 -> LegacyTypefaceSpec("sans-serif-black", Typeface.NORMAL)
+        else -> error("Legacy renderer received unsupported weight: $weight")
     }
 }
+
+data class LegacyTypefaceSpec(
+    val familyName: String,
+    val style: Int,
+)
