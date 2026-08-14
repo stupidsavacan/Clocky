@@ -11,7 +11,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License
+ * limitations under the License.
  */
 
 package com.android.deskclock.settings
@@ -19,16 +19,19 @@ package com.android.deskclock.settings
 import android.content.Context
 import android.util.AttributeSet
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.ListPopupWindow
-
+import androidx.core.content.ContextCompat
 import androidx.preference.DropDownPreference
-import androidx.preference.PreferenceViewHolder
 
 import com.android.deskclock.R
-import com.android.deskclock.ThemeUtils
+import com.android.deskclock.Utils
 
-internal class SimpleMenuPreference @JvmOverloads constructor(
+/**
+ * Bend [DropDownPreference] to support
+ * [Simple Menus](https://material.google.com/components/menus.html#menus-behavior).
+ */
+class SimpleMenuPreference(
     context: Context?,
     attrs: AttributeSet?,
     defStyleAttr: Int,
@@ -52,34 +55,82 @@ internal class SimpleMenuPreference @JvmOverloads constructor(
         return mAdapter
     }
 
-    override fun onBindViewHolder(view: PreferenceViewHolder) {
-        super.onBindViewHolder(view)
-        val view = view.itemView
-        view.setOnClickListener {
-            val popup = ListPopupWindow(getContext())
-            popup.anchorView = view
-            popup.setAdapter(mAdapter)
-            popup.setDropDownGravity(android.view.Gravity.END)
-            popup.setOnItemClickListener { _, _, position, _ ->
-                val value = entryValues[position].toString()
-                if (callChangeListener(value)) {
-                    setValue(value)
-                }
-                popup.dismiss()
+    override fun setSummary(summary: CharSequence?) {
+        val entries: Array<CharSequence> = getEntries()
+        val index = Utils.indexOf(entries, summary!!)
+        require(index != -1) { "Illegal Summary" }
+        val lastSelectedOriginalPosition = mAdapter.lastSelectedOriginalPosition
+        mAdapter.setSelectedPosition(index)
+        setSelectedPosition(entries, lastSelectedOriginalPosition, index)
+        setSelectedPosition(getEntryValues(), lastSelectedOriginalPosition, index)
+        super.setSummary(summary)
+    }
+
+    private class SimpleMenuAdapter internal constructor(context: Context, resource: Int) :
+            ArrayAdapter<CharSequence?>(context, resource) {
+
+        /** The original position of the last selected element  */
+        var lastSelectedOriginalPosition = 0
+            private set
+
+        private fun restoreOriginalOrder() {
+            val item: CharSequence? = getItem(0)
+            remove(item)
+            insert(item, lastSelectedOriginalPosition)
+        }
+
+        private fun swapSelectedToFront(position: Int) {
+            val item: CharSequence? = getItem(position)
+            remove(item)
+            insert(item, 0)
+            lastSelectedOriginalPosition = position
+        }
+
+        fun setSelectedPosition(position: Int) {
+            setNotifyOnChange(false)
+            val item: CharSequence? = getItem(position)
+            restoreOriginalOrder()
+            val originalPosition: Int = getPosition(item)
+            swapSelectedToFront(originalPosition)
+            notifyDataSetChanged()
+        }
+
+        override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val view: View = super.getDropDownView(position, convertView, parent)
+            if (position == 0) {
+                view.setBackgroundColor(ContextCompat.getColor(getContext(), R.color.white_08p))
+            } else {
+                view.setBackgroundColor(ContextCompat.getColor(getContext(), R.color.transparent))
             }
-            popup.show()
+            return view
         }
     }
 
-    private class SimpleMenuAdapter(context: Context, resource: Int) :
-            ArrayAdapter<CharSequence?>(context, resource) {
-        override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
-            val view = super.getView(position, convertView, parent)
-            val textColor = ThemeUtils.resolveColor(context, android.R.attr.textColorPrimary)
-            if (view is android.widget.TextView) {
-                view.setTextColor(textColor)
-            }
-            return view
+    companion object {
+        private fun restoreOriginalOrder(
+            array: Array<CharSequence>,
+            lastSelectedOriginalPosition: Int
+        ) {
+            val item = array[0]
+            System.arraycopy(array, 1, array, 0, lastSelectedOriginalPosition)
+            array[lastSelectedOriginalPosition] = item
+        }
+
+        private fun swapSelectedToFront(array: Array<CharSequence>, position: Int) {
+            val item = array[position]
+            System.arraycopy(array, 0, array, 1, position)
+            array[0] = item
+        }
+
+        private fun setSelectedPosition(
+            array: Array<CharSequence>,
+            lastSelectedOriginalPosition: Int,
+            position: Int
+        ) {
+            val item = array[position]
+            restoreOriginalOrder(array, lastSelectedOriginalPosition)
+            val originalPosition = Utils.indexOf(array, item)
+            swapSelectedToFront(array, originalPosition)
         }
     }
 }
