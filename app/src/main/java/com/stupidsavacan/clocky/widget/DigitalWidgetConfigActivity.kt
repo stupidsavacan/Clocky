@@ -16,6 +16,7 @@ import com.android.deskclock.R
 import com.google.android.material.slider.Slider
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.stupidsavacan.clocky.customization.font.DigitalWidgetWeightRenderer
+import com.stupidsavacan.clocky.customization.font.WidgetLetterSpacingPolicy
 import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
 import com.stupidsavacan.clocky.customization.ui.WidgetProfileDateVisibilityEditor
 import com.stupidsavacan.clocky.customization.ui.WidgetProfileWeightEditor
@@ -57,6 +58,10 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         val timeSlider: Slider = findViewById(R.id.clocky_time_weight_slider)
         val dateSlider: Slider = findViewById(R.id.clocky_date_weight_slider)
         val dateEnabled: SwitchMaterial = findViewById(R.id.clocky_date_enabled)
+        val timeLetterSpacingValue: TextView = findViewById(R.id.clocky_time_letter_spacing_value)
+        val dateLetterSpacingValue: TextView = findViewById(R.id.clocky_date_letter_spacing_value)
+        val timeLetterSpacingSlider: Slider = findViewById(R.id.clocky_time_letter_spacing_slider)
+        val dateLetterSpacingSlider: Slider = findViewById(R.id.clocky_date_letter_spacing_slider)
         val fourByOne = bindProfileControls(
             switchId = R.id.clocky_four_by_one_enabled,
             containerId = R.id.clocky_four_by_one_controls,
@@ -91,6 +96,8 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         dateSlider.value = current.date.requestedWeight.toFloat()
         dateEnabled.isChecked = current.date.enabled
         datePreview.visibility = if (current.date.enabled) View.VISIBLE else View.GONE
+        timeLetterSpacingSlider.value = WidgetLetterSpacingPolicy.normalize(current.time.letterSpacing)
+        dateLetterSpacingSlider.value = WidgetLetterSpacingPolicy.normalize(current.date.letterSpacing)
 
         fun refreshTime(weight: Int) {
             timeValue.text = weight.toString()
@@ -102,8 +109,22 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             applyPreviewWeight(datePreview, weight)
         }
 
+        fun refreshTimeLetterSpacing(value: Float) {
+            val safe = WidgetLetterSpacingPolicy.normalize(value)
+            timeLetterSpacingValue.text = WidgetLetterSpacingPolicy.display(safe)
+            timePreview.letterSpacing = safe
+        }
+
+        fun refreshDateLetterSpacing(value: Float) {
+            val safe = WidgetLetterSpacingPolicy.normalize(value)
+            dateLetterSpacingValue.text = WidgetLetterSpacingPolicy.display(safe)
+            datePreview.letterSpacing = safe
+        }
+
         refreshTime(current.time.requestedWeight)
         refreshDate(current.date.requestedWeight)
+        refreshTimeLetterSpacing(current.time.letterSpacing)
+        refreshDateLetterSpacing(current.date.letterSpacing)
 
         configureProfileControls(
             fourByOne,
@@ -148,15 +169,25 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
                 setProfileDateWeight(fourByTwo, value.toInt())
             }
         }
+        timeLetterSpacingSlider.addOnChangeListener { _, value, _ ->
+            refreshTimeLetterSpacing(value)
+        }
+        dateLetterSpacingSlider.addOnChangeListener { _, value, _ ->
+            refreshDateLetterSpacing(value)
+        }
         dateEnabled.setOnCheckedChangeListener { _, checked ->
             datePreview.visibility = if (checked) View.VISIBLE else View.GONE
         }
 
         saveButton.setOnClickListener {
             val withBaseSettings = current.copy(
-                time = current.time.copy(requestedWeight = timeSlider.value.toInt()),
+                time = current.time.copy(
+                    requestedWeight = timeSlider.value.toInt(),
+                    letterSpacing = WidgetLetterSpacingPolicy.normalize(timeLetterSpacingSlider.value),
+                ),
                 date = current.date.copy(
                     requestedWeight = dateSlider.value.toInt(),
+                    letterSpacing = WidgetLetterSpacingPolicy.normalize(dateLetterSpacingSlider.value),
                     enabled = dateEnabled.isChecked,
                 ),
             )

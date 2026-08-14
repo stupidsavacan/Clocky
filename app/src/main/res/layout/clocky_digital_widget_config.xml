@@ -134,6 +134,88 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="@string/clocky_letter_spacing_title"
+            android:textAppearance="?attr/textAppearanceHeadline6" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/clocky_letter_spacing_summary"
+            android:textAppearance="?attr/textAppearanceBody2" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/clocky_time_letter_spacing"
+                android:textAppearance="?attr/textAppearanceSubtitle1" />
+
+            <TextView
+                android:id="@+id/clocky_time_letter_spacing_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:minWidth="72dp"
+                android:text="0.00 em"
+                android:textAppearance="?attr/textAppearanceSubtitle1" />
+        </LinearLayout>
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/clocky_time_letter_spacing_slider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/clocky_time_letter_spacing"
+            android:stepSize="0.01"
+            android:valueFrom="-0.2"
+            android:valueTo="0.5"
+            app:labelBehavior="withinBounds" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/clocky_date_letter_spacing"
+                android:textAppearance="?attr/textAppearanceSubtitle1" />
+
+            <TextView
+                android:id="@+id/clocky_date_letter_spacing_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:minWidth="72dp"
+                android:text="0.00 em"
+                android:textAppearance="?attr/textAppearanceSubtitle1" />
+        </LinearLayout>
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/clocky_date_letter_spacing_slider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/clocky_date_letter_spacing"
+            android:stepSize="0.01"
+            android:valueFrom="-0.2"
+            android:valueTo="0.5"
+            app:labelBehavior="withinBounds" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="@string/clocky_profile_overrides_title"
             android:textAppearance="?attr/textAppearanceHeadline6" />

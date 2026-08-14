@@ -412,6 +412,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     resolvedWeights.timeWeight,
                     resolvedWeights.dateWeight,
                     resolvedWeights.dateEnabled,
+                    widgetSettings.time.letterSpacing,
+                    widgetSettings.date.letterSpacing,
             )
             if (LOGGER.isVerboseLoggable) {
                 LOGGER.v(sizes.toString())
@@ -427,6 +429,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
                     dateSizePx = sizes.mFontSizePx.toFloat(),
                     dateFormat = dateFormat,
                     dateEnabled = resolvedWeights.dateEnabled,
+                    timeLetterSpacing = widgetSettings.time.letterSpacing,
+                    dateLetterSpacing = widgetSettings.date.letterSpacing,
             )
             rv.setTextViewTextSize(R.id.nextAlarm, COMPLEX_UNIT_PX, sizes.mFontSizePx.toFloat())
 
@@ -466,6 +470,8 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             requestedTimeWeight: Int,
             requestedDateWeight: Int,
             dateEnabled: Boolean,
+            timeLetterSpacing: Float,
+            dateLetterSpacing: Float,
         ): Sizes {
             // Inflate a test layout to compute sizes at different font sizes.
             val inflater: LayoutInflater = LayoutInflater.from(context)
@@ -479,7 +485,14 @@ class DigitalAppWidgetProvider : AppWidgetProvider() {
             date.setFormat12Hour(dateFormat)
             date.setFormat24Hour(dateFormat)
             DigitalWidgetWeightRenderer.applySizerWeights(
-                    clock, date, requestedTimeWeight, requestedDateWeight, dateEnabled)
+                    clock,
+                    date,
+                    requestedTimeWeight,
+                    requestedDateWeight,
+                    dateEnabled,
+                    timeLetterSpacing,
+                    dateLetterSpacing,
+            )
 
             // Configure the next alarm views to display the next alarm time or be gone.
             val nextAlarmIcon: TextView = sizer.findViewById(R.id.nextAlarmIcon) as TextView
