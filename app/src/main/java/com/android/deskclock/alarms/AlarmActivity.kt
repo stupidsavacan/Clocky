@@ -38,7 +38,6 @@ import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
 import android.media.AudioManager
 import android.os.Build
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -52,7 +51,6 @@ import android.view.accessibility.AccessibilityManager
 import android.widget.ImageView
 import android.widget.TextClock
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.animation.PathInterpolatorCompat
