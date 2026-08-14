@@ -1,0 +1,81 @@
+name: Vendor AOSP DeskClock snapshot
+
+on:
+  push:
+    branches:
+      - agent/aosp-direct-port
+    paths:
+      - .github/workflows/vendor-aosp-deskclock.yml
+      - tools/aosp/deskclock-upstream.env
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Clocky
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Load pinned upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          source tools/aosp/deskclock-upstream.env
+          echo "AOSP_DESKCLOCK_TAG=$AOSP_DESKCLOCK_TAG" >> "$GITHUB_ENV"
+          echo "AOSP_DESKCLOCK_COMMIT=$AOSP_DESKCLOCK_COMMIT" >> "$GITHUB_ENV"
+          echo "AOSP_DESKCLOCK_ARCHIVE_URL=$AOSP_DESKCLOCK_ARCHIVE_URL" >> "$GITHUB_ENV"
+
+      - name: Verify pinned tag resolves to the expected commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-remote https://android.googlesource.com/platform/packages/apps/DeskClock \
+            "refs/tags/${AOSP_DESKCLOCK_TAG}^{}" > /tmp/deskclock-tag.txt
+          cat /tmp/deskclock-tag.txt
+          test "$(cut -f1 /tmp/deskclock-tag.txt)" = "$AOSP_DESKCLOCK_COMMIT"
+
+      - name: Import AOSP DeskClock unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf third_party/aosp-deskclock
+          mkdir -p third_party/aosp-deskclock
+          curl --fail --location --retry 3 --silent --show-error \
+            "$AOSP_DESKCLOCK_ARCHIVE_URL" \
+            | tar -xz -C third_party/aosp-deskclock
+
+          cat > third_party/aosp-deskclock/CLOCKY_UPSTREAM.md <<EOF
+          # AOSP DeskClock vendored snapshot
+
+          This directory is an unchanged source snapshot imported from AOSP DeskClock.
+
+          - Repository: https://android.googlesource.com/platform/packages/apps/DeskClock
+          - Tag: ${AOSP_DESKCLOCK_TAG}
+          - Commit: ${AOSP_DESKCLOCK_COMMIT}
+          - Import policy: preserve upstream source/resources first; standalone-Gradle and Clocky-specific adaptations live outside this exact snapshot until explicitly copied/adapted.
+          - License: AOSP DeskClock source files are provided under their upstream open-source license notices; Clocky preserves those notices.
+          EOF
+
+          find third_party/aosp-deskclock -type f | sort > third_party/aosp-deskclock/CLOCKY_FILE_MANIFEST.txt
+          printf '%s  %s\n' "$AOSP_DESKCLOCK_COMMIT" "$AOSP_DESKCLOCK_TAG" > third_party/aosp-deskclock/CLOCKY_PIN.txt
+
+      - name: Commit vendored snapshot to this branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f third_party/aosp-deskclock
+          if git diff --cached --quiet; then
+            echo "Pinned AOSP DeskClock snapshot is already present."
+            exit 0
+          fi
+          git commit -m "Vendor AOSP DeskClock ${AOSP_DESKCLOCK_TAG} unchanged"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
