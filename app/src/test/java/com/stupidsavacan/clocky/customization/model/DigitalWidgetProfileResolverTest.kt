@@ -107,4 +107,44 @@ class DigitalWidgetProfileResolverTest {
         assertEquals(1f, resolved.timeSizeSp)
         assertEquals(1f, resolved.dateSizeSp)
     }
+
+    @Test
+    fun profileOffsetsOverrideBasePerField() {
+        val settings = WidgetSettings(
+            appWidgetId = 13,
+            time = TimeSettings(xDp = 2f, yDp = 3f),
+            date = DateSettings(xDp = -4f, yDp = 5f),
+            fourByOne = ProfileOverride(timeXDp = 12f, dateYDp = -8f),
+            fourByTwo = ProfileOverride(timeYDp = 9f, dateXDp = 7f),
+        )
+
+        val compact = DigitalWidgetProfileResolver.resolveOffsets(settings, 59)
+        assertEquals(DigitalWidgetProfile.FOUR_BY_ONE, compact.profile)
+        assertEquals(12f, compact.timeXDp, 0.001f)
+        assertEquals(3f, compact.timeYDp, 0.001f)
+        assertEquals(-4f, compact.dateXDp, 0.001f)
+        assertEquals(-8f, compact.dateYDp, 0.001f)
+
+        val regular = DigitalWidgetProfileResolver.resolveOffsets(settings, 129)
+        assertEquals(DigitalWidgetProfile.FOUR_BY_TWO, regular.profile)
+        assertEquals(2f, regular.timeXDp, 0.001f)
+        assertEquals(9f, regular.timeYDp, 0.001f)
+        assertEquals(7f, regular.dateXDp, 0.001f)
+        assertEquals(5f, regular.dateYDp, 0.001f)
+    }
+
+    @Test
+    fun nonFiniteOffsetsAreSanitizedAtResolverBoundary() {
+        val settings = WidgetSettings(
+            appWidgetId = 14,
+            time = TimeSettings(xDp = Float.NaN, yDp = Float.POSITIVE_INFINITY),
+            date = DateSettings(xDp = Float.NEGATIVE_INFINITY, yDp = Float.NaN),
+        )
+
+        val resolved = DigitalWidgetProfileResolver.resolveOffsets(settings, 129)
+        assertEquals(0f, resolved.timeXDp, 0.001f)
+        assertEquals(0f, resolved.timeYDp, 0.001f)
+        assertEquals(0f, resolved.dateXDp, 0.001f)
+        assertEquals(0f, resolved.dateYDp, 0.001f)
+    }
 }
