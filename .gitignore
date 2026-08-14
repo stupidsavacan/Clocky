@@ -9,6 +9,9 @@ local.properties
 reference_apk/
 reference/vendor/
 
+# AOSP source-acquisition staging (fetched by tools/aosp/fetch_deskclock.sh)
+vendor-staging/
+
 # Prebuilt Android packages must not be committed.
 # Generated Clocky packages belong in build outputs / Actions artifacts, not Git.
 *.apk
