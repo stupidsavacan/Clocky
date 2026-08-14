@@ -5,10 +5,15 @@
     <string name="clocky_widget_weight_summary" tools:ignore="MissingTranslation">Set the time and date weights independently. Clocky preserves the exact value from 100 to 900.</string>
     <string name="clocky_time_weight" tools:ignore="MissingTranslation">Time weight</string>
     <string name="clocky_date_weight" tools:ignore="MissingTranslation">Date weight</string>
+    <string name="clocky_show_date" tools:ignore="MissingTranslation">Show date</string>
     <string name="clocky_widget_date_preview" tools:ignore="MissingTranslation">Fri, Aug 14</string>
     <string name="clocky_profile_overrides_title" tools:ignore="MissingTranslation">Size-specific overrides</string>
     <string name="clocky_profile_overrides_summary" tools:ignore="MissingTranslation">Leave an override off to inherit the common weights above. Turn it on to give that widget height its own time and date weights.</string>
     <string name="clocky_four_by_one_override" tools:ignore="MissingTranslation">Compact / 4×1 weights</string>
     <string name="clocky_four_by_two_override" tools:ignore="MissingTranslation">Regular / 4×2 weights</string>
+    <string name="clocky_profile_date_visibility" tools:ignore="MissingTranslation">Date visibility</string>
+    <string name="clocky_inherit" tools:ignore="MissingTranslation">Inherit</string>
+    <string name="clocky_show" tools:ignore="MissingTranslation">Show</string>
+    <string name="clocky_hide" tools:ignore="MissingTranslation">Hide</string>
     <string name="clocky_widget_save" tools:ignore="MissingTranslation">Save widget</string>
 </resources>
