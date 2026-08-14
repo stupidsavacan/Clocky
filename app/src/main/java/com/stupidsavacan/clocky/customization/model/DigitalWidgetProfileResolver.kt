@@ -19,6 +19,14 @@ data class ResolvedWidgetSizes(
     val dateSizeSp: Float,
 )
 
+data class ResolvedWidgetOffsets(
+    val profile: DigitalWidgetProfile,
+    val timeXDp: Float,
+    val timeYDp: Float,
+    val dateXDp: Float,
+    val dateYDp: Float,
+)
+
 /**
  * Resolves AppWidget host dimensions to Clocky's compact (4x1) or regular (4x2) profile.
  *
@@ -59,6 +67,20 @@ object DigitalWidgetProfileResolver {
             dateSizeSp = (override?.dateSizeSp ?: settings.date.sizeSp).coerceAtLeast(1f),
         )
     }
+
+    fun resolveOffsets(settings: WidgetSettings, targetHeightDp: Int): ResolvedWidgetOffsets {
+        val profile = profileForHeightDp(targetHeightDp)
+        val override = overrideFor(settings, profile)
+        return ResolvedWidgetOffsets(
+            profile = profile,
+            timeXDp = finiteOrZero(override?.timeXDp ?: settings.time.xDp),
+            timeYDp = finiteOrZero(override?.timeYDp ?: settings.time.yDp),
+            dateXDp = finiteOrZero(override?.dateXDp ?: settings.date.xDp),
+            dateYDp = finiteOrZero(override?.dateYDp ?: settings.date.yDp),
+        )
+    }
+
+    private fun finiteOrZero(value: Float): Float = if (value.isFinite()) value else 0f
 
     private fun overrideFor(
         settings: WidgetSettings,
