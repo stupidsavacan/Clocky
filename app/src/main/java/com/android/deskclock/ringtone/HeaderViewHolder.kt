@@ -11,7 +11,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.
+ * limitations under the License
  */
 
 package com.android.deskclock.ringtone
@@ -41,6 +41,6 @@ internal class HeaderViewHolder private constructor(itemView: View)
     }
 
     companion object {
-        const val VIEW_TYPE_ITEM_HEADER = R.layout.ringtone_item_header
+        val VIEW_TYPE_ITEM_HEADER = R.layout.ringtone_item_header
     }
 }
