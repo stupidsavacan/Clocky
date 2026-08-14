@@ -39,7 +39,7 @@ class SnackbarSlidingBehavior(
         child: View,
         dependency: View
     ): Boolean {
-        return dependency.findViewById<View?>(MaterialR.id.snackbar_text) != null
+        return dependency.findViewById<View>(MaterialR.id.snackbar_text) != null
     }
 
     override fun onDependentViewChanged(
