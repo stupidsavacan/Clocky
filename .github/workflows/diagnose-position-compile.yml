@@ -1,0 +1,55 @@
+name: Diagnose position renderer compile
+
+on:
+  push:
+    branches:
+      - agent/widget-position-renderer
+    paths:
+      - '.github/workflows/diagnose-position-compile.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/widget-position-renderer
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install SDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Capture compile diagnostics
+        shell: bash
+        run: |
+          set +e
+          ./gradlew --no-daemon :app:compileDebugKotlin > /tmp/compile.log 2>&1
+          status=$?
+          set -e
+          {
+            echo "exit_code=$status"
+            grep -E '^e: |^w: | error: |FAILURE:|What went wrong:|Compilation error' /tmp/compile.log || true
+            echo
+            echo '--- tail ---'
+            tail -n 80 /tmp/compile.log
+          } > position-compile-diagnostic.txt
+      - name: Commit diagnostic report
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add position-compile-diagnostic.txt
+          git commit -m 'Position renderer compile診断結果を記録'
+          git push origin HEAD:agent/widget-position-renderer
