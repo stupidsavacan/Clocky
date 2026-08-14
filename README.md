@@ -1,58 +1,65 @@
 # Clocky
 
-**Android のホーム画面時計を、タイポグラフィ中心に細かくカスタマイズするためのウィジェットアプリ。**
+**Google Clock の使い慣れた時計体験を基準にしつつ、ウィジェットのタイポグラフィとレイアウトを大幅に拡張する Android 時計アプリ。**
 
-Clocky は、通常の時計ウィジェットの軽さと安定性を保ちつつ、時刻と日付の見た目をかなり細かく調整できることを目標にしています。
+> Status: **MVP built / AOSP DeskClock foundation & Google Clock parity planning**
 
-> Status: **Planning / pre-MVP**
+## Product direction
 
-## 目標
+Clocky は今後、次の2層で作ります。
 
-最初の MVP は **4×2** を基準に完成させ、直後に **4×1** を追加します。
+1. **Open functional base** — AOSP DeskClock の Alarm / Timer / Stopwatch / World Clock などを、スタンドアロン Gradle アプリ向けに適応。
+2. **Clocky experience layer** — Google Clock を操作・表示の参照仕様としてパリティを取り、その上に Clocky 独自のウィジェット編集機能を追加。
 
-主な機能予定：
+Google Clock の APK は挙動・寸法・UI/UXの参照にのみ使い、プロプライエタリなコード・画像・フォント・署名資産は Clocky にコピーしません。
 
-- Android ホーム画面 `AppWidget`
-- Kotlin
+## Current MVP
+
+現在の MVP では、ホーム画面のデジタル時計 Widget と基本的なカスタマイズ基盤まで到達しています。
+
 - classic `RemoteViews` / `AppWidgetProvider`
-- 透明背景を基本にした時計デザイン
-- 時計と日付を独立して編集
-- 時計サイズ / 日付サイズを別々に調整
-- フォント、太さ、文字間隔、色、透明度、位置の調整
-- 12h / 24h
-- 日付フォーマット選択
-- 背景色、透明度、角丸、余白
-- Widget ごとの独立設定
-- 編集可能なプリセット
-- 4×2 / 4×1 のサイズ別レイアウト profile
-- 不要な定期フル更新を避けた低負荷設計
+- 4×2 baseline
+- compact / 4×1 profile foundation
+- time + date
+- date show / hide
+- independent time/date size
+- font-family choices
+- colour/background choices
+- alignment
+- per-widget settings
+- signed release build pipeline
 
-## フォントの考え方
+実機での Google Clock 完全パリティはまだ未完了です。
 
-似たフォントを大量にフラット表示するのではなく、見た目の差が分かりやすい系統へまとめます。
+## Google Clock parity target
 
-初期カテゴリ案：
+最終的には、通常利用で Google Clock にある主要機能を取りこぼさないことを目標にします。
 
-- Modern
-- Rounded
-- Serif
-- Condensed
-- Mono
-- Display / Experimental
+- Alarm
+- Timer
+- Stopwatch + laps
+- World clock / cities
+- Settings
+- Digital widget
+- Digital Stacked widget
+- Digital Cities widget
+- Analog widget
+- Stopwatch widget
+- resize / 12h-24h / next-alarm / date / theme behaviour
 
-各カテゴリの中に少数の意味のあるバリエーションを置きます。
+詳細は [`docs/parity/GOOGLE_CLOCK_PARITY.md`](./docs/parity/GOOGLE_CLOCK_PARITY.md)。
 
-APK に同梱するフォントは再配布可能なライセンスを持つものだけを採用し、Apple 等のプロプライエタリな純正フォントを単に見た目を似せる目的で同梱しません。
+## Clocky extensions
 
-## カスタマイズ
+Google-like default preset を出発点に、次を変更可能にします。
 
 ### Time
 
 - font family / variant
 - size
-- weight
+- **weight 100–900**
 - letter spacing
-- color / opacity
+- colour / opacity
 - X/Y offset
 - Left / Center / Right
 - 12h / 24h
@@ -61,15 +68,14 @@ APK に同梱するフォントは再配布可能なライセンスを持つも�
 ### Date
 
 - show / hide
-- 時計と同じフォント / 別フォント
-- font family / variant
-- **独立した size**
-- weight
+- same / independent font
+- independent size
+- **independent weight 100–900**
 - letter spacing
-- color / opacity
+- colour / opacity
 - date format
 - X/Y offset
-- 時計との間隔
+- distance from time
 
 ### Layout / Background
 
@@ -77,25 +83,32 @@ APK に同梱するフォントは再配布可能なライセンスを持つも�
 - background opacity
 - corner radius
 - padding
-- global alignment
-- global vertical position
-- size-specific override
+- global alignment / vertical position
+- size-specific overrides
+- editable presets
 
-## サイズ戦略
+Weight の詳細仕様は [`docs/spec/FONT_WEIGHT.md`](./docs/spec/FONT_WEIGHT.md)。
 
-### 4×2 — MVP の基準
+## AOSP DeskClock baseline
 
-まず 4×2 でカスタマイズ機能一式を完成・安定化させます。
+最初の移植ベースは AOSP DeskClock のタグ付きスナップショットを固定して使用します。
 
-### 4×1 — 直後に対応
+```text
+Tag: android-17.0.0_r1
+DeskClock commit: 1f6ebf36d0c14f5e16265d80022cb6068d97cebd
+```
 
-4×2 の単純縮小にはせず、必要に応じて時計と日付を横並びへ変えるなど、4×1 専用 profile を持たせます。
+AOSP DeskClock は Android platform / Soong 向けのため、そのまま `app/` にコピーするのではなく、依存関係を分類して standalone Gradle 用に適応します。
 
-プリセットやフォントを大量に増やす前に 4×1 対応を完了させる方針です。
+- [`docs/architecture/AOSP_DESKCLOCK_ADOPTION.md`](./docs/architecture/AOSP_DESKCLOCK_ADOPTION.md)
+- [`docs/architecture/AOSP_PORT_INVENTORY.md`](./docs/architecture/AOSP_PORT_INVENTORY.md)
+- [`THIRD_PARTY_AND_REFERENCE_POLICY.md`](./THIRD_PARTY_AND_REFERENCE_POLICY.md)
 
-## 基準実機での参考値
+## Size strategy
 
-Google 時計 Digital ウィジェットを基準に実測した値です。
+Google Clock の reference behaviour を基準にしますが、固定ピクセルではなく AppWidget Host から渡されるサイズを優先します。
+
+既存の参考端末実測値:
 
 | 項目 | 値 |
 |---|---:|
@@ -104,54 +117,32 @@ Google 時計 Digital ウィジェットを基準に実測した値です。
 | Logical display | 約 411 × 914 dp |
 | Launcher | Motorola Launcher |
 | Reference Widget | Google 時計 Digital |
-| AppWidget ID | 11 |
 | Current span | 4 × 2 |
-| Minimum launcher span | 2 × 1 |
 | Measured 4×2 HostView | 692 × 484 px |
 | Measured 4×2 HostView | 約 395.4 × 276.6 dp |
-| Expected 4×1 HostView | 約 395.4 × 138.3 dp |
 
-これらは**参考端末上の実測値であり、Clocky の固定寸法ではありません**。実装では AppWidget Host から渡されるサイズ情報を優先します。
+## Development order
 
-## 想定アーキテクチャ
+1. AOSP snapshot / license / dependency inventory
+2. Expand current MVP source into normal reviewable source files
+3. Adapt AOSP core domains to standalone Gradle
+4. Google Clock screen + widget parity specs
+5. Functional parity implementation
+6. Clocky extensions: weight / font / size / spacing / X/Y / colour / background
+7. presets + advanced editor
+8. real-device side-by-side verification
 
-```text
-Clocky app
-├─ WidgetConfigActivity
-├─ WidgetSettingsRepository
-│  └─ settings keyed by appWidgetId
-├─ ClockWidgetProvider
-├─ ClockWidgetRenderer
-│  ├─ 4x2 profile
-│  └─ 4x1 profile
-├─ RemoteViews layouts
-├─ redistributable font resources
-└─ preset definitions
-```
+See [`docs/IMPLEMENTATION_BACKLOG.md`](./docs/IMPLEMENTATION_BACKLOG.md).
 
-Google 時計 Digital の実機・APK解析で得た AppWidget 設計上の考え方は参考にしますが、Clocky は**独立実装**です。Google 時計のコード・画像・プロプライエタリ資産をコピーして作るものではありません。
+## Non-goals
 
-## ドキュメント
+- SystemUI / Android lock-screen clock replacement
+- root-required behaviour
+- pretending to be signed by Google or a platform key
+- redistribution of Google Clock APK/assets
+- copying proprietary Google/Apple fonts solely to imitate appearance
 
-- [`MVP_計画書.md`](./MVP_計画書.md) — MVP の範囲、設計、完成条件、技術方針
-- [`実装予定表.md`](./実装予定表.md) — 実装順、各 Phase の作業項目と完了ゲート
+## Legacy planning docs
 
-## MVP ではやらないこと
-
-- Android 標準ロック画面時計そのものの置換
-- root / SystemUI 改造
-- 任意 TTF / OTF のユーザー import
-- 高コストな独自毎秒更新による秒表示
-- 天気 / 予定 / バッテリー等の追加情報
-- 全 Launcher での完全なピクセル一致
-- Google / Apple のプロプライエタリ資産のコピー
-
-## Lock screen
-
-初期 Clocky は **ホーム画面ウィジェット**です。
-
-通常のサードパーティ Android アプリからシステムのロック画面時計そのものを差し替えることは MVP の対象外です。将来、対象 OS / 端末がサードパーティのロック画面 Widget hosting を提供する場合は、別機能として調査します。
-
-## License
-
-TBD.
+- [`MVP_計画書.md`](./MVP_計画書.md)
+- [`実装予定表.md`](./実装予定表.md)
