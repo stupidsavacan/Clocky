@@ -21,6 +21,28 @@ def replace_once(path: str, old: str, new: str) -> None:
     print(f"updated {path}")
 
 
+def replace_one_of(path: str, olds: list[str], new: str) -> None:
+    """Replace one accepted predecessor with the final form.
+
+    This is useful when an earlier remediation version may already have produced an intermediate
+    representation. Fresh upstream and already-remediated trees therefore converge identically.
+    """
+    target = ROOT / path
+    text = target.read_text(encoding="utf-8")
+    if new in text:
+        print(f"already remediated {path}")
+        return
+    for old in olds:
+        if old in text:
+            target.write_text(text.replace(old, new, 1), encoding="utf-8")
+            print(f"updated {path}")
+            return
+    raise RuntimeError(
+        f"none of the expected predecessor patterns were found in {path}: "
+        + ", ".join(repr(old[:80]) for old in olds)
+    )
+
+
 def replace_all(path: str, old: str, new: str) -> None:
     target = ROOT / path
     text = target.read_text(encoding="utf-8")
@@ -166,25 +188,52 @@ replace_once(
 replace_once(
     snackbar_behavior,
     "        return dependency is Snackbar.SnackbarLayout\n",
-    "        return dependency.findViewById<View?>(MaterialR.id.snackbar_text) != null\n",
+    "        return dependency.findViewById<View>(MaterialR.id.snackbar_text) != null\n",
 )
 
-# timer_notifications_less_min is plain text and therefore must bypass String.format.
-replace_once(
-    "app/src/main/java/com/android/deskclock/data/TimerStringFormatter.kt",
+# timer_notifications_less_min is plain text. Return it before the generic format-resource path so
+# lint can prove that every resource passed to String.format actually contains format arguments.
+timer_formatter = "app/src/main/java/com/android/deskclock/data/TimerStringFormatter.kt"
+timer_original = (
+    "        } else if (showSeconds) {\n"
+    "            formatStringId = R.string.timer_notifications_seconds\n"
+    "        } else if (!shouldShowSeconds) {\n"
+    "            formatStringId = R.string.timer_notifications_less_min\n"
+    "        }\n\n"
     "        return if (formatStringId == -1) {\n"
     "            null\n"
     "        } else {\n"
     "            String.format(context.getString(formatStringId), hourSeq, minSeq,\n"
     "                    remainingSuffix, secSeq)\n"
-    "        }\n",
+    "        }\n"
+)
+timer_intermediate = (
+    "        } else if (showSeconds) {\n"
+    "            formatStringId = R.string.timer_notifications_seconds\n"
+    "        } else if (!shouldShowSeconds) {\n"
+    "            formatStringId = R.string.timer_notifications_less_min\n"
+    "        }\n\n"
     "        return when (formatStringId) {\n"
     "            -1 -> null\n"
     "            R.string.timer_notifications_less_min -> context.getString(formatStringId)\n"
     "            else -> String.format(context.getString(formatStringId), hourSeq, minSeq,\n"
     "                    remainingSuffix, secSeq)\n"
-    "        }\n",
+    "        }\n"
 )
+timer_final = (
+    "        } else if (showSeconds) {\n"
+    "            formatStringId = R.string.timer_notifications_seconds\n"
+    "        } else if (!shouldShowSeconds) {\n"
+    "            return context.getString(R.string.timer_notifications_less_min)\n"
+    "        }\n\n"
+    "        return if (formatStringId == -1) {\n"
+    "            null\n"
+    "        } else {\n"
+    "            String.format(context.getString(formatStringId), hourSeq, minSeq,\n"
+    "                    remainingSuffix, secSeq)\n"
+    "        }\n"
+)
+replace_one_of(timer_formatter, [timer_original, timer_intermediate], timer_final)
 
 # The service's completion broadcast targets an in-app, non-exported dynamic receiver. Restrict
 # delivery to Clocky's own package instead of launching an unsafe implicit broadcast.
