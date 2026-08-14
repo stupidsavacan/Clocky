@@ -1,0 +1,36 @@
+name: Apply integrated widget size renderer patch
+
+on:
+  push:
+    branches:
+      - agent/widget-size-renderer-v2
+    paths:
+      - '.github/workflows/apply-widget-size-renderer-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/widget-size-renderer-v2
+          fetch-depth: 0
+      - name: Apply deterministic provider patch
+        run: python3 tools/ci/apply_widget_size_renderer.py
+      - name: Validate diff
+        run: git diff --check
+      - name: Commit provider patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No provider changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt
+          git commit -m "Date visibilityとsize rendererを統合"
+          git push origin HEAD:agent/widget-size-renderer-v2
