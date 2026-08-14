@@ -6,40 +6,100 @@ on:
       - agent/widget-font-family-renderer
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export-patch:
+  build-unattached-commit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android 35
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
       - name: Apply font-family compatibility patch
         run: python ci/agent_font_family_patch.py
 
-      - name: Validate patch shape
+      - name: Validate and test patch
         shell: bash
         run: |
           set -euo pipefail
           git diff --check
-          git status --short
+          ./gradlew --no-daemon :app:compileDebugKotlin :app:testDebugUnitTest
 
-      - name: Emit patched files
-        shell: bash
+      - name: Create unattached Git commit object
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: python
         run: |
-          set -euo pipefail
-          emit() {
-            local label="$1"
-            local path="$2"
-            echo "CLOCKY_FILE_${label}_BEGIN"
-            base64 -w0 "$path"
-            echo
-            echo "CLOCKY_FILE_${label}_END"
-          }
-          emit PROVIDER app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt
-          emit RENDERER app/src/main/java/com/stupidsavacan/clocky/customization/font/DigitalWidgetWeightRenderer.kt
-          emit POLICY app/src/main/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicy.kt
-          emit OFFSET app/src/main/java/com/stupidsavacan/clocky/customization/position/DigitalWidgetOffsetRenderer.kt
-          emit LAYOUT app/src/main/res/layout/digital_widget.xml
-          emit TEST app/src/test/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicyTest.kt
+          import base64
+          import json
+          import os
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          parent = os.environ['GITHUB_SHA']
+          token = os.environ['GH_TOKEN']
+          api = f'https://api.github.com/repos/{repo}'
+
+          def request(method, path, payload=None):
+              data = None if payload is None else json.dumps(payload).encode()
+              req = Request(
+                  api + path,
+                  data=data,
+                  method=method,
+                  headers={
+                      'Authorization': f'Bearer {token}',
+                      'Accept': 'application/vnd.github+json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'clocky-agent-font-patch',
+                  },
+              )
+              with urlopen(req) as response:
+                  return json.load(response)
+
+          parent_commit = request('GET', f'/git/commits/{parent}')
+          entries = []
+          paths = [
+              'app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt',
+              'app/src/main/java/com/stupidsavacan/clocky/customization/font/DigitalWidgetWeightRenderer.kt',
+              'app/src/main/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicy.kt',
+              'app/src/main/java/com/stupidsavacan/clocky/customization/position/DigitalWidgetOffsetRenderer.kt',
+              'app/src/main/res/layout/digital_widget.xml',
+              'app/src/test/java/com/stupidsavacan/clocky/customization/font/LegacyWidgetFontFamilyPolicyTest.kt',
+          ]
+          for path in paths:
+              raw = Path(path).read_bytes()
+              blob = request('POST', '/git/blobs', {
+                  'content': base64.b64encode(raw).decode(),
+                  'encoding': 'base64',
+              })
+              entries.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': blob['sha']})
+
+          entries.extend([
+              {'path': '.github/workflows/agent-font-family-patch-export.yml', 'mode': '100644', 'type': 'blob', 'sha': None},
+              {'path': 'ci/agent_font_family_patch.py', 'mode': '100644', 'type': 'blob', 'sha': None},
+          ])
+          tree = request('POST', '/git/trees', {
+              'base_tree': parent_commit['tree']['sha'],
+              'tree': entries,
+          })
+          commit = request('POST', '/git/commits', {
+              'message': 'Render repository MVP font families exactly',
+              'tree': tree['sha'],
+              'parents': [parent],
+          })
+          print(f"CLOCKY_UNATTACHED_TREE_SHA={tree['sha']}")
+          print(f"CLOCKY_UNATTACHED_COMMIT_SHA={commit['sha']}")
+          print('Branch ref intentionally not updated by Actions.')
