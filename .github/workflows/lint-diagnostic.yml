@@ -1,0 +1,109 @@
+name: Lint diagnostic
+
+on:
+  push:
+    branches:
+      - agent/widget-weight-renderer
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/widget-weight-renderer
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Run lint and persist diagnostics
+        shell: bash
+        run: |
+          set +e
+          ./gradlew --no-daemon :app:lintDebug > /tmp/lint-console.txt 2>&1
+          status=$?
+          set -e
+
+          mkdir -p ci
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          out = []
+          console = Path('/tmp/lint-console.txt')
+          out.append('=== lint console error lines ===')
+          if console.exists():
+              lines = console.read_text(encoding='utf-8', errors='replace').splitlines()
+              matches = [line for line in lines if ': Error:' in line or ' Error:' in line]
+              out.extend(matches or ['(none matched)'])
+
+          text_reports = list(Path('app/build').rglob('lint-results-debug.txt'))
+          out.append('\n=== text reports ===')
+          if not text_reports:
+              out.append('(none found)')
+          for report in text_reports:
+              out.append(f'-- {report} --')
+              lines = report.read_text(encoding='utf-8', errors='replace').splitlines()
+              matches = [line for line in lines if ': Error:' in line]
+              out.extend(matches or ['(no Error lines)'])
+
+          xml_reports = list(Path('app/build').rglob('lint-results-debug.xml'))
+          out.append('\n=== XML errors ===')
+          if not xml_reports:
+              out.append('(none found)')
+          for report in xml_reports:
+              out.append(f'-- {report} --')
+              try:
+                  root = ET.parse(report).getroot()
+              except Exception as exc:
+                  out.append(f'parse failed: {exc}')
+                  continue
+              found = False
+              for issue in root.findall('issue'):
+                  if issue.attrib.get('severity') != 'Error':
+                      continue
+                  found = True
+                  loc = issue.find('location')
+                  file_name = loc.attrib.get('file', '-') if loc is not None else '-'
+                  line = loc.attrib.get('line', '-') if loc is not None else '-'
+                  out.append(f"[{issue.attrib.get('id','unknown')}] {file_name}:{line}: {issue.attrib.get('message','')}")
+              if not found:
+                  out.append('(no Error issues)')
+
+          Path('ci/lint-diagnostics.txt').write_text('\n'.join(out) + '\n', encoding='utf-8')
+          PY
+
+          echo "lint_exit_code=$status" >> ci/lint-diagnostics.txt
+          cat ci/lint-diagnostics.txt
+
+      - name: Commit diagnostic and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/lint-diagnostic.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ci/lint-diagnostics.txt .github/workflows/lint-diagnostic.yml
+          git commit -m 'Record widget weight lint diagnostics'
+          git push origin HEAD:agent/widget-weight-renderer
