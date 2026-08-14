@@ -1,0 +1,36 @@
+name: Clocky Recovery Text Export
+
+on:
+  push:
+    branches:
+      - agent/mvp-java
+    paths:
+      - '.github/workflows/recovery-text-export.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  export-text:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Encode encrypted export into text chunks
+        shell: bash
+        run: |
+          test -f build-export/Clocky-MVP-export.enc
+          test -f build-export/Clocky-MVP-export-key.enc
+          rm -rf build-export-text
+          mkdir -p build-export-text/data build-export-text/key
+          base64 -w0 build-export/Clocky-MVP-export.enc | split -b 6000 -d -a 3 - build-export-text/data/part-
+          base64 -w0 build-export/Clocky-MVP-export-key.enc | split -b 6000 -d -a 3 - build-export-text/key/part-
+          cp build-export/SHA256SUMS.txt build-export-text/encrypted-SHA256SUMS.txt
+          for f in build-export-text/data/part-* build-export-text/key/part-*; do sha256sum "$f"; done > build-export-text/chunk-SHA256SUMS.txt
+      - name: Commit text chunks
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build-export-text
+          git commit -m "Export encrypted Clocky build as text chunks"
+          git push origin HEAD:agent/mvp-java

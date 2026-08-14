@@ -1,0 +1,5 @@
+d98b370da53f052fefea79331bef56c0c39ee6a1b6137f2a973ebb25f431f2e4  build-aligned-text/data/part-000
+4e3eab268ae09988eaae3880465b5123db139be9c8ba252378639fd37d959b4a  build-aligned-text/data/part-001
+fe29e4d4d6a156a6fe175c4818f787d22e2b3abe1da0a8045191dc9bdab7189e  build-aligned-text/data/part-002
+e2922d83bcde098c882b6da1a027c9b916c7ee836a652234dd0f290172d9f435  build-aligned-text/data/part-003
+03e73074f706bb2ba02c5e9a048e6da8ee750c3843b4a940a2898382bcb84955  build-aligned-text/data/part-004
