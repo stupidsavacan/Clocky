@@ -1,0 +1,44 @@
+name: Diagnose unit test classes
+
+on:
+  push:
+    branches:
+      - agent/widget-size-config-ui
+    paths:
+      - '.github/workflows/diagnose-unit-test-classes.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-class:
+    name: ${{ matrix.test_class }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test_class:
+          - com.stupidsavacan.clocky.customization.font.FontWeightResolverTest
+          - com.stupidsavacan.clocky.customization.font.RemoteViewsFontWeightPolicyTest
+          - com.stupidsavacan.clocky.customization.model.DigitalWidgetProfileResolverTest
+          - com.stupidsavacan.clocky.customization.model.WidgetSettingsTest
+          - com.stupidsavacan.clocky.customization.ui.WidgetProfileDateVisibilityEditorTest
+          - com.stupidsavacan.clocky.customization.ui.WidgetProfileSizeEditorTest
+          - com.stupidsavacan.clocky.customization.ui.WidgetProfileWeightEditorTest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install SDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run class
+        run: ./gradlew --no-daemon :app:testDebugUnitTest --tests '${{ matrix.test_class }}'
