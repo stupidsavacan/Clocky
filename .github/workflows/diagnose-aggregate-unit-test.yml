@@ -1,3 +1,4 @@
+# Temporary diagnostic; remove before merging PR #20.
 name: Diagnose aggregate unit test
 
 on:
