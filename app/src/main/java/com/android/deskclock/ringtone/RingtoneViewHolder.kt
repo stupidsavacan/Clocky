@@ -11,7 +11,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.
+ * limitations under the License
  */
 
 package com.android.deskclock.ringtone
@@ -107,8 +107,8 @@ internal class RingtoneViewHolder private constructor(itemView: View)
     }
 
     companion object {
-        const val VIEW_TYPE_SYSTEM_SOUND = R.layout.ringtone_item_sound
-        const val VIEW_TYPE_CUSTOM_SOUND = -R.layout.ringtone_item_sound
+        val VIEW_TYPE_SYSTEM_SOUND = R.layout.ringtone_item_sound
+        val VIEW_TYPE_CUSTOM_SOUND = -R.layout.ringtone_item_sound
         const val CLICK_NORMAL = 0
         const val CLICK_LONG_PRESS = -1
         const val CLICK_NO_PERMISSIONS = -2
