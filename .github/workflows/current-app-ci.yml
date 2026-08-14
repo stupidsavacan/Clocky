@@ -98,7 +98,44 @@ jobs:
         run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
 
       - name: Lint
+        id: lint
+        continue-on-error: true
         run: ./gradlew --no-daemon --stacktrace :app:lintDebug
+
+      - name: Summarize lint errors
+        if: always()
+        shell: python
+        run: |
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          report = Path('app/build/reports/lint-results-debug.xml')
+          output = Path('build/ci-metadata/lint-errors.txt')
+          if not report.exists():
+              output.write_text('lint XML report not found\n', encoding='utf-8')
+              print('lint XML report not found')
+              raise SystemExit(0)
+
+          root = ET.parse(report).getroot()
+          errors = []
+          for issue in root.findall('issue'):
+              if issue.attrib.get('severity') != 'Error':
+                  continue
+              location = issue.find('location')
+              file_name = location.attrib.get('file', '-') if location is not None else '-'
+              line = location.attrib.get('line', '-') if location is not None else '-'
+              errors.append((
+                  issue.attrib.get('id', 'unknown'),
+                  file_name,
+                  line,
+                  issue.attrib.get('message', '').replace('\n', ' '),
+              ))
+
+          lines = [f'Lint errors: {len(errors)}']
+          lines.extend(f'{i:03d}. [{kind}] {file_name}:{line}: {message}' for i, (kind, file_name, line, message) in enumerate(errors, 1))
+          text = '\n'.join(lines) + '\n'
+          output.write_text(text, encoding='utf-8')
+          print(text)
 
       - name: Assemble debug APK
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
@@ -136,9 +173,18 @@ jobs:
           path: |
             app/build/reports/**
             app/build/test-results/**
-            build/ci-metadata/build-metadata.txt
+            build/ci-metadata/*.txt
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Enforce lint result
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.lint.outcome }}" != "success" ]; then
+            echo 'Lint failed; see the summarized errors above.' >&2
+            exit 1
+          fi
 
       - name: Record artifact quota fallback status
         if: always()
