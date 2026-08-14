@@ -22,35 +22,245 @@
     android:gravity="top|center_horizontal"
     android:orientation="vertical">
 
-    <TextClock
-        android:id="@+id/clock"
-        style="@style/widget_big_thin"
+    <FrameLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal|top"
-        android:ellipsize="none"
-        android:format12Hour="@string/lock_screen_12_hour_format"
-        android:format24Hour="@string/lock_screen_24_hour_format"
-        android:includeFontPadding="false"
-        android:singleLine="true"
-        android:textColor="@color/white" />
+        android:layout_gravity="center_horizontal|top">
+
+        <TextClock
+            android:id="@+id/clock_w100"
+            style="@style/Clocky.Widget.Time.W100"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:format12Hour="@string/lock_screen_12_hour_format"
+            android:format24Hour="@string/lock_screen_24_hour_format"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:visibility="gone" />
+
+        <TextClock
+            android:id="@+id/clock_w200"
+            style="@style/Clocky.Widget.Time.W200"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:format12Hour="@string/lock_screen_12_hour_format"
+            android:format24Hour="@string/lock_screen_24_hour_format"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:visibility="gone" />
+
+        <TextClock
+            android:id="@+id/clock_w300"
+            style="@style/Clocky.Widget.Time.W300"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:format12Hour="@string/lock_screen_12_hour_format"
+            android:format24Hour="@string/lock_screen_24_hour_format"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:visibility="gone" />
+
+        <TextClock
+            android:id="@+id/clock_w400"
+            style="@style/Clocky.Widget.Time.W400"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:format12Hour="@string/lock_screen_12_hour_format"
+            android:format24Hour="@string/lock_screen_24_hour_format"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/white" />
+
+        <TextClock
+            android:id="@+id/clock_w500"
+            style="@style/Clocky.Widget.Time.W500"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:format12Hour="@string/lock_screen_12_hour_format"
+            android:format24Hour="@string/lock_screen_24_hour_format"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:visibility="gone" />
+
+        <TextClock
+            android:id="@+id/clock_w600"
+            style="@style/Clocky.Widget.Time.W600"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:format12Hour="@string/lock_screen_12_hour_format"
+            android:format24Hour="@string/lock_screen_24_hour_format"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:visibility="gone" />
+
+        <TextClock
+            android:id="@+id/clock_w700"
+            style="@style/Clocky.Widget.Time.W700"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:format12Hour="@string/lock_screen_12_hour_format"
+            android:format24Hour="@string/lock_screen_24_hour_format"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:visibility="gone" />
+
+        <TextClock
+            android:id="@+id/clock_w800"
+            style="@style/Clocky.Widget.Time.W800"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:format12Hour="@string/lock_screen_12_hour_format"
+            android:format24Hour="@string/lock_screen_24_hour_format"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:visibility="gone" />
+
+        <TextClock
+            android:id="@+id/clock_w900"
+            style="@style/Clocky.Widget.Time.W900"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:format12Hour="@string/lock_screen_12_hour_format"
+            android:format24Hour="@string/lock_screen_24_hour_format"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal|top">
 
-        <TextClock
-            android:id="@+id/date"
-            style="@style/widget_label"
+        <FrameLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:ellipsize="none"
-            android:includeFontPadding="false"
-            android:singleLine="true"
-            android:textAllCaps="true"
-            android:textColor="@color/white" />
+            android:layout_gravity="center">
+
+            <TextClock
+                android:id="@+id/date_w100"
+                style="@style/Clocky.Widget.Date.W100"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="none"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:visibility="gone" />
+
+            <TextClock
+                android:id="@+id/date_w200"
+                style="@style/Clocky.Widget.Date.W200"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="none"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:visibility="gone" />
+
+            <TextClock
+                android:id="@+id/date_w300"
+                style="@style/Clocky.Widget.Date.W300"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="none"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:visibility="gone" />
+
+            <TextClock
+                android:id="@+id/date_w400"
+                style="@style/Clocky.Widget.Date.W400"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="none"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:textAllCaps="true"
+                android:textColor="@color/white" />
+
+            <TextClock
+                android:id="@+id/date_w500"
+                style="@style/Clocky.Widget.Date.W500"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="none"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:visibility="gone" />
+
+            <TextClock
+                android:id="@+id/date_w600"
+                style="@style/Clocky.Widget.Date.W600"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="none"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:visibility="gone" />
+
+            <TextClock
+                android:id="@+id/date_w700"
+                style="@style/Clocky.Widget.Date.W700"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="none"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:visibility="gone" />
+
+            <TextClock
+                android:id="@+id/date_w800"
+                style="@style/Clocky.Widget.Date.W800"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="none"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:visibility="gone" />
+
+            <TextClock
+                android:id="@+id/date_w900"
+                style="@style/Clocky.Widget.Date.W900"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="none"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <ImageView
             android:id="@+id/nextAlarmIcon"

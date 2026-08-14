@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API 23-27 fallback: use the closest built-in sans-serif face available. -->
+    <style name="Clocky.Widget.Time.W100" parent="widget_big_thin">
+        <item name="android:fontFamily">sans-serif-thin</item>
+    </style>
+    <style name="Clocky.Widget.Time.W200" parent="widget_big_thin">
+        <item name="android:fontFamily">sans-serif-thin</item>
+    </style>
+    <style name="Clocky.Widget.Time.W300" parent="widget_big_thin">
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+    <style name="Clocky.Widget.Time.W400" parent="widget_big_thin">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    <style name="Clocky.Widget.Time.W500" parent="widget_big_thin">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="Clocky.Widget.Time.W600" parent="widget_big_thin">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="Clocky.Widget.Time.W700" parent="widget_big_thin">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="Clocky.Widget.Time.W800" parent="widget_big_thin">
+        <item name="android:fontFamily">sans-serif-black</item>
+    </style>
+    <style name="Clocky.Widget.Time.W900" parent="widget_big_thin">
+        <item name="android:fontFamily">sans-serif-black</item>
+    </style>
+
+    <style name="Clocky.Widget.Date.W100" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-thin</item>
+    </style>
+    <style name="Clocky.Widget.Date.W200" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-thin</item>
+    </style>
+    <style name="Clocky.Widget.Date.W300" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+    <style name="Clocky.Widget.Date.W400" parent="widget_label">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    <style name="Clocky.Widget.Date.W500" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="Clocky.Widget.Date.W600" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="Clocky.Widget.Date.W700" parent="widget_label">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="Clocky.Widget.Date.W800" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-black</item>
+    </style>
+    <style name="Clocky.Widget.Date.W900" parent="widget_label">
+        <item name="android:fontFamily">sans-serif-black</item>
+    </style>
+</resources>

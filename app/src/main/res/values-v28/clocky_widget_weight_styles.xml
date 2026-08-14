@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API 28+ can select TextView font weight directly. -->
+    <style name="Clocky.Widget.Time.W100" parent="widget_big_thin"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">100</item></style>
+    <style name="Clocky.Widget.Time.W200" parent="widget_big_thin"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">200</item></style>
+    <style name="Clocky.Widget.Time.W300" parent="widget_big_thin"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">300</item></style>
+    <style name="Clocky.Widget.Time.W400" parent="widget_big_thin"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">400</item></style>
+    <style name="Clocky.Widget.Time.W500" parent="widget_big_thin"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">500</item></style>
+    <style name="Clocky.Widget.Time.W600" parent="widget_big_thin"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">600</item></style>
+    <style name="Clocky.Widget.Time.W700" parent="widget_big_thin"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">700</item></style>
+    <style name="Clocky.Widget.Time.W800" parent="widget_big_thin"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">800</item></style>
+    <style name="Clocky.Widget.Time.W900" parent="widget_big_thin"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">900</item></style>
+
+    <style name="Clocky.Widget.Date.W100" parent="widget_label"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">100</item></style>
+    <style name="Clocky.Widget.Date.W200" parent="widget_label"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">200</item></style>
+    <style name="Clocky.Widget.Date.W300" parent="widget_label"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">300</item></style>
+    <style name="Clocky.Widget.Date.W400" parent="widget_label"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">400</item></style>
+    <style name="Clocky.Widget.Date.W500" parent="widget_label"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">500</item></style>
+    <style name="Clocky.Widget.Date.W600" parent="widget_label"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">600</item></style>
+    <style name="Clocky.Widget.Date.W700" parent="widget_label"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">700</item></style>
+    <style name="Clocky.Widget.Date.W800" parent="widget_label"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">800</item></style>
+    <style name="Clocky.Widget.Date.W900" parent="widget_label"><item name="android:fontFamily">sans-serif</item><item name="android:textStyle">normal</item><item name="android:textFontWeight">900</item></style>
+</resources>
