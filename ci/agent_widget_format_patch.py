@@ -15,15 +15,13 @@ policy.write_text('''package com.stupidsavacan.clocky.customization.format
 
 import com.stupidsavacan.clocky.customization.model.HourMode
 
-/** Pure format mapping for settings whose runtime meaning is explicitly defined. */
+/** Pure hour-mode mapping for settings whose runtime meaning is explicitly defined. */
 object DigitalWidgetFormatPolicy {
     fun timeOverride(hourMode: HourMode): String? = when (hourMode) {
-        HourMode.SYSTEM -> null
-        HourMode.HOUR_12 -> "h:mm"
-        HourMode.HOUR_24 -> "HH:mm"
+        HourMode.FOLLOW_SYSTEM -> null
+        HourMode.FORCE_12_HOUR -> "h:mm"
+        HourMode.FORCE_24_HOUR -> "HH:mm"
     }
-
-    fun dateFormat(override: String?, systemDefault: String): String = override ?: systemDefault
 }
 ''', encoding='utf-8')
 
@@ -38,20 +36,14 @@ import org.junit.Test
 
 class DigitalWidgetFormatPolicyTest {
     @Test
-    fun systemHourModeLeavesExistingTextClockFormatsUntouched() {
-        assertNull(DigitalWidgetFormatPolicy.timeOverride(HourMode.SYSTEM))
+    fun followSystemLeavesExistingTextClockFormatsUntouched() {
+        assertNull(DigitalWidgetFormatPolicy.timeOverride(HourMode.FOLLOW_SYSTEM))
     }
 
     @Test
     fun explicitHourModesMatchRepositoryMvpFormats() {
-        assertEquals("h:mm", DigitalWidgetFormatPolicy.timeOverride(HourMode.HOUR_12))
-        assertEquals("HH:mm", DigitalWidgetFormatPolicy.timeOverride(HourMode.HOUR_24))
-    }
-
-    @Test
-    fun dateOverrideWinsAndNullFallsBackToSystemPattern() {
-        assertEquals("yyyy.MM.dd", DigitalWidgetFormatPolicy.dateFormat("yyyy.MM.dd", "EEE, MMM d"))
-        assertEquals("EEE, MMM d", DigitalWidgetFormatPolicy.dateFormat(null, "EEE, MMM d"))
+        assertEquals("h:mm", DigitalWidgetFormatPolicy.timeOverride(HourMode.FORCE_12_HOUR))
+        assertEquals("HH:mm", DigitalWidgetFormatPolicy.timeOverride(HourMode.FORCE_24_HOUR))
     }
 }
 ''', encoding='utf-8')
@@ -99,15 +91,12 @@ p = replace_once(
     '''            // Configure child views of the remote view.
             val dateFormat: CharSequence = getDateFormat(context)
 ''',
-    '''            // Configure only format settings whose runtime semantics are explicit.
-            val dateFormat: CharSequence = DigitalWidgetFormatPolicy.dateFormat(
-                    widgetSettings.format.datePatternOverride,
-                    getDateFormat(context),
-            )
+    '''            // Preserve the existing locale-driven formats unless an explicit hour mode exists.
+            val dateFormat: CharSequence = getDateFormat(context)
             val timeFormatOverride: CharSequence? =
-                    DigitalWidgetFormatPolicy.timeOverride(widgetSettings.format.hourMode)
+                    DigitalWidgetFormatPolicy.timeOverride(widgetSettings.time.hourMode)
 ''',
-    'provider resolved formats',
+    'provider resolved hour mode',
 )
 p = replace_once(
     p,
@@ -118,10 +107,9 @@ p = replace_once(
     '''                    template,
                     nextAlarmTime,
                     timeFormatOverride,
-                    dateFormat,
                     resolvedWeights.timeWeight,
 ''',
-    'provider optimize formats',
+    'provider optimize hour mode',
 )
 p = replace_once(
     p,
@@ -132,7 +120,7 @@ p = replace_once(
                     timeFormatOverride = timeFormatOverride,
                     dateEnabled = resolvedWeights.dateEnabled,
 ''',
-    'provider remote formats',
+    'provider remote hour mode',
 )
 p = replace_once(
     p,
@@ -143,31 +131,25 @@ p = replace_once(
     '''            template: Sizes,
             nextAlarmTime: String?,
             timeFormatOverride: CharSequence?,
-            dateFormat: CharSequence,
             requestedTimeWeight: Int,
 ''',
     'provider optimize signature',
 )
 p = replace_once(
     p,
-    '''            // Configure the date to display the current date string.
-            val dateFormat: CharSequence = getDateFormat(context)
-            val date: TextClock = sizer.findViewById(R.id.date) as TextClock
-            val clock: TextClock = sizer.findViewById(R.id.clock) as TextClock
-            date.setFormat12Hour(dateFormat)
+    '''            date.setFormat12Hour(dateFormat)
             date.setFormat24Hour(dateFormat)
+            DigitalWidgetWeightRenderer.applySizerWeights(
 ''',
-    '''            // Configure the same formats that the RemoteViews will display.
-            val date: TextClock = sizer.findViewById(R.id.date) as TextClock
-            val clock: TextClock = sizer.findViewById(R.id.clock) as TextClock
-            date.setFormat12Hour(dateFormat)
+    '''            date.setFormat12Hour(dateFormat)
             date.setFormat24Hour(dateFormat)
             if (timeFormatOverride != null) {
                 clock.setFormat12Hour(timeFormatOverride)
                 clock.setFormat24Hour(timeFormatOverride)
             }
+            DigitalWidgetWeightRenderer.applySizerWeights(
 ''',
-    'provider sizer formats',
+    'provider sizer hour mode',
 )
 provider.write_text(p, encoding='utf-8')
 
