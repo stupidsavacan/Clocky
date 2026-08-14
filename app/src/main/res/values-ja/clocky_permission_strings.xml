@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="exact_alarm_access_title">正確なアラームの権限</string>
+    <string name="exact_alarm_access_summary">Android 12 / 12L：指定した時刻どおりにアラームを鳴らすためのシステム権限を確認します。</string>
+</resources>

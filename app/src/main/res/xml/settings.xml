@@ -49,6 +49,11 @@
 
     <PreferenceCategory
         android:title="@string/alarm_settings">
+        <com.android.deskclock.settings.ExactAlarmPermissionPreference
+            android:key="exact_alarm_permission"
+            android:summary="@string/exact_alarm_access_summary"
+            android:title="@string/exact_alarm_access_title" />
+
         <ListPreference
             android:defaultValue="10"
             android:dialogTitle="@string/auto_silence_title"

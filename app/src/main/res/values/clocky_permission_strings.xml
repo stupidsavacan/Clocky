@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="exact_alarm_access_title">Precise alarm access</string>
+    <string name="exact_alarm_access_summary">Android 12 and 12L: review the system permission used to deliver alarms at the requested time.</string>
+</resources>
