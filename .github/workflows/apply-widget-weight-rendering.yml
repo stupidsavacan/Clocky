@@ -1,0 +1,84 @@
+name: Apply widget weight rendering
+
+on:
+  push:
+    branches:
+      - agent/widget-weight-rendering
+    paths:
+      - tools/ci/apply_widget_weight_rendering.py
+      - .github/workflows/apply-widget-weight-rendering.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-widget-weight-rendering
+  cancel-in-progress: false
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: agent/widget-weight-rendering
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Apply deterministic weight rendering changes
+        run: python3 tools/ci/apply_widget_weight_rendering.py
+
+      - name: Verify patch shape
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          test -f app/src/main/java/com/android/alarmclock/DigitalWidgetWeightVariants.kt
+          grep -q 'clock_w100' app/src/main/res/layout/digital_widget.xml
+          grep -q 'date_w900' app/src/main/res/layout/digital_widget_sizer.xml
+          grep -q 'SharedPreferencesWidgetSettingsStore' app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt
+
+      - name: Compile
+        run: ./gradlew --no-daemon --stacktrace :app:compileDebugKotlin
+
+      - name: Unit tests
+        run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
+
+      - name: Lint
+        run: ./gradlew --no-daemon --stacktrace :app:lintDebug
+
+      - name: Assemble
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Commit validated changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'No generated changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/com/android/alarmclock/DigitalAppWidgetProvider.kt \
+                  app/src/main/java/com/android/alarmclock/DigitalWidgetWeightVariants.kt \
+                  app/src/main/res/layout/digital_widget.xml \
+                  app/src/main/res/layout/digital_widget_sizer.xml \
+                  app/src/main/res/values/styles.xml
+          git commit -m 'Wire per-widget font weights into digital RemoteViews'
+          git push origin HEAD:agent/widget-weight-rendering
