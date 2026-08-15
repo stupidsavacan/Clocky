@@ -1,0 +1,103 @@
+name: Release PR30 Debug Rebuild
+
+on:
+  push:
+    branches:
+      - agent/release-pr30-debug-20260815
+    paths:
+      - '.github/workflows/release-pr30-debug-rebuild.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout rebuild branch
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK 35 and Build Tools 35.0.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Verify branch differs from PR30 only by this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --name-only d719cc4efd84ed8b90176d00aefddfdf7d5b1ab3..HEAD | tee /tmp/pr30-diff.txt
+          test "$(wc -l < /tmp/pr30-diff.txt)" -eq 1
+          grep -Fx '.github/workflows/release-pr30-debug-rebuild.yml' /tmp/pr30-diff.txt
+
+      - name: Compile and test
+        run: |
+          ./gradlew --no-daemon --stacktrace :app:compileDebugKotlin
+          ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
+
+      - name: Assemble debug APK
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-out
+          APK=$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' | head -n 1)
+          test -n "$APK"
+          cp "$APK" release-out/Clocky-PR30-debug-rebuild.apk
+          sha256sum release-out/Clocky-PR30-debug-rebuild.apk | tee release-out/SHA256SUMS.txt
+          {
+            echo 'source_pr=30'
+            echo 'source_commit=d719cc4efd84ed8b90176d00aefddfdf7d5b1ab3'
+            echo "rebuild_commit=${GITHUB_SHA}"
+            echo 'build_type=debug'
+            echo 'compile_sdk=35'
+            echo 'target_sdk=35'
+            echo 'java=17'
+            echo 'note=Rebuilt from PR #30 source; only this workflow file differs from the source commit. Debug signing is runner-generated, so this APK is not expected to match the historical CI #180 APK byte-for-byte.'
+          } > release-out/BUILD-METADATA.txt
+
+      - name: Create prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG='clocky-pr30-debug-rebuild-20260815'
+          gh release create "$TAG" \
+            release-out/Clocky-PR30-debug-rebuild.apk \
+            release-out/SHA256SUMS.txt \
+            release-out/BUILD-METADATA.txt \
+            --target d719cc4efd84ed8b90176d00aefddfdf7d5b1ab3 \
+            --title 'Clocky PR #30 baseline — debug APK rebuild' \
+            --prerelease \
+            --notes 'Rebuild of the Clocky application source at the PR #30 merge commit. This is an installable debug build, not a production/release-signed build. The historical CI #180 artifact was not retained because Actions artifact upload hit storage quota. This rebuild verifies that the branch differs from PR #30 only by the one-shot release workflow before compiling and assembling. Because the Android debug signing key is generated on the fresh runner, the APK is not expected to have the historical CI #180 SHA-256.'
+
+      - name: Remove temporary rebuild branch
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/agent/release-pr30-debug-20260815"
