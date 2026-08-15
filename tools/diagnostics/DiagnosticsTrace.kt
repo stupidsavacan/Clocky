@@ -344,9 +344,14 @@ object DiagnosticsTrace {
     private fun crashFile(): File = File(diagnosticsDir(), "crash.log")
 
     private fun timestamp(): String {
-        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US)
+        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US)
         format.timeZone = TimeZone.getDefault()
-        return format.format(Date())
+        val raw = format.format(Date())
+        return if (raw.length >= 5) {
+            raw.dropLast(2) + ":" + raw.takeLast(2)
+        } else {
+            raw
+        }
     }
 
     private fun sanitize(value: String): String = value
