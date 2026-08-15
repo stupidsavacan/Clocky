@@ -1,0 +1,165 @@
+name: Release PR30 Signed APK
+
+on:
+  push:
+    branches:
+      - agent/release-pr30-signed-apk
+    paths:
+      - '.github/workflows/release-pr30-signed-apk.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-sign-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SOURCE_SHA: d719cc4efd84ed8b90176d00aefddfdf7d5b1ab3
+      RELEASE_TAG: clocky-aosp-pr30-rebuild-20260815
+    steps:
+      - name: Checkout exact PR #30 merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: d719cc4efd84ed8b90176d00aefddfdf7d5b1ab3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK 35 and Build Tools 35.0.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile and unit test exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --stacktrace :app:compileDebugKotlin :app:testDebugUnitTest
+
+      - name: Lint exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --stacktrace :app:lintDebug
+
+      - name: Assemble unsigned release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --stacktrace :app:assembleRelease
+          test -f app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Generate a new release JKS
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          PASS="$(openssl rand -hex 32)"
+          printf '%s\n' "$PASS" > out/Clocky-PR30-JKS-PASSWORD.txt
+          chmod 600 out/Clocky-PR30-JKS-PASSWORD.txt
+          keytool -genkeypair \
+            -keystore out/Clocky-PR30-release.jks \
+            -storetype PKCS12 \
+            -alias clocky \
+            -keyalg RSA \
+            -keysize 4096 \
+            -validity 10000 \
+            -storepass "$PASS" \
+            -keypass "$PASS" \
+            -dname 'CN=Clocky, OU=Release, O=stupidsavacan, L=Nagoya, ST=Aichi, C=JP'
+
+      - name: Align and sign release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          BT="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          PASS="$(cat out/Clocky-PR30-JKS-PASSWORD.txt)"
+          U="app/build/outputs/apk/release/app-release-unsigned.apk"
+          A="out/Clocky-0.2.0-aosp-port-pr30-aligned.apk"
+          S="out/Clocky-0.2.0-aosp-port-pr30-signed.apk"
+          "$BT/zipalign" -f 4 "$U" "$A"
+          "$BT/apksigner" sign \
+            --ks out/Clocky-PR30-release.jks \
+            --ks-key-alias clocky \
+            --ks-pass "pass:$PASS" \
+            --key-pass "pass:$PASS" \
+            --out "$S" \
+            "$A"
+          "$BT/apksigner" verify --verbose --print-certs "$S" | tee out/apksigner-verify.txt
+          "$BT/aapt" dump badging "$S" > out/aapt-badging.txt
+          rm -f "$A"
+
+      - name: Record hashes and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "source_commit=$SOURCE_SHA"
+            echo 'source_pr=30'
+            echo 'application_id=com.stupidsavacan.clocky'
+            echo 'version_name=0.2.0-aosp-port'
+            echo 'version_code=2'
+            echo 'signing_key=newly_generated_for_this_release=true'
+            echo 'note=New signing identity; it cannot update an installation signed by a different key.'
+          } > out/BUILD-PROVENANCE.txt
+          (cd out && sha256sum \
+            Clocky-0.2.0-aosp-port-pr30-signed.apk \
+            Clocky-PR30-release.jks \
+            Clocky-PR30-JKS-PASSWORD.txt \
+            apksigner-verify.txt \
+            aapt-badging.txt \
+            BUILD-PROVENANCE.txt > SHA256SUMS.txt)
+
+      - name: Create private repository prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > out/RELEASE-NOTES.md <<'EOF'
+          Clocky AOSP-port APK rebuilt from the exact PR #30 merge commit.
+
+          Source commit: d719cc4efd84ed8b90176d00aefddfdf7d5b1ab3
+          Version: 0.2.0-aosp-port (versionCode 2)
+
+          Validation performed in GitHub Actions:
+          - compileDebugKotlin
+          - testDebugUnitTest
+          - lintDebug
+          - assembleRelease
+          - zipalign
+          - APK signing
+          - apksigner verification
+
+          Signing note: this APK uses a newly generated JKS. Android will not accept it as an in-place update over an installation signed with a different key. Preserve the JKS and password if this signing identity is to be reused.
+          EOF
+          gh release create "$RELEASE_TAG" \
+            out/Clocky-0.2.0-aosp-port-pr30-signed.apk \
+            out/Clocky-PR30-release.jks \
+            out/Clocky-PR30-JKS-PASSWORD.txt \
+            out/SHA256SUMS.txt \
+            out/apksigner-verify.txt \
+            out/aapt-badging.txt \
+            out/BUILD-PROVENANCE.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SOURCE_SHA" \
+            --title 'Clocky AOSP 0.2.0 — PR #30 baseline rebuild' \
+            --notes-file out/RELEASE-NOTES.md \
+            --prerelease
