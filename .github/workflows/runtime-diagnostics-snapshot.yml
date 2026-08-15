@@ -1,0 +1,158 @@
+name: Clocky Runtime Diagnostics Snapshot
+
+on:
+  push:
+    branches:
+      - agent/runtime-diagnostics-snapshot
+    paths:
+      - 'tools/diagnostics/**'
+      - '.github/workflows/runtime-diagnostics-snapshot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: clocky-runtime-diagnostics-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout diagnostic branch
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 35 and Build Tools 35.0.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Apply deterministic runtime instrumentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/diagnostics/instrument_runtime.py
+          git diff --check
+          mkdir -p build/runtime-diagnostics
+          git diff -- app/src/main app/build.gradle.kts > build/runtime-diagnostics/instrumented-source.patch
+          test -s build/runtime-diagnostics/instrumented-source.patch
+
+      - name: Compile diagnostics build
+        run: ./gradlew --no-daemon --stacktrace :app:compileDebugKotlin
+
+      - name: Unit tests
+        run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
+
+      - name: Lint diagnostics build
+        run: ./gradlew --no-daemon --stacktrace :app:lintDebug
+
+      - name: Assemble diagnostics APK
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Record diagnostic build inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' | head -n 1)
+          test -n "$APK"
+          SHA=$(sha256sum "$APK" | awk '{print $1}')
+          SIZE=$(stat -c '%s' "$APK")
+          {
+            echo "source_branch=${GITHUB_REF_NAME}"
+            echo "source_commit=${GITHUB_SHA}"
+            echo "workflow_run_id=${GITHUB_RUN_ID}"
+            echo "workflow_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "apk_path=${APK}"
+            echo "apk_bytes=${SIZE}"
+            echo "apk_sha256=${SHA}"
+            echo "instrumentation=tools/diagnostics/instrument_runtime.py"
+            echo
+            echo '--- app manifest component/permission/icon lines after instrumentation ---'
+            grep -E 'uses-permission|android:icon=|<activity|<receiver|<service|<provider|appwidget.provider' app/src/main/AndroidManifest.xml || true
+            echo
+            echo '--- digital widget provider metadata ---'
+            cat app/src/main/res/xml/digital_appwidget.xml
+            if [ -f app/src/main/res/xml-v28/digital_appwidget.xml ]; then
+              echo
+              cat app/src/main/res/xml-v28/digital_appwidget.xml
+            fi
+          } > build/runtime-diagnostics/build-report.txt
+          cp "$APK" build/runtime-diagnostics/Clocky-runtime-diagnostics-debug.apk
+          sha256sum build/runtime-diagnostics/Clocky-runtime-diagnostics-debug.apk | tee build/runtime-diagnostics/APK-SHA256.txt
+
+      - name: Publish APK as temporary prerelease asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="clocky-runtime-diagnostics-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          API="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases"
+          BODY=$(cat <<EOF
+          Temporary diagnostic build from branch ${GITHUB_REF_NAME} at ${GITHUB_SHA}.
+
+          The APK is the current Clocky source plus the deterministic build-time instrumentation in tools/diagnostics/instrument_runtime.py. The exact generated source patch and build report are attached alongside the APK.
+
+          This build records diagnostics locally on-device only. Use the separate Clocky Diagnostics TEMP launcher entry to save the trace after reproducing the widget problem.
+          EOF
+          )
+          PAYLOAD=$(jq -n \
+            --arg tag "$TAG" \
+            --arg sha "$GITHUB_SHA" \
+            --arg name "Clocky Runtime Diagnostics TEMP" \
+            --arg body "$BODY" \
+            '{tag_name:$tag,target_commitish:$sha,name:$name,body:$body,draft:false,prerelease:true}')
+          RELEASE=$(curl -fsSL \
+            -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "${API}" \
+            -d "$PAYLOAD")
+          RELEASE_ID=$(echo "$RELEASE" | jq -r '.id')
+          RELEASE_URL=$(echo "$RELEASE" | jq -r '.html_url')
+          test "$RELEASE_ID" != "null"
+          UPLOAD="https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets"
+
+          upload_asset() {
+            local path="$1"
+            local name="$2"
+            local type="$3"
+            curl -fsSL \
+              -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Content-Type: ${type}" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              --data-binary "@${path}" \
+              "${UPLOAD}?name=${name}" >/dev/null
+          }
+
+          upload_asset build/runtime-diagnostics/Clocky-runtime-diagnostics-debug.apk Clocky-runtime-diagnostics-debug.apk application/vnd.android.package-archive
+          upload_asset build/runtime-diagnostics/instrumented-source.patch instrumented-source.patch text/plain
+          upload_asset build/runtime-diagnostics/build-report.txt build-report.txt text/plain
+          upload_asset build/runtime-diagnostics/APK-SHA256.txt APK-SHA256.txt text/plain
+
+          {
+            echo '### Runtime diagnostics release'
+            echo "- Release: ${RELEASE_URL}"
+            echo "- Tag: ${TAG}"
+            echo '- Asset: Clocky-runtime-diagnostics-debug.apk'
+            echo '- Main branch is not modified by this workflow.'
+          } >> "$GITHUB_STEP_SUMMARY"
