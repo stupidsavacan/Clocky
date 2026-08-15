@@ -245,7 +245,7 @@ object DiagnosticsTrace {
                     "heightPx" to metrics.heightPixels,
                     "orientation" to config.orientation,
                     "fontScale" to config.fontScale,
-                    "locale" to config.locales.toLanguageTags(),
+                    "locale" to localeTags(config),
                 ),
             )
             logComponents("activities", packageInfo.activities)
@@ -282,6 +282,15 @@ object DiagnosticsTrace {
                 "environment.capture.failed",
                 mapOf("type" to t.javaClass.name, "message" to t.message),
             )
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun localeTags(config: Configuration): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            config.locales.toLanguageTags()
+        } else {
+            config.locale?.toLanguageTag() ?: ""
         }
     }
 
