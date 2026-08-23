@@ -179,7 +179,7 @@ jobs:
             build/ci-metadata/build-metadata.txt
             build/ci-metadata/APK-SHA256.txt
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
       - name: Upload test and lint reports
         id: upload_reports
@@ -193,7 +193,7 @@ jobs:
             app/build/test-results/**
             build/ci-metadata/*.txt
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 7
 
       - name: Enforce lint result
         if: always()
