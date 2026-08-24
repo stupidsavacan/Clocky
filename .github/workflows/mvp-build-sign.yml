@@ -2,13 +2,6 @@ name: Clocky MVP Build Sign Release
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - agent/mvp-java
-    paths:
-      - 'ci/Clocky_MVP_source.zip'
-      - 'ci/GenerateJks.java'
-      - '.github/workflows/mvp-build-sign.yml'
 
 permissions:
   contents: write
