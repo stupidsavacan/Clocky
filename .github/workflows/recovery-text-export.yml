@@ -1,11 +1,7 @@
 name: Clocky Recovery Text Export
 
 on:
-  push:
-    branches:
-      - agent/mvp-java
-    paths:
-      - '.github/workflows/recovery-text-export.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write
