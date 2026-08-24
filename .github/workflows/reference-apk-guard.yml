@@ -1,7 +1,6 @@
 name: Reference APK Guard
 
 on:
-  push:
   pull_request:
 
 permissions:
