@@ -2,16 +2,6 @@ name: Current App CI
 # Validates the standalone AOSP port after explicit PendingIntent mutability remediation.
 
 on:
-  push:
-    paths:
-      - 'app/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle.properties'
-      - 'gradle/**'
-      - 'gradlew'
-      - 'gradlew.bat'
-      - '.github/workflows/current-app-ci.yml'
   pull_request:
     paths:
       - 'app/**'
