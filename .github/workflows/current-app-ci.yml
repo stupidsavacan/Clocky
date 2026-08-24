@@ -13,29 +13,33 @@ concurrency:
 
 jobs:
   build-test-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools
-
-      - name: Install Android SDK 35 and Build Tools 35.0.0
+      - name: Require preinstalled JDK 17 and Android SDK 35
         shell: bash
         run: |
           set -euo pipefail
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+          java -version 2>&1 | tee /tmp/clocky-java-version.txt
+          grep -Eq 'version "17([.]|\")' /tmp/clocky-java-version.txt
+          javac -version 2>&1 | grep -Eq '^javac 17([.]|$)'
+
+          : "${ANDROID_SDK_ROOT:?ANDROID_SDK_ROOT is not set on the runner}"
+          test -d "$ANDROID_SDK_ROOT/platforms/android-35"
+          test -x "$ANDROID_SDK_ROOT/platform-tools/adb"
+
+          BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          test -d "$BUILD_TOOLS"
+          for tool in aapt aapt2 apksigner zipalign; do
+            test -x "$BUILD_TOOLS/$tool"
+          done
+
+          echo "Using runner-preinstalled Java 17 and Android SDK 35 / Build Tools 35.0.0."
+          echo "No sdkmanager or toolchain download is performed by this workflow."
 
       - name: Require Gradle wrapper
         shell: bash
@@ -62,6 +66,7 @@ jobs:
             echo "commit=${GITHUB_SHA}"
             echo "ref=${GITHUB_REF}"
             echo "runner_os=${RUNNER_OS}"
+            echo "runner_image=ubuntu-24.04"
             echo "java_version=$(java -version 2>&1 | head -n 1)"
             echo "sdk_root=${ANDROID_SDK_ROOT}"
             echo "compile_sdk=35"
