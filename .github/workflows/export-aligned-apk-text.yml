@@ -1,11 +1,7 @@
 name: Clocky Export Aligned APK Text
 
 on:
-  push:
-    branches:
-      - agent/mvp-java
-    paths:
-      - '.github/workflows/export-aligned-apk-text.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write
