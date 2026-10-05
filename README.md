@@ -14,6 +14,8 @@ Clocky は次の3層で構成します。
 
 Google Clock の APK は挙動・寸法・UI/UX の参照にのみ使い、プロプライエタリなコード・画像・フォント・署名資産は Clocky にコピーしません。
 
+長期の製品境界・完成条件・最終到達点は [`docs/product/CLOCKY_END_STATE.md`](./docs/product/CLOCKY_END_STATE.md) を正本とします。日々の実装進捗は `docs/IMPLEMENTATION_BACKLOG.md` / Issue / PR で管理し、End-State 仕様と進捗管理を分離します。
+
 ## Current source state
 
 ```text
