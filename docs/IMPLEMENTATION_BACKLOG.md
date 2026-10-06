@@ -61,7 +61,7 @@ Exit gate: the existing Digital widget can be added, configured, rendered, and r
 - Digital widget picker `previewImage` (AOSP image) and the world-city list / autosizer in the Digital path: replaced when Clocky owns the Digital provider (Phase 1A).
 - Other AOSP alarm/timer/stopwatch notification `PendingIntent`s without mutability flags: F1 targetSdk runtime work.
 
-## Phase 1A — Digital Core (`CLOCKY_END_STATE.md` §13) — in progress (branch `phase1a/digital-core`)
+## Phase 1A — Digital Core (`CLOCKY_END_STATE.md` §13) — complete (PR #39)
 
 Exit gate: Clocky-owned Digital is stable for the 4×1 / 4×2 family, and the editor preview matches the widget because both use the same resolved specification and RemoteViews path. Design record: `docs/architecture/PHASE_1A_DIGITAL_CORE.md`.
 
@@ -91,7 +91,14 @@ Exit gate: Clocky-owned Digital is stable for the 4×1 / 4×2 family, and the ed
     - [x] 4×1 resize without clipping.
     - [x] Delete clears the settings.
   - [x] No Clocky entries in any emulator's crash buffer.
-- [ ] Remaining for the gate: the same pass on the physical moto g13 (API 34, Motorola Launcher3: OEM launcher geometry, the API 31+ outline path on hardware, the reconfigure button). It was not run because the device sits on a secure lock screen that needs the owner's unlock.
+  - Physical moto g13 (API 34, Motorola Launcher3, ja-JP; 2026-10-07, driven with `tools/device/cdev.py`):
+    - [x] Fresh add → config; Back → "appWidgetId was not returned", no widget or settings left.
+    - [x] Save → Amber time, Solid Dark 24dp (API 31+ outline): preview = widget (id 22, schema 2).
+    - [x] Resize to one row: the editor's host-derived class is **Strip** (`OPTION_APPWIDGET_MIN_HEIGHT` < 100dp). `cdev`'s "Card (est.)" comes from the portrait host-view height, ~122dp.
+    - [x] The launcher pencil reconfigure keeps id 22; setting the Strip date to Hide shows in the preview and the widget; resizing back to two rows brings the date back.
+    - [x] Delete → `<map />`; no crash or ANR.
+    - Not re-checked here: widget landscape. Motorola home rotation is off and I left the launcher setting alone; the API 30 emulator and the Phase 0 moto session covered it.
+  - [x] Found on the moto and fixed: with auto-rotate, the config screen opens in landscape, where the pinned preview left the controls a ~55px viewport. `layout-land` now puts the preview and the controls side by side, each scrolling (Robolectric regression test, SDK 23/28/34; verified on the moto).
 
 ### Mockup alignment (PR #38 reference; Phase 1B scope, recorded here)
 
