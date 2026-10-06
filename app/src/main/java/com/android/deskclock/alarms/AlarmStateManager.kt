@@ -289,7 +289,10 @@ class AlarmStateManager : BroadcastReceiver() {
 
             val alarmManager: AlarmManager = context.getSystemService(ALARM_SERVICE) as AlarmManager
 
-            val flags = if (nextAlarm == null) PendingIntent.FLAG_NO_CREATE else 0
+            // Clocky: targetSdk 31+ requires an explicit mutability flag. Without it this runs on
+            // boot/locale/time/timezone/package-replaced broadcasts and crashed the app process.
+            val flags = PendingIntent.FLAG_IMMUTABLE or
+                    (if (nextAlarm == null) PendingIntent.FLAG_NO_CREATE else 0)
             val operation: PendingIntent? = PendingIntent.getBroadcast(context, 0 /* requestCode */,
                     createIndicatorIntent(context), flags)
 
@@ -301,7 +304,7 @@ class AlarmStateManager : BroadcastReceiver() {
                 val viewIntent: PendingIntent =
                         PendingIntent.getActivity(context, nextAlarm.hashCode(),
                         AlarmNotifications.createViewAlarmIntent(context, nextAlarm),
-                        PendingIntent.FLAG_UPDATE_CURRENT)
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
                 val info = AlarmClockInfo(alarmTime, viewIntent)
                 Utils.updateNextAlarm(alarmManager, info, operation!!)
