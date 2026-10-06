@@ -173,4 +173,26 @@ class DigitalWidgetConfigActivityTest {
                 assertEquals(BackgroundType.SOLID, saved.background.type)
             }
     }
+
+    /** moto g13 regression: in landscape the pinned preview left the controls a ~55px viewport. */
+    @Test
+    @Config(qualifiers = "w800dp-h360dp-land")
+    fun landscapePutsPreviewBesideTheControls() {
+        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(45))
+            .setup()
+            .visible()
+            .use { controller ->
+                val activity = controller.get()
+                shadowOf(Looper.getMainLooper()).idle()
+                val preview = activity.findViewById<View>(R.id.clocky_preview_column)
+                val controls = activity.findViewById<View>(R.id.clocky_controls_scroll)
+                val previewPos = IntArray(2).also { preview.getLocationInWindow(it) }
+                val controlsPos = IntArray(2).also { controls.getLocationInWindow(it) }
+                assertTrue("controls sit to the side of the preview", controlsPos[0] > previewPos[0])
+                assertTrue(
+                    "controls get the full height (${controls.height}px)",
+                    controls.height > activity.window.decorView.height / 2,
+                )
+            }
+    }
 }
