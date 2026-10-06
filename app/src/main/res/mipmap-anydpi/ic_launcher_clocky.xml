@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- API 23-25 fallback for the adaptive Clocky launcher icon. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/clocky_launcher_background" />
+        </shape>
+    </item>
+    <item
+        android:bottom="-18dp"
+        android:left="-18dp"
+        android:right="-18dp"
+        android:top="-18dp"
+        android:drawable="@drawable/ic_launcher_clocky_foreground" />
+</layer-list>

@@ -32,7 +32,9 @@
 
     <color name="clock_gray">#B3FFFFFF</color>
 
-    <color name="default_background">#1A237E</color>
+    <!-- Clocky: neutral ink instead of the AOSP indigo #1A237E (Issue #31). The AOSP-derived Home
+         UI is dark-only (white text/icons), so this stays a dark neutral in both modes. -->
+    <color name="default_background">#16161A</color>
 
     <!-- shadowColor for widget text -->
     <color name="widget_shadow_color">#67000000</color>

@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Clocky-owned neutral palette, taken from docs/product/design/Clocky_widget_design_mockup.html
-  (surface #F4F2EE, ink #16161A, secondary ink #5C5C63, cards #FFFFFF). Clocky screens use these
+  (surface #F4F2EE, ink #16161A, secondary ink #5C5C63). Clocky screens use these
   instead of inheriting AOSP DeskClock colors. Dark values live in values-night.
 -->
 <resources>
     <color name="clocky_surface">#F4F2EE</color>
-    <color name="clocky_surface_container">#FFFFFF</color>
     <color name="clocky_outline">#E6E2DA</color>
     <color name="clocky_ink">#16161A</color>
     <color name="clocky_ink_secondary">#5C5C63</color>
     <color name="clocky_on_ink">#F4F2EE</color>
+
+    <!-- Fixed (not night-flipped): launcher icon background and the dark AOSP-derived Home surface. -->
+    <color name="clocky_launcher_background">#16161A</color>
 </resources>

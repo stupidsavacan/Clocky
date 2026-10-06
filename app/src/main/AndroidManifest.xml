@@ -12,8 +12,8 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <application android:name=".DeskClockApplication" android:allowBackup="false" android:backupAgent="DeskClockBackupAgent" android:fullBackupContent="@xml/backup_scheme" android:fullBackupOnly="true" android:icon="@mipmap/ic_launcher_alarmclock" android:label="@string/app_label" android:requiredForAllUsers="true" android:supportsRtl="true" android:theme="@style/Theme.DeskClock">
-        <activity android:name=".DeskClock" android:label="@string/app_label" android:launchMode="singleTask" android:exported="true" android:windowSoftInputMode="adjustPan">
+    <application android:name=".DeskClockApplication" android:allowBackup="false" android:backupAgent="DeskClockBackupAgent" android:fullBackupContent="@xml/backup_scheme" android:fullBackupOnly="true" android:icon="@mipmap/ic_launcher_clocky" android:label="@string/clocky_app_label" android:requiredForAllUsers="true" android:supportsRtl="true" android:theme="@style/Theme.DeskClock">
+        <activity android:name=".DeskClock" android:label="@string/clocky_app_label" android:launchMode="singleTask" android:exported="true" android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -84,7 +84,7 @@
         </service>
         <activity android:name=".ScreensaverActivity" android:excludeFromRecents="true" android:resizeableActivity="false" android:taskAffinity="" />
         <activity android:name=".settings.ScreensaverSettingsActivity" android:excludeFromRecents="true" android:label="@string/screensaver_settings" android:taskAffinity="" android:theme="@style/Theme.DeskClock.Settings" />
-        <service android:name=".Screensaver" android:label="@string/app_label" android:exported="true" android:permission="android.permission.BIND_DREAM_SERVICE">
+        <service android:name=".Screensaver" android:label="@string/clocky_app_label" android:exported="true" android:permission="android.permission.BIND_DREAM_SERVICE">
             <intent-filter>
                 <action android:name="android.service.dreams.DreamService" />
                 <action android:name="android.app.action.NEXT_ALARM_CLOCK_CHANGED" />
