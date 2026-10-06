@@ -13,17 +13,26 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
+<!--
+  Clocky 4x1 / 4x2 Digital geometry (Phase 0, Issue #31). Values restored from the retained MVP
+  provider metadata in ci/Clocky_MVP_source.zip (res/xml/clock_widget_info.xml) instead of the AOSP
+  generic 206x129dp / 136x59dp sizing. See docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md section 11.
+-->
 
 <appwidget-provider
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:configure="com.stupidsavacan.clocky.widget.DigitalWidgetConfigActivity"
     android:initialLayout="@layout/loading_widget"
-    android:minHeight="@dimen/min_digital_widget_height"
-    android:minWidth="@dimen/min_digital_widget_width"
-    android:minResizeHeight="59dp"
-    android:minResizeWidth="136dp"
+    android:minHeight="70dp"
+    android:minWidth="250dp"
+    android:minResizeHeight="70dp"
+    android:minResizeWidth="250dp"
     android:previewImage="@drawable/appwidget_digital_clock_preview"
     android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="2"
+    android:targetCellWidth="4"
     android:updatePeriodMillis="0"
     android:widgetCategory="keyguard|home_screen"
-    android:widgetFeatures="reconfigurable" />
+    android:widgetFeatures="reconfigurable"
+    tools:ignore="UnusedAttribute" />
