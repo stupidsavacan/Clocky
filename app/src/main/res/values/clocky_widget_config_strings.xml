@@ -11,7 +11,6 @@
     <string name="clocky_date_size" tools:ignore="MissingTranslation">Date size</string>
     <string name="clocky_size_sp_value" tools:ignore="MissingTranslation">%1$.1f sp</string>
     <string name="clocky_show_date" tools:ignore="MissingTranslation">Show date</string>
-    <string name="clocky_widget_date_preview" tools:ignore="MissingTranslation">Fri, Aug 14</string>
     <string name="clocky_letter_spacing_title" tools:ignore="MissingTranslation">Letter spacing</string>
     <string name="clocky_letter_spacing_summary" tools:ignore="MissingTranslation">Adjust character spacing in em units. Negative values tighten text; positive values spread it out.</string>
     <string name="clocky_time_letter_spacing" tools:ignore="MissingTranslation">Time letter spacing</string>
@@ -27,4 +26,15 @@
     <string name="clocky_show" tools:ignore="MissingTranslation">Show</string>
     <string name="clocky_hide" tools:ignore="MissingTranslation">Hide</string>
     <string name="clocky_widget_save" tools:ignore="MissingTranslation">Save widget</string>
+    <string name="clocky_preview_strip" tools:ignore="MissingTranslation">4×1 · Strip</string>
+    <string name="clocky_preview_card" tools:ignore="MissingTranslation">4×2 · Card</string>
+    <string name="clocky_preview_description" tools:ignore="MissingTranslation">Widget preview</string>
+    <string name="clocky_element_time" tools:ignore="MissingTranslation">Time</string>
+    <string name="clocky_element_date" tools:ignore="MissingTranslation">Date</string>
+    <string name="clocky_degraded_weight" tools:ignore="MissingTranslation">%1$s: weight %2$d shows as %3$d on this Android version.</string>
+    <string name="clocky_degraded_font_weight" tools:ignore="MissingTranslation">%1$s: this font only has weight 400, so the system font is shown.</string>
+    <string name="clocky_degraded_font_unknown" tools:ignore="MissingTranslation">%1$s: this font is not available, so the system font is shown.</string>
+    <string name="clocky_degraded_offset" tools:ignore="MissingTranslation">%1$s: position offsets need Android 12 or later. They are kept but not shown.</string>
+    <string name="clocky_degraded_offset_clamped" tools:ignore="MissingTranslation">%1$s: the position offset is limited to this widget size.</string>
+    <string name="clocky_degraded_radius" tools:ignore="MissingTranslation">Background corners show as %1$d dp on this Android version.</string>
 </resources>

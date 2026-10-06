@@ -4,6 +4,8 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.TextClock
 import com.android.alarmclock.DigitalAppWidgetProvider
 import com.android.deskclock.R
 import com.google.android.material.slider.Slider
@@ -17,6 +19,8 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
+import com.stupidsavacan.clocky.widget.digital.DigitalWidgetFit
+import android.os.Looper
 import org.robolectric.annotation.Config
 
 /**
@@ -95,6 +99,27 @@ class DigitalWidgetConfigActivityTest {
                 )
                 val saved = SharedPreferencesDesignStore(activity).load(widgetId)
                 assertEquals(700, saved.design.time.style.weight)
+            }
+    }
+
+    @Test
+    fun previewAppliesTheProductionRemoteViewsAndFollowsEdits() {
+        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(44))
+            .setup()
+            .use { controller ->
+                val activity = controller.get()
+                shadowOf(Looper.getMainLooper()).idle()
+                val frame = activity.findViewById<FrameLayout>(R.id.clocky_preview_frame)
+                val time = DigitalWidgetFit.visibleTextIn(frame, R.id.clocky_time_slot)
+                assertTrue("preview shows the widget's TextClock fragment", time is TextClock)
+                assertEquals(R.id.clocky_face_w400, time!!.id)
+
+                activity.findViewById<Slider>(R.id.clocky_time_weight_slider).value = 700f
+                shadowOf(Looper.getMainLooper()).idle()
+                assertEquals(
+                    R.id.clocky_face_w700,
+                    DigitalWidgetFit.visibleTextIn(frame, R.id.clocky_time_slot)!!.id,
+                )
             }
     }
 }

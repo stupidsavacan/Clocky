@@ -2,27 +2,29 @@ package com.stupidsavacan.clocky.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Intent
-import android.graphics.Typeface
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 import com.android.deskclock.R
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.slider.Slider
 import com.google.android.material.switchmaterial.SwitchMaterial
-import com.stupidsavacan.clocky.customization.font.DigitalWidgetWeightRenderer
 import com.stupidsavacan.clocky.customization.font.WidgetLetterSpacingPolicy
 import com.stupidsavacan.clocky.customization.ui.WidgetProfileDateVisibilityEditor
 import com.stupidsavacan.clocky.customization.ui.WidgetProfileSizeEditor
 import com.stupidsavacan.clocky.customization.ui.WidgetProfileWeightEditor
+import com.stupidsavacan.clocky.design.model.DigitalDesign
 import com.stupidsavacan.clocky.design.model.SizeClass
 import com.stupidsavacan.clocky.design.model.WidgetInstance
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
+import com.stupidsavacan.clocky.widget.digital.DegradationNotices
 import com.stupidsavacan.clocky.widget.digital.DigitalWidgetUpdater
+import com.stupidsavacan.clocky.widget.digital.PreviewHost
 
 /**
  * Clocky-owned configuration surface for the Clocky Digital widget.
@@ -56,8 +58,6 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         val currentStrip = current.layout.overrides[SizeClass.STRIP]
         val currentCard = current.layout.overrides[SizeClass.CARD]
 
-        val timePreview: TextView = findViewById(R.id.clocky_time_preview)
-        val datePreview: TextView = findViewById(R.id.clocky_date_preview)
         val timeValue: TextView = findViewById(R.id.clocky_time_weight_value)
         val dateValue: TextView = findViewById(R.id.clocky_date_weight_value)
         val timeSlider: Slider = findViewById(R.id.clocky_time_weight_slider)
@@ -116,46 +116,41 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             hideId = R.id.clocky_four_by_two_date_hide,
         )
         val saveButton: Button = findViewById(R.id.clocky_widget_save)
+        val previewSizeClass: MaterialButtonToggleGroup = findViewById(R.id.clocky_preview_size_class)
+        val previewNotice: TextView = findViewById(R.id.clocky_preview_notice)
 
         timeSlider.value = current.time.style.weight.toFloat()
         dateSlider.value = current.date.style.weight.toFloat()
         prepareSizeSlider(timeSizeSlider, current.time.style.sizeSp)
         prepareSizeSlider(dateSizeSlider, current.date.style.sizeSp)
         dateEnabled.isChecked = current.date.visible
-        datePreview.visibility = if (current.date.visible) View.VISIBLE else View.GONE
         timeLetterSpacingSlider.value = WidgetLetterSpacingPolicy.normalize(current.time.style.letterSpacingEm)
         dateLetterSpacingSlider.value = WidgetLetterSpacingPolicy.normalize(current.date.style.letterSpacingEm)
 
         fun refreshTime(weight: Int) {
             timeValue.text = weight.toString()
-            applyPreviewWeight(timePreview, weight)
         }
 
         fun refreshDate(weight: Int) {
             dateValue.text = weight.toString()
-            applyPreviewWeight(datePreview, weight)
         }
 
         fun refreshTimeSize(sizeSp: Float) {
             timeSizeValue.text = getString(R.string.clocky_size_sp_value, sizeSp)
-            timePreview.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, sizeSp)
         }
 
         fun refreshDateSize(sizeSp: Float) {
             dateSizeValue.text = getString(R.string.clocky_size_sp_value, sizeSp)
-            datePreview.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, sizeSp)
         }
 
         fun refreshTimeLetterSpacing(value: Float) {
             val safe = WidgetLetterSpacingPolicy.normalize(value)
             timeLetterSpacingValue.text = WidgetLetterSpacingPolicy.display(safe)
-            timePreview.letterSpacing = safe
         }
 
         fun refreshDateLetterSpacing(value: Float) {
             val safe = WidgetLetterSpacingPolicy.normalize(value)
             dateLetterSpacingValue.text = WidgetLetterSpacingPolicy.display(safe)
-            datePreview.letterSpacing = safe
         }
 
         refreshTime(current.time.style.weight)
@@ -248,11 +243,8 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         dateLetterSpacingSlider.addOnChangeListener { _, value, _ ->
             refreshDateLetterSpacing(value)
         }
-        dateEnabled.setOnCheckedChangeListener { _, checked ->
-            datePreview.visibility = if (checked) View.VISIBLE else View.GONE
-        }
 
-        saveButton.setOnClickListener {
+        fun currentDesign(): DigitalDesign {
             val withBaseSettings = current.copy(
                 time = current.time.copy(
                     style = current.time.style.copy(
@@ -304,12 +296,41 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
                 cardTimeSizeSp = if (fourByTwoSize.timeInherited) null else fourByTwoSize.timeSlider.value,
                 cardDateSizeSp = if (fourByTwoSize.dateInherited) null else fourByTwoSize.dateSlider.value,
             )
-            val updated = WidgetProfileDateVisibilityEditor.apply(
+            return WidgetProfileDateVisibilityEditor.apply(
                 design = withProfileSizes,
                 baseDateVisible = dateEnabled.isChecked,
                 stripMode = selectedDateVisibilityMode(fourByOneDate),
                 cardMode = selectedDateVisibilityMode(fourByTwoDate),
             )
+        }
+
+        val previewHost = PreviewHost(findViewById<FrameLayout>(R.id.clocky_preview_frame), appWidgetId) { spec ->
+            val notices = DegradationNotices.describe(this, spec.degradations)
+            previewNotice.text = notices.joinToString(separator = System.lineSeparator())
+            previewNotice.visibility = if (notices.isEmpty()) View.GONE else View.VISIBLE
+        }
+        previewSizeClass.check(
+            if (previewHost.hostSizeClass() == SizeClass.STRIP) R.id.clocky_preview_strip else R.id.clocky_preview_card,
+        )
+        fun selectedPreviewClass(): SizeClass =
+            if (previewSizeClass.checkedButtonId == R.id.clocky_preview_strip) SizeClass.STRIP else SizeClass.CARD
+        val schedulePreview = { previewHost.schedule(currentDesign(), selectedPreviewClass()) }
+        previewSizeClass.addOnButtonCheckedListener { _, _, isChecked -> if (isChecked) schedulePreview() }
+        listOf(
+            timeSlider, dateSlider, timeSizeSlider, dateSizeSlider, timeLetterSpacingSlider, dateLetterSpacingSlider,
+            fourByOne.timeSlider, fourByOne.dateSlider, fourByTwo.timeSlider, fourByTwo.dateSlider,
+            fourByOneSize.timeSlider, fourByOneSize.dateSlider, fourByTwoSize.timeSlider, fourByTwoSize.dateSlider,
+        ).forEach { slider -> slider.addOnChangeListener { _, _, _ -> schedulePreview() } }
+        dateEnabled.setOnCheckedChangeListener { _, _ -> schedulePreview() }
+        listOf(fourByOne, fourByTwo).forEach { controls -> controls.onToggle = schedulePreview }
+        listOf(fourByOneSize, fourByTwoSize).forEach { controls -> controls.onToggle = schedulePreview }
+        listOf(fourByOneDate, fourByTwoDate).forEach { controls ->
+            controls.group.setOnCheckedChangeListener { _, _ -> schedulePreview() }
+        }
+        schedulePreview()
+
+        saveButton.setOnClickListener {
+            val updated = currentDesign()
             store.save(WidgetInstance(appWidgetId, updated))
             DigitalWidgetUpdater.update(this, AppWidgetManager.getInstance(this), appWidgetId)
 
@@ -395,6 +416,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
                 controls.timeInherited = true
                 controls.dateInherited = true
             }
+            controls.onToggle()
         }
     }
 
@@ -428,6 +450,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
                 controls.timeInherited = true
                 controls.dateInherited = true
             }
+            controls.onToggle()
         }
     }
 
@@ -478,17 +501,6 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         controls.dateValue.text = getString(R.string.clocky_size_sp_value, sizeSp)
     }
 
-    private fun applyPreviewWeight(view: TextView, requestedWeight: Int) {
-        val effective = DigitalWidgetWeightRenderer.effectiveWeight(requestedWeight)
-        view.typeface = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val base = Typeface.create("sans-serif", Typeface.NORMAL)
-            Typeface.create(base, effective, false)
-        } else {
-            val spec = DigitalWidgetWeightRenderer.legacyTypefaceSpec(effective)
-            Typeface.create(spec.familyName, spec.style)
-        }
-    }
-
     private data class ProfileControls(
         val enabled: SwitchMaterial,
         val container: View,
@@ -498,6 +510,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         val dateValue: TextView,
         var timeInherited: Boolean = true,
         var dateInherited: Boolean = true,
+        var onToggle: () -> Unit = {},
     )
 
     private data class SizeProfileControls(
@@ -509,6 +522,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         val dateValue: TextView,
         var timeInherited: Boolean = true,
         var dateInherited: Boolean = true,
+        var onToggle: () -> Unit = {},
     )
 
     private data class DateVisibilityControls(

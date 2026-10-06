@@ -14,9 +14,11 @@ import com.android.alarmclock.DigitalAppWidgetProvider
 import com.android.deskclock.DeskClock
 import com.android.deskclock.R
 import com.android.deskclock.Utils
+import com.stupidsavacan.clocky.design.model.DigitalDesign
 import com.stupidsavacan.clocky.design.model.WidgetInstance
 import com.stupidsavacan.clocky.design.resolve.DesignResolver
 import com.stupidsavacan.clocky.design.resolve.RenderEnvironment
+import com.stupidsavacan.clocky.design.resolve.ResolvedDigitalSpec
 import com.stupidsavacan.clocky.design.resolve.SizeContext
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
 import java.util.Locale
@@ -54,21 +56,32 @@ object DigitalWidgetUpdater {
         size: SizeContext,
         onClick: PendingIntent?,
     ): RemoteViews {
-        val density = context.resources.displayMetrics.density
         val spec = DesignResolver.resolve(instance.design, size, environment(context))
-        val portrait = DigitalWidgetComposer.compose(
-            context,
-            spec,
-            DigitalWidgetFit.fit(context, spec, px(size.minWidthDp, density), px(size.maxHeightDp, density)),
-            onClick,
-        )
-        val landscape = DigitalWidgetComposer.compose(
-            context,
-            spec,
-            DigitalWidgetFit.fit(context, spec, px(size.maxWidthDp, density), px(size.minHeightDp, density)),
-            onClick,
-        )
+        val portrait = compose(context, spec, size.minWidthDp, size.maxHeightDp, onClick)
+        val landscape = compose(context, spec, size.maxWidthDp, size.minHeightDp, onClick)
         return RemoteViews(landscape, portrait)
+    }
+
+    /** The portrait half of [build], for the editor's PreviewHost (no click handling). */
+    fun buildPortrait(
+        context: Context,
+        design: DigitalDesign,
+        size: SizeContext,
+    ): Pair<ResolvedDigitalSpec, RemoteViews> {
+        val spec = DesignResolver.resolve(design, size, environment(context))
+        return spec to compose(context, spec, size.minWidthDp, size.maxHeightDp, onClick = null)
+    }
+
+    private fun compose(
+        context: Context,
+        spec: ResolvedDigitalSpec,
+        widthDp: Int,
+        heightDp: Int,
+        onClick: PendingIntent?,
+    ): RemoteViews {
+        val density = context.resources.displayMetrics.density
+        val sizes = DigitalWidgetFit.fit(context, spec, px(widthDp, density), px(heightDp, density))
+        return DigitalWidgetComposer.compose(context, spec, sizes, onClick)
     }
 
     fun sizeContextOf(options: Bundle): SizeContext = SizeContext(
