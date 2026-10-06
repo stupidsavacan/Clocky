@@ -1,9 +1,12 @@
 package com.stupidsavacan.clocky.customization.ui
 
-import com.stupidsavacan.clocky.customization.model.DateSettings
-import com.stupidsavacan.clocky.customization.model.ProfileOverride
-import com.stupidsavacan.clocky.customization.model.TimeSettings
-import com.stupidsavacan.clocky.customization.model.WidgetSettings
+import com.stupidsavacan.clocky.design.model.DateElement
+import com.stupidsavacan.clocky.design.model.DesignLayout
+import com.stupidsavacan.clocky.design.model.DigitalDesign
+import com.stupidsavacan.clocky.design.model.LayoutPatch
+import com.stupidsavacan.clocky.design.model.SizeClass
+import com.stupidsavacan.clocky.design.model.TextStyle
+import com.stupidsavacan.clocky.design.model.TimeElement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -25,7 +28,7 @@ class WidgetProfileWeightEditorTest {
     @Test
     fun enabledStateUsesExplicitProfileWeights() {
         val state = WidgetProfileWeightEditor.state(
-            ProfileOverride(timeWeight = 650, dateWeight = 350),
+            LayoutPatch(timeWeight = 650, dateWeight = 350),
             400,
             400,
         )
@@ -40,7 +43,7 @@ class WidgetProfileWeightEditorTest {
     @Test
     fun partialStateKeepsPerFieldInheritance() {
         val state = WidgetProfileWeightEditor.state(
-            ProfileOverride(timeWeight = 650, dateWeight = null),
+            LayoutPatch(timeWeight = 650, dateWeight = null),
             400,
             430,
         )
@@ -54,12 +57,12 @@ class WidgetProfileWeightEditorTest {
 
     @Test
     fun disablingWeightsPreservesOtherProfileFields() {
-        val original = ProfileOverride(
+        val original = LayoutPatch(
             timeWeight = 575,
             dateWeight = 430,
             timeSizeSp = 50f,
             dateYDp = 6f,
-            dateEnabled = false,
+            dateVisible = false,
         )
 
         val updated = WidgetProfileWeightEditor.updateOverride(
@@ -74,17 +77,17 @@ class WidgetProfileWeightEditorTest {
         assertNull(updated.dateWeight)
         assertEquals(50f, updated.timeSizeSp)
         assertEquals(6f, updated.dateYDp)
-        assertEquals(false, updated.dateEnabled)
+        assertEquals(false, updated.dateVisible)
     }
 
     @Test
     fun enabledUpdatePreservesInheritedNullAndOtherFields() {
-        val original = ProfileOverride(
+        val original = LayoutPatch(
             timeWeight = 650,
             dateWeight = null,
             timeSizeSp = 50f,
             dateYDp = 6f,
-            dateEnabled = false,
+            dateVisible = false,
         )
 
         val updated = WidgetProfileWeightEditor.updateOverride(
@@ -99,7 +102,7 @@ class WidgetProfileWeightEditorTest {
         assertNull(updated.dateWeight)
         assertEquals(50f, updated.timeSizeSp)
         assertEquals(6f, updated.dateYDp)
-        assertEquals(false, updated.dateEnabled)
+        assertEquals(false, updated.dateVisible)
     }
 
     @Test
@@ -119,7 +122,7 @@ class WidgetProfileWeightEditorTest {
     @Test
     fun disablingWeightOnlyProfileCollapsesToNull() {
         val updated = WidgetProfileWeightEditor.updateOverride(
-            ProfileOverride(timeWeight = 600, dateWeight = 500),
+            LayoutPatch(timeWeight = 600, dateWeight = 500),
             enabled = false,
             timeWeight = 600,
             dateWeight = 500,
@@ -130,55 +133,62 @@ class WidgetProfileWeightEditorTest {
 
     @Test
     fun applyUpdatesBothProfilesWithoutChangingBase() {
-        val settings = WidgetSettings(
-            appWidgetId = 11,
-            time = TimeSettings(requestedWeight = 575),
-            date = DateSettings(requestedWeight = 430),
+        val settings = DigitalDesign(
+            time = TimeElement(TextStyle(sizeSp = 64f, weight = 575)),
+            date = DateElement(style = TextStyle(sizeSp = 14f, weight = 430)),
         )
 
         val updated = WidgetProfileWeightEditor.apply(
             settings,
-            fourByOneEnabled = true,
-            fourByOneTimeWeight = 700,
-            fourByOneDateWeight = 300,
-            fourByTwoEnabled = true,
-            fourByTwoTimeWeight = 500,
-            fourByTwoDateWeight = 600,
+            stripEnabled = true,
+            stripTimeWeight = 700,
+            stripDateWeight = 300,
+            cardEnabled = true,
+            cardTimeWeight = 500,
+            cardDateWeight = 600,
         )
 
-        assertEquals(575, updated.time.requestedWeight)
-        assertEquals(430, updated.date.requestedWeight)
-        assertEquals(700, updated.fourByOne?.timeWeight)
-        assertEquals(300, updated.fourByOne?.dateWeight)
-        assertEquals(500, updated.fourByTwo?.timeWeight)
-        assertEquals(600, updated.fourByTwo?.dateWeight)
+        assertEquals(575, updated.time.style.weight)
+        assertEquals(430, updated.date.style.weight)
+        assertEquals(700, updated.layout.overrides[SizeClass.STRIP]?.timeWeight)
+        assertEquals(300, updated.layout.overrides[SizeClass.STRIP]?.dateWeight)
+        assertEquals(500, updated.layout.overrides[SizeClass.CARD]?.timeWeight)
+        assertEquals(600, updated.layout.overrides[SizeClass.CARD]?.dateWeight)
     }
 
     @Test
     fun applyKeepsProfilesIndependentIncludingInheritedFields() {
-        val settings = WidgetSettings(
-            appWidgetId = 12,
-            time = TimeSettings(requestedWeight = 575),
-            date = DateSettings(requestedWeight = 430),
-            fourByOne = ProfileOverride(timeSizeSp = 42f),
-            fourByTwo = ProfileOverride(dateYDp = 3f),
+        val settings = DigitalDesign(
+            time = TimeElement(TextStyle(sizeSp = 64f, weight = 575)),
+            date = DateElement(style = TextStyle(sizeSp = 14f, weight = 430)),
+            layout = DesignLayout(
+
+                overrides = mapOf(
+
+                    SizeClass.STRIP to LayoutPatch(timeSizeSp = 42f),
+
+                    SizeClass.CARD to LayoutPatch(dateYDp = 3f),
+
+                ),
+
+            ),
         )
 
         val updated = WidgetProfileWeightEditor.apply(
             settings,
-            fourByOneEnabled = true,
-            fourByOneTimeWeight = 700,
-            fourByOneDateWeight = null,
-            fourByTwoEnabled = true,
-            fourByTwoTimeWeight = null,
-            fourByTwoDateWeight = 600,
+            stripEnabled = true,
+            stripTimeWeight = 700,
+            stripDateWeight = null,
+            cardEnabled = true,
+            cardTimeWeight = null,
+            cardDateWeight = 600,
         )
 
-        assertEquals(700, updated.fourByOne?.timeWeight)
-        assertNull(updated.fourByOne?.dateWeight)
-        assertEquals(42f, updated.fourByOne?.timeSizeSp)
-        assertNull(updated.fourByTwo?.timeWeight)
-        assertEquals(600, updated.fourByTwo?.dateWeight)
-        assertEquals(3f, updated.fourByTwo?.dateYDp)
+        assertEquals(700, updated.layout.overrides[SizeClass.STRIP]?.timeWeight)
+        assertNull(updated.layout.overrides[SizeClass.STRIP]?.dateWeight)
+        assertEquals(42f, updated.layout.overrides[SizeClass.STRIP]?.timeSizeSp)
+        assertNull(updated.layout.overrides[SizeClass.CARD]?.timeWeight)
+        assertEquals(600, updated.layout.overrides[SizeClass.CARD]?.dateWeight)
+        assertEquals(3f, updated.layout.overrides[SizeClass.CARD]?.dateYDp)
     }
 }

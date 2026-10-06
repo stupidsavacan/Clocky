@@ -11,7 +11,6 @@
     <string name="clocky_date_size" tools:ignore="MissingTranslation">Date size</string>
     <string name="clocky_size_sp_value" tools:ignore="MissingTranslation">%1$.1f sp</string>
     <string name="clocky_show_date" tools:ignore="MissingTranslation">Show date</string>
-    <string name="clocky_widget_date_preview" tools:ignore="MissingTranslation">Fri, Aug 14</string>
     <string name="clocky_letter_spacing_title" tools:ignore="MissingTranslation">Letter spacing</string>
     <string name="clocky_letter_spacing_summary" tools:ignore="MissingTranslation">Adjust character spacing in em units. Negative values tighten text; positive values spread it out.</string>
     <string name="clocky_time_letter_spacing" tools:ignore="MissingTranslation">Time letter spacing</string>
@@ -27,4 +26,54 @@
     <string name="clocky_show" tools:ignore="MissingTranslation">Show</string>
     <string name="clocky_hide" tools:ignore="MissingTranslation">Hide</string>
     <string name="clocky_widget_save" tools:ignore="MissingTranslation">Save widget</string>
+    <string name="clocky_preview_strip" tools:ignore="MissingTranslation">4×1 · Strip</string>
+    <string name="clocky_preview_card" tools:ignore="MissingTranslation">4×2 · Card</string>
+    <string name="clocky_preview_description" tools:ignore="MissingTranslation">Widget preview</string>
+    <string name="clocky_element_time" tools:ignore="MissingTranslation">Time</string>
+    <string name="clocky_element_date" tools:ignore="MissingTranslation">Date</string>
+    <string name="clocky_degraded_weight" tools:ignore="MissingTranslation">%1$s: weight %2$d shows as %3$d on this Android version.</string>
+    <string name="clocky_degraded_font_weight" tools:ignore="MissingTranslation">%1$s: this font only has weight 400, so the system font is shown.</string>
+    <string name="clocky_degraded_font_unknown" tools:ignore="MissingTranslation">%1$s: this font is not available, so the system font is shown.</string>
+    <string name="clocky_degraded_offset" tools:ignore="MissingTranslation">%1$s: position offsets need Android 12 or later. They are kept but not shown.</string>
+    <string name="clocky_degraded_offset_clamped" tools:ignore="MissingTranslation">%1$s: the position offset is limited to this widget size.</string>
+    <string name="clocky_degraded_radius" tools:ignore="MissingTranslation">Background corners show as %1$d dp on this Android version.</string>
+    <string name="clocky_style_title" tools:ignore="MissingTranslation">Style</string>
+    <string name="clocky_time_font" tools:ignore="MissingTranslation">Time font</string>
+    <string name="clocky_date_font" tools:ignore="MissingTranslation">Date font</string>
+    <string name="clocky_time_color" tools:ignore="MissingTranslation">Time color</string>
+    <string name="clocky_date_color" tools:ignore="MissingTranslation">Date color</string>
+    <string name="clocky_time_opacity" tools:ignore="MissingTranslation">Time opacity</string>
+    <string name="clocky_date_opacity" tools:ignore="MissingTranslation">Date opacity</string>
+    <string name="clocky_time_alignment" tools:ignore="MissingTranslation">Time alignment</string>
+    <string name="clocky_date_alignment" tools:ignore="MissingTranslation">Date alignment</string>
+    <string name="clocky_date_format" tools:ignore="MissingTranslation">Date format</string>
+    <string name="clocky_date_format_auto" tools:ignore="MissingTranslation">Auto (%1$s)</string>
+    <string name="clocky_background_title" tools:ignore="MissingTranslation">Background</string>
+    <string name="clocky_background_none" tools:ignore="MissingTranslation">None</string>
+    <string name="clocky_background_solid" tools:ignore="MissingTranslation">Solid</string>
+    <string name="clocky_background_opacity" tools:ignore="MissingTranslation">Background opacity</string>
+    <string name="clocky_background_corners" tools:ignore="MissingTranslation">Corners</string>
+    <string name="clocky_background_padding" tools:ignore="MissingTranslation">Inner padding</string>
+    <string name="clocky_corners_system" tools:ignore="MissingTranslation">Match system</string>
+    <string name="clocky_dp_value" tools:ignore="MissingTranslation">%1$d dp</string>
+    <string name="clocky_percent_value" tools:ignore="MissingTranslation">%1$d%%</string>
+    <string name="clocky_align_start" tools:ignore="MissingTranslation">Start</string>
+    <string name="clocky_align_center" tools:ignore="MissingTranslation">Center</string>
+    <string name="clocky_align_end" tools:ignore="MissingTranslation">End</string>
+    <string name="clocky_font_system" tools:ignore="MissingTranslation">System</string>
+    <string name="clocky_font_light" tools:ignore="MissingTranslation">Light</string>
+    <string name="clocky_font_rounded" tools:ignore="MissingTranslation">Rounded</string>
+    <string name="clocky_font_serif" tools:ignore="MissingTranslation">Serif</string>
+    <string name="clocky_font_condensed" tools:ignore="MissingTranslation">Condensed</string>
+    <string name="clocky_font_mono" tools:ignore="MissingTranslation">Mono</string>
+    <string name="clocky_color_white" tools:ignore="MissingTranslation">White</string>
+    <string name="clocky_color_ink" tools:ignore="MissingTranslation">Ink</string>
+    <string name="clocky_color_stone" tools:ignore="MissingTranslation">Stone</string>
+    <string name="clocky_color_sky" tools:ignore="MissingTranslation">Sky</string>
+    <string name="clocky_color_mint" tools:ignore="MissingTranslation">Mint</string>
+    <string name="clocky_color_amber" tools:ignore="MissingTranslation">Amber</string>
+    <string name="clocky_color_coral" tools:ignore="MissingTranslation">Coral</string>
+    <string name="clocky_color_dark" tools:ignore="MissingTranslation">Dark</string>
+    <string name="clocky_color_navy" tools:ignore="MissingTranslation">Navy</string>
+    <string name="clocky_color_forest" tools:ignore="MissingTranslation">Forest</string>
 </resources>

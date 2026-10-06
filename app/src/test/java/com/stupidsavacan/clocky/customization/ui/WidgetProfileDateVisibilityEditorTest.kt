@@ -1,8 +1,12 @@
 package com.stupidsavacan.clocky.customization.ui
 
-import com.stupidsavacan.clocky.customization.model.DateSettings
-import com.stupidsavacan.clocky.customization.model.ProfileOverride
-import com.stupidsavacan.clocky.customization.model.WidgetSettings
+import com.stupidsavacan.clocky.design.model.DateElement
+import com.stupidsavacan.clocky.design.model.DesignLayout
+import com.stupidsavacan.clocky.design.model.DigitalDesign
+import com.stupidsavacan.clocky.design.model.LayoutPatch
+import com.stupidsavacan.clocky.design.model.SizeClass
+import com.stupidsavacan.clocky.design.model.TextStyle
+import com.stupidsavacan.clocky.design.model.TimeElement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -28,10 +32,10 @@ class WidgetProfileDateVisibilityEditorTest {
 
     @Test
     fun inheritClearsOnlyDateVisibilityAndPreservesWeightOverrides() {
-        val original = ProfileOverride(
+        val original = LayoutPatch(
             timeWeight = 650,
             dateWeight = 350,
-            dateEnabled = false,
+            dateVisible = false,
         )
 
         val updated = WidgetProfileDateVisibilityEditor.updateOverride(
@@ -42,14 +46,14 @@ class WidgetProfileDateVisibilityEditorTest {
         requireNotNull(updated)
         assertEquals(650, updated.timeWeight)
         assertEquals(350, updated.dateWeight)
-        assertNull(updated.dateEnabled)
+        assertNull(updated.dateVisible)
     }
 
     @Test
     fun inheritCollapsesDateOnlyProfileToNull() {
         assertNull(
             WidgetProfileDateVisibilityEditor.updateOverride(
-                ProfileOverride(dateEnabled = true),
+                LayoutPatch(dateVisible = true),
                 WidgetProfileDateVisibilityEditor.Mode.INHERIT,
             )
         )
@@ -66,30 +70,38 @@ class WidgetProfileDateVisibilityEditorTest {
             WidgetProfileDateVisibilityEditor.Mode.HIDE,
         )
 
-        assertTrue(show?.dateEnabled == true)
-        assertFalse(hide?.dateEnabled ?: true)
+        assertTrue(show?.dateVisible == true)
+        assertFalse(hide?.dateVisible ?: true)
     }
 
     @Test
     fun applyUpdatesBaseAndProfilesIndependently() {
-        val settings = WidgetSettings(
-            appWidgetId = 18,
-            date = DateSettings(enabled = true),
-            fourByOne = ProfileOverride(timeWeight = 575),
-            fourByTwo = ProfileOverride(dateWeight = 650),
+        val settings = DigitalDesign(
+            date = DateElement(visible = true),
+            layout = DesignLayout(
+
+                overrides = mapOf(
+
+                    SizeClass.STRIP to LayoutPatch(timeWeight = 575),
+
+                    SizeClass.CARD to LayoutPatch(dateWeight = 650),
+
+                ),
+
+            ),
         )
 
         val updated = WidgetProfileDateVisibilityEditor.apply(
             settings,
-            baseDateEnabled = false,
-            fourByOneMode = WidgetProfileDateVisibilityEditor.Mode.SHOW,
-            fourByTwoMode = WidgetProfileDateVisibilityEditor.Mode.HIDE,
+            baseDateVisible = false,
+            stripMode = WidgetProfileDateVisibilityEditor.Mode.SHOW,
+            cardMode = WidgetProfileDateVisibilityEditor.Mode.HIDE,
         )
 
-        assertFalse(updated.date.enabled)
-        assertEquals(575, updated.fourByOne?.timeWeight)
-        assertTrue(updated.fourByOne?.dateEnabled == true)
-        assertEquals(650, updated.fourByTwo?.dateWeight)
-        assertFalse(updated.fourByTwo?.dateEnabled ?: true)
+        assertFalse(updated.date.visible)
+        assertEquals(575, updated.layout.overrides[SizeClass.STRIP]?.timeWeight)
+        assertTrue(updated.layout.overrides[SizeClass.STRIP]?.dateVisible == true)
+        assertEquals(650, updated.layout.overrides[SizeClass.CARD]?.dateWeight)
+        assertFalse(updated.layout.overrides[SizeClass.CARD]?.dateVisible ?: true)
     }
 }

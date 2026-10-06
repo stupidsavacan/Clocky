@@ -26,7 +26,7 @@ class DigitalWidgetMetadataTest {
             while (it.next() != XmlPullParser.START_TAG || it.name != "appwidget-provider") Unit
             return listOf(
                 "minWidth", "minHeight", "minResizeWidth", "minResizeHeight",
-                "targetCellWidth", "targetCellHeight", "widgetFeatures", "configure",
+                "targetCellWidth", "targetCellHeight", "widgetFeatures", "configure", "previewLayout",
             ).associateWith { name -> it.getAttributeValue(ANDROID_NS, name) }
         }
     }
@@ -58,6 +58,11 @@ class DigitalWidgetMetadataTest {
         assertEquals("2", attrs["targetCellHeight"])
         // widgetFeatures="reconfigurable" is the flag value 0x1.
         assertEquals("0x1", attrs["widgetFeatures"])
+        // API 31+ pickers render the Clocky preview layout instead of the AOSP preview image.
+        assertEquals(
+            "@" + com.android.deskclock.R.layout.clocky_digital_widget_preview,
+            attrs["previewLayout"],
+        )
     }
 
     private companion object {

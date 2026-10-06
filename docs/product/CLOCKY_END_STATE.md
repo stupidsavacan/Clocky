@@ -549,7 +549,7 @@ Design
 **主要な設計判断**
 1. **フォントの断片を合成する**: 書体はスロットへの `addView` で差し替え、weight は断片の中で可視/不可視を切り替える。これで「書体の数×weight×要素」の組み合わせを「書体の数」個のレイアウトファイルに抑えられる。今の28 TextClock 方式から移行する。
 2. **今ある純粋関数を活かす**: `FontWeightResolver`、`RemoteViewsFontWeightPolicy`、`WidgetLetterSpacingPolicy`、`DigitalWidgetFormatPolicy`、`DigitalWidgetOffsetRenderer` の縮退ロジックは、resolve/ と render/ の部品として残す。`ProfileOverride` と各 Editor オブジェクトは汎用の Patch へ置き換える。
-3. **Digital の provider を Clocky 側へ移す**: AOSP の world-city list とオートサイザーを主経路から外す。World Clock family は別の provider にする（Issue #31 の3番の方針を採る）。リリース前なので、provider のクラス名が変わることによる移行コストはない。
+3. **Digital の provider を Clocky 側へ移す**: AOSP の world-city list とオートサイザーを主経路から外す。World Clock family は別の provider にする（Issue #31 の3番の方針を採る）。*2026-10-06 実機検証による更新:* provider のクラス名を変えると、アプリ更新時に配置済みウィジェットが削除される（`android.appwidget.oldName` を付けても、API 30 の in-place 更新では保持されなかった）。そのため実装は Clocky 側へ移しつつ、登録上の component 名 `com.android.alarmclock.DigitalAppWidgetProvider` は互換のために維持する（`docs/architecture/PHASE_1A_DIGITAL_CORE.md` §5）。
 4. **テストの境界**: resolve/ は純粋な Kotlin なので unit test で網羅する。render/ は Robolectric で RemoteViews を apply したスナップショットを比べる。providers/ は実機の matrix で確認する。
 
 ---

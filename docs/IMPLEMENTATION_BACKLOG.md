@@ -61,6 +61,51 @@ Exit gate: the existing Digital widget can be added, configured, rendered, and r
 - Digital widget picker `previewImage` (AOSP image) and the world-city list / autosizer in the Digital path: replaced when Clocky owns the Digital provider (Phase 1A).
 - Other AOSP alarm/timer/stopwatch notification `PendingIntent`s without mutability flags: F1 targetSdk runtime work.
 
+## Phase 1A — Digital Core (`CLOCKY_END_STATE.md` §13) — complete (PR #39)
+
+Exit gate: Clocky-owned Digital is stable for the 4×1 / 4×2 family, and the editor preview matches the widget because both use the same resolved specification and RemoteViews path. Design record: `docs/architecture/PHASE_1A_DIGITAL_CORE.md`.
+
+- [x] Design model v2 (`design/model`), schema-2 JSON codec, and a one-way v1 → v2 migration written back in place (`design/storage`). Decode failures render defaults and never overwrite.
+- [x] `SizeClassResolver`: Strip (`0 < minHeight < 100dp`) / Card. Phase 0 measured heights classify the same way.
+- [x] `DesignResolver`: requested → effective (weight per SDK, legacy families exact at 400, RTL-mirrored and clamped X/Y with 0dp before API 31, explicit `h:mm`/`HH:mm`, radius variants before API 31) plus a `Degradation` list.
+- [x] Clocky-owned provider (`ClockyDigitalWidgetProvider`), composer (template + per-font fragments via `addView`), fit (one common scale measured on the applied production RemoteViews with worst-case strings), Native background. The AOSP Digital implementation, city list, sizer and Phase 0 renderers are removed.
+- [x] The legacy component name `com.android.alarmclock.DigitalAppWidgetProvider` is kept as a one-line alias: renaming deleted placed widgets on update even with `oldName` (API 30 evidence; End-State §12 updated).
+- [x] PreviewHost: the editor applies the same `buildPortrait` RemoteViews, with a Strip/Card toggle and degradation notices.
+- [x] Editor controls: font, color + opacity, START/CENTER/END, date format (Locale Auto + six literal presets), background (None/Solid, color, opacity, corners, padding).
+- [x] Robolectric: composition, reapply idempotence, gravity remotability, background, fit (native graphics), store migration, preview contract, style controls → save (SDK 23/28/34).
+- Device evidence (2026-10-06, `google_apis` x86_64 emulators, Pixel Launcher, real launcher driven over ADB):
+  - API 30:
+    - [x] Phase 0 → 1A in-place upgrade keeps the placed widget and migrates its v1 settings to v2.
+    - [x] Strip hides the date per the migrated override.
+    - [x] Editor preview = saved 4×2 widget (Amber System time, Mono `yyyy.MM.dd` date END-aligned, Solid Dark 24dp drawable background).
+    - [x] TextClock ticked 1:39 → 1:41 with the Clocky process killed: no app update loop.
+  - API 35:
+    - [x] Fresh add → config (Card preview from the host's real size).
+    - [x] Coral Serif + Solid with system-radius outline: preview = widget.
+    - [x] 4×2 → 4×1 → 4×2 resize.
+    - [x] Launcher pencil reconfigure opens the saved design; setting the Strip date to Hide updates preview and widget.
+    - [x] Delete clears the settings.
+  - API 25:
+    - [x] Fresh add → config; Mint on Navy Solid 16dp (drawable path) renders identically in preview and launcher.
+    - [x] Requested weight 600 is stored, and the editor discloses "weight 600 shows as 500".
+    - [x] 4×1 resize without clipping.
+    - [x] Delete clears the settings.
+  - [x] No Clocky entries in any emulator's crash buffer.
+  - Physical moto g13 (API 34, Motorola Launcher3, ja-JP; 2026-10-07, driven with `tools/device/cdev.py`):
+    - [x] Fresh add → config; Back → "appWidgetId was not returned", no widget or settings left.
+    - [x] Save → Amber time, Solid Dark 24dp (API 31+ outline): preview = widget (id 22, schema 2).
+    - [x] Resize to one row: the editor's host-derived class is **Strip** (`OPTION_APPWIDGET_MIN_HEIGHT` < 100dp). `cdev`'s "Card (est.)" comes from the portrait host-view height, ~122dp.
+    - [x] The launcher pencil reconfigure keeps id 22; setting the Strip date to Hide shows in the preview and the widget; resizing back to two rows brings the date back.
+    - [x] Delete → `<map />`; no crash or ANR.
+    - Not re-checked here: widget landscape. Motorola home rotation is off and I left the launcher setting alone; the API 30 emulator and the Phase 0 moto session covered it.
+  - [x] Found on the moto and fixed: with auto-rotate, the config screen opens in landscape, where the pinned preview left the controls a ~55px viewport. `layout-land` now puts the preview and the controls side by side, each scrolling (Robolectric regression test, SDK 23/28/34; verified on the moto).
+
+- [x] Widget-picker preview (Issue #31 §5): API 31+ pickers render `clocky_digital_widget_preview` (live TextClocks, theme text colors), verified legible in the moto g13 Motorola picker. Below API 31 the picker still uses the AOSP `previewImage`. Replacing it needs a Clocky PNG asset, which fits with the Phase 3 generated-previews work.
+
+### Mockup alignment (PR #38 reference; Phase 1B scope, recorded here)
+
+The 26-board mockup's Clocky Default uses **Center Stack** for Card (date above time, centered) and **Inline** for Strip (time with date beside it), as End-State §5.8 recommends, with a next-alarm row (the Phase 2 Info line). Phase 1A keeps a single `TIME_FIRST` template, matching the Phase 0 look. Choosing templates per size class and the Clocky Default preset's styling (date weight 500 over time weight 300, etc.) belong to Phase 1B (Quick Tune / Kits).
+
 ## F0 — repository / upstream foundation — complete
 
 - [x] Pin AOSP DeskClock `android-17.0.0_r1` / commit `1f6ebf36d0c14f5e16265d80022cb6068d97cebd`.

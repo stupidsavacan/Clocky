@@ -1,0 +1,25 @@
+Providers:
+  [3] provider ProviderId{user:0, app:10160, cmp:ComponentInfo{com.android.chrome/org.chromium.chrome.browser.searchwidget.SearchWidgetProvider}}
+    min=(61441x12289)   minResize=(61441x12289) updatePeriodMillis=86400000 resizeMode=1 widgetCategory=5 autoAdvanceViewId=-1 initialLayout=#7f0e03c6 initialKeyguardLayout=#0   zombie=false
+  [47] provider ProviderId{user:0, app:10228, cmp:ComponentInfo{com.brave.browser/org.chromium.chrome.browser.searchwidget.SearchWidgetProvider}}
+    min=(61441x12289)   minResize=(61441x12289) updatePeriodMillis=86400000 resizeMode=1 widgetCategory=5 autoAdvanceViewId=-1 initialLayout=#7f0e0441 initialKeyguardLayout=#0   zombie=false
+  [67] provider ProviderId{user:0, app:10232, cmp:ComponentInfo{com.stupidsavacan.clocky/com.android.alarmclock.AnalogAppWidgetProvider}}
+    min=(28161x28161)   minResize=(14081x14081) updatePeriodMillis=0 resizeMode=3 widgetCategory=1 autoAdvanceViewId=-1 initialLayout=#7f0d0023 initialKeyguardLayout=#0   zombie=false
+  [68] provider ProviderId{user:0, app:10232, cmp:ComponentInfo{com.stupidsavacan.clocky/com.android.alarmclock.DigitalAppWidgetProvider}}
+    min=(64001x17921)   minResize=(64001x10241) updatePeriodMillis=0 resizeMode=3 widgetCategory=3 autoAdvanceViewId=-1 initialLayout=#7f0d0047 initialKeyguardLayout=#0   zombie=false
+ 
+ 
+Widgets:
+  [0] id=9
+    host=HostId{user:0, app:10080, hostId:1024, pkg:com.motorola.launcher3}
+    provider=ProviderId{user:0, app:10134, cmp:ComponentInfo{com.example.search/com.example.search.SearchWidgetProvider}}
+    host.callbacks=com.android.internal.appwidget.IAppWidgetHost$Stub$Proxy@26eacf5
+    views=android.widget.RemoteViews@e0759ce
+  [1] id=17
+    host=HostId{user:0, app:10080, hostId:1024, pkg:com.motorola.launcher3}
+    provider=ProviderId{user:0, app:10232, cmp:ComponentInfo{com.stupidsavacan.clocky/com.android.alarmclock.DigitalAppWidgetProvider}}
+    host.callbacks=com.android.internal.appwidget.IAppWidgetHost$Stub$Proxy@26eacf5
+    views=android.widget.RemoteViews@c507a8a
+ 
+Hosts:
+  [0] hostId=HostId{user:0, app:10080, hostId:1024, pkg:com.motorola.launcher3} widgets.size=2

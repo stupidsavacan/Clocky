@@ -4,9 +4,20 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.widget.Button
+import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.ImageView
+import com.google.android.material.chip.Chip
+import com.google.android.material.button.MaterialButton
+import com.stupidsavacan.clocky.design.model.Alignment
+import com.stupidsavacan.clocky.design.model.BackgroundType
+import com.stupidsavacan.clocky.design.model.ColorRef
+import android.widget.TextClock
+import com.android.alarmclock.DigitalAppWidgetProvider
 import com.android.deskclock.R
 import com.google.android.material.slider.Slider
-import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
+import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -16,6 +27,8 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
+import com.stupidsavacan.clocky.widget.digital.DigitalWidgetFit
+import android.os.Looper
 import org.robolectric.annotation.Config
 
 /**
@@ -72,7 +85,10 @@ class DigitalWidgetConfigActivityTest {
 
     @Test
     fun saveReturnsOkForTheConfiguredWidgetAndPersistsSettings() {
-        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(43))
+        val app = RuntimeEnvironment.getApplication()
+        val widgetId = shadowOf(AppWidgetManager.getInstance(app))
+            .createWidget(DigitalAppWidgetProvider::class.java, R.layout.clocky_digital_widget)
+        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(widgetId))
             .setup()
             .use { controller ->
                 val activity = controller.get()
@@ -83,14 +99,100 @@ class DigitalWidgetConfigActivityTest {
                 val shadow = shadowOf(activity)
                 assertEquals(Activity.RESULT_OK, shadow.resultCode)
                 assertEquals(
-                    43,
+                    widgetId,
                     shadow.resultIntent.getIntExtra(
                         AppWidgetManager.EXTRA_APPWIDGET_ID,
                         AppWidgetManager.INVALID_APPWIDGET_ID,
                     ),
                 )
-                val saved = SharedPreferencesWidgetSettingsStore(activity).load(43)
-                assertEquals(700, saved.time.requestedWeight)
+                val saved = SharedPreferencesDesignStore(activity).load(widgetId)
+                assertEquals(700, saved.design.time.style.weight)
+            }
+    }
+
+    @Test
+    fun previewAppliesTheProductionRemoteViewsAndFollowsEdits() {
+        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(44))
+            .setup()
+            .use { controller ->
+                val activity = controller.get()
+                shadowOf(Looper.getMainLooper()).idle()
+                val frame = activity.findViewById<FrameLayout>(R.id.clocky_preview_frame)
+                val time = DigitalWidgetFit.visibleTextIn(frame, R.id.clocky_time_slot)
+                assertTrue("preview shows the widget's TextClock fragment", time is TextClock)
+                assertEquals(R.id.clocky_face_w400, time!!.id)
+
+                activity.findViewById<Slider>(R.id.clocky_time_weight_slider).value = 700f
+                shadowOf(Looper.getMainLooper()).idle()
+                assertEquals(
+                    R.id.clocky_face_w700,
+                    DigitalWidgetFit.visibleTextIn(frame, R.id.clocky_time_slot)!!.id,
+                )
+            }
+    }
+
+    private fun <T : View> ViewGroup.findAll(type: Class<T>): List<T> = (0 until childCount).flatMap { i ->
+        val child = getChildAt(i)
+        val self = if (type.isInstance(child)) listOf(type.cast(child)!!) else emptyList()
+        self + ((child as? ViewGroup)?.findAll(type) ?: emptyList())
+    }
+
+    private fun ViewGroup.clickText(type: Class<out View>, text: String, occurrence: Int = 0) {
+        val matches = findAll(type).filter { (it as? android.widget.TextView)?.text?.toString() == text }
+        assertTrue("no $text control", matches.size > occurrence)
+        matches[occurrence].performClick()
+    }
+
+    @Test
+    fun styleControlsFeedPreviewAndSave() {
+        val app = RuntimeEnvironment.getApplication()
+        val widgetId = shadowOf(AppWidgetManager.getInstance(app))
+            .createWidget(DigitalAppWidgetProvider::class.java, R.layout.clocky_digital_widget)
+        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(widgetId))
+            .setup()
+            .use { controller ->
+                val activity = controller.get()
+                val section = activity.findViewById<ViewGroup>(R.id.clocky_style_section)
+                section.clickText(Chip::class.java, "Serif") // time font
+                section.clickText(Chip::class.java, "Sky") // time color
+                section.clickText(MaterialButton::class.java, "End", occurrence = 1) // date alignment
+                section.clickText(Chip::class.java, "yyyy.MM.dd".let { java.text.SimpleDateFormat(it).format(java.util.Date()) })
+                section.clickText(MaterialButton::class.java, "Solid")
+                shadowOf(Looper.getMainLooper()).idle()
+
+                val frame = activity.findViewById<FrameLayout>(R.id.clocky_preview_frame)
+                assertEquals(View.VISIBLE, frame.findViewById<ImageView>(R.id.clocky_widget_background).visibility)
+                assertEquals(R.id.clocky_face_single, DigitalWidgetFit.visibleTextIn(frame, R.id.clocky_time_slot)!!.id)
+
+                activity.findViewById<Button>(R.id.clocky_widget_save).performClick()
+                val saved = SharedPreferencesDesignStore(activity).load(widgetId).design
+                assertEquals("serif", saved.time.style.fontId)
+                assertEquals(ColorRef.Fixed(0x8AB4F8), saved.time.style.color)
+                assertEquals(Alignment.END, saved.date.style.alignment)
+                assertEquals("yyyy.MM.dd", saved.date.formatPattern)
+                assertEquals(BackgroundType.SOLID, saved.background.type)
+            }
+    }
+
+    /** moto g13 regression: in landscape the pinned preview left the controls a ~55px viewport. */
+    @Test
+    @Config(qualifiers = "w800dp-h360dp-land")
+    fun landscapePutsPreviewBesideTheControls() {
+        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(45))
+            .setup()
+            .visible()
+            .use { controller ->
+                val activity = controller.get()
+                shadowOf(Looper.getMainLooper()).idle()
+                val preview = activity.findViewById<View>(R.id.clocky_preview_column)
+                val controls = activity.findViewById<View>(R.id.clocky_controls_scroll)
+                val previewPos = IntArray(2).also { preview.getLocationInWindow(it) }
+                val controlsPos = IntArray(2).also { controls.getLocationInWindow(it) }
+                assertTrue("controls sit to the side of the preview", controlsPos[0] > previewPos[0])
+                assertTrue(
+                    "controls get the full height (${controls.height}px)",
+                    controls.height > activity.window.decorView.height / 2,
+                )
             }
     }
 }
