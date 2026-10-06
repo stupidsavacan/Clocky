@@ -108,6 +108,5 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/digital_appwidget" />
         </receiver>
-        <service android:name="com.android.alarmclock.DigitalAppWidgetCityService" android:permission="android.permission.BIND_REMOTEVIEWS" />
     </application>
 </manifest>

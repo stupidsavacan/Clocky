@@ -24,8 +24,8 @@ import java.util.Locale
  * JSON codec for Design schema v2, including the one-way v1 → v2 migration.
  *
  * The migration table is docs/architecture/PHASE_1A_DIGITAL_CORE.md §2. v1 decoding uses the
- * exact defaults of the Phase 0 SharedPreferencesWidgetSettingsStore so absent keys migrate to
- * what that store would have loaded.
+ * exact defaults of the Phase 0 store (SharedPreferencesWidgetSettingsStore, removed in Phase 1A),
+ * so absent keys migrate to what that store would have loaded.
  */
 object DigitalDesignCodec {
     const val SCHEMA_V1 = 1
