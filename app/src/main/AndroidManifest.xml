@@ -99,14 +99,13 @@
             <meta-data android:name="android.appwidget.oldName" android:value="com.android.deskclock.AnalogAppWidgetProvider" />
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/analog_appwidget" />
         </receiver>
-        <!-- Clocky-owned Digital widget (Phase 1A). oldName keeps widgets placed by builds that used the AOSP provider. -->
-        <receiver android:name="com.stupidsavacan.clocky.widget.digital.ClockyDigitalWidgetProvider" android:exported="true" android:label="@string/digital_gadget">
+        <!-- Clocky-owned Digital widget (Phase 1A). The legacy component name is kept so placed widgets survive updates. -->
+        <receiver android:name="com.android.alarmclock.DigitalAppWidgetProvider" android:exported="true" android:label="@string/digital_gadget">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="android.intent.action.LOCALE_CHANGED" />
                 <action android:name="android.intent.action.TIME_SET" />
             </intent-filter>
-            <meta-data android:name="android.appwidget.oldName" android:value="com.android.alarmclock.DigitalAppWidgetProvider" />
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/digital_appwidget" />
         </receiver>
         <service android:name="com.android.alarmclock.DigitalAppWidgetCityService" android:permission="android.permission.BIND_REMOTEVIEWS" />

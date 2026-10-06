@@ -4,10 +4,10 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.widget.Button
+import com.android.alarmclock.DigitalAppWidgetProvider
 import com.android.deskclock.R
 import com.google.android.material.slider.Slider
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
-import com.stupidsavacan.clocky.widget.digital.ClockyDigitalWidgetProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -75,7 +75,7 @@ class DigitalWidgetConfigActivityTest {
     fun saveReturnsOkForTheConfiguredWidgetAndPersistsSettings() {
         val app = RuntimeEnvironment.getApplication()
         val widgetId = shadowOf(AppWidgetManager.getInstance(app))
-            .createWidget(ClockyDigitalWidgetProvider::class.java, R.layout.clocky_digital_widget)
+            .createWidget(DigitalAppWidgetProvider::class.java, R.layout.clocky_digital_widget)
         Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(widgetId))
             .setup()
             .use { controller ->

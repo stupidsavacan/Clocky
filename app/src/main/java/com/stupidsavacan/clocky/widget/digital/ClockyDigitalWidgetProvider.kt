@@ -14,10 +14,10 @@ import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
  * changes, configuration saves, locale changes (Locale Auto date pattern) and TIME_SET, which
  * Settings sends when the 12/24h preference changes. There is no app-driven update loop.
  *
- * The manifest declares `android.appwidget.oldName` for the former AOSP provider so widgets
- * placed by earlier builds keep their ids, and therefore their settings.
+ * Registered under the legacy component name [com.android.alarmclock.DigitalAppWidgetProvider] so
+ * placed widgets (and their per-id settings) survive app updates.
  */
-class ClockyDigitalWidgetProvider : AppWidgetProvider() {
+abstract class ClockyDigitalWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         when (intent.action) {

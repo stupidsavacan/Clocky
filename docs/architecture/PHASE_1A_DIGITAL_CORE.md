@@ -22,7 +22,7 @@ restore, generated previews (3), and other families (4).
 | Letter spacing / hour mode | `WidgetLetterSpacingPolicy`, `DigitalWidgetFormatPolicy` | **Kept** |
 | X/Y degradation | `DigitalWidgetOffsetRenderer.effectiveOffsets` | Logic kept inside the resolver; the RemoteViews half moves to the composer |
 | Rendering | AOSP `DigitalAppWidgetProvider` + `digital_widget.xml` (28 TextClocks, world-city list, next-alarm row, AOSP sizer) | Replaced by the Clocky composer: a template plus `addView` font fragments |
-| Provider | `com.android.alarmclock.DigitalAppWidgetProvider` | Replaced by `com.stupidsavacan.clocky.widget.digital.ClockyDigitalWidgetProvider`, which declares `android.appwidget.oldName` = the AOSP class so placed widgets survive the update. The AOSP Digital receiver and city service are removed from the manifest. |
+| Provider | `com.android.alarmclock.DigitalAppWidgetProvider` (AOSP implementation) | The AOSP implementation is removed. The behavior lives in `com.stupidsavacan.clocky.widget.digital.ClockyDigitalWidgetProvider`. The registered component name stays `com.android.alarmclock.DigitalAppWidgetProvider` as a one-line subclass, so placed widgets survive updates (§5). The city service is removed. |
 | Editor preview | Static TextViews | `PreviewHost`: the same composer applies the same RemoteViews locally |
 
 AOSP domain code (alarms, timers, stopwatch, cities, `DataModel`) is untouched. The AOSP Analog
@@ -135,9 +135,16 @@ Every value the Phase 0 UI could write, and everything the Phase 0 widget render
   list, next-alarm row, day-change alarm and AOSP widget-count analytics are not part of the Clocky
   Digital path. The next alarm returns as the Info line (Phase 2) and cities as the World Clock
   family (Phase 4).
-- `android.appwidget.oldName` moves placed widgets to the new ComponentName with their ids, so their
-  settings migrate in place; this needs device verification. Settings are deleted only in `onDeleted`.
-  There is no list-diff pruning, because a transiently empty `getAppWidgetIds` would wipe everything.
+- **Provider identity (device evidence, 2026-10-06).** End-State §12 decision 3 assumed renaming the
+  provider class costs nothing before release. On an API 30 emulator (Pixel Launcher), a widget
+  placed by the Phase 0 build was **deleted** by an in-place update to a build whose provider had a
+  new class name. This happened even with `android.appwidget.oldName` meta-data, which AppWidget
+  service did not honor for an in-place update. Its settings were orphaned. Phase 1A therefore keeps
+  the registered component name `com.android.alarmclock.DigitalAppWidgetProvider` as a one-line
+  subclass of the Clocky implementation. With that, the same upgrade kept widget id 5, re-rendered
+  it through the Clocky composer, and migrated its v1 settings in place to v2. Settings are deleted
+  only in `onDeleted`. There is no list-diff pruning, because a transiently empty
+  `getAppWidgetIds` would wipe everything.
 
 ## 5a. Delivery units
 
@@ -164,6 +171,8 @@ widget and the preview differ only in input size, so they cannot drift structura
    (`EEE, MMM d` and `EEE d MMM`) collapse into the same output. Phase 1A renders a non-null
    `formatPattern` **literally** and offers Locale Auto plus the six preset patterns. If presets
    become skeletons later, a deterministic migration maps these six known strings to preset ids.
+5. Provider identity: whether to rename the component later (accepting that placed widgets are
+   deleted on that update) or keep the legacy component name permanently.
 4. Text sizes are set in px on the RemoteViews (as in Phase 0), so a system font-scale change is
    picked up only at the next widget update. This is relevant to the End-State §14 font-scale-200%
    check.

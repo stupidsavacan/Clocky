@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.text.format.DateFormat
 import android.view.View
 import android.widget.RemoteViews
+import com.android.alarmclock.DigitalAppWidgetProvider
 import com.android.deskclock.DeskClock
 import com.android.deskclock.R
 import com.android.deskclock.Utils
@@ -27,7 +28,7 @@ import java.util.Locale
 object DigitalWidgetUpdater {
     fun updateAll(context: Context) {
         val wm = AppWidgetManager.getInstance(context) ?: return
-        wm.getAppWidgetIds(ComponentName(context, ClockyDigitalWidgetProvider::class.java))
+        wm.getAppWidgetIds(ComponentName(context, DigitalAppWidgetProvider::class.java))
             .forEach { update(context, wm, it) }
     }
 
