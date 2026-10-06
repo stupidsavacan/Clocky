@@ -100,6 +100,8 @@ Exit gate: Clocky-owned Digital is stable for the 4×1 / 4×2 family, and the ed
     - Not re-checked here: widget landscape. Motorola home rotation is off and I left the launcher setting alone; the API 30 emulator and the Phase 0 moto session covered it.
   - [x] Found on the moto and fixed: with auto-rotate, the config screen opens in landscape, where the pinned preview left the controls a ~55px viewport. `layout-land` now puts the preview and the controls side by side, each scrolling (Robolectric regression test, SDK 23/28/34; verified on the moto).
 
+- [x] Widget-picker preview (Issue #31 §5): API 31+ pickers render `clocky_digital_widget_preview` (live TextClocks, theme text colors), verified legible in the moto g13 Motorola picker. Below API 31 the picker still uses the AOSP `previewImage`. Replacing it needs a Clocky PNG asset, which fits with the Phase 3 generated-previews work.
+
 ### Mockup alignment (PR #38 reference; Phase 1B scope, recorded here)
 
 The 26-board mockup's Clocky Default uses **Center Stack** for Card (date above time, centered) and **Inline** for Strip (time with date beside it), as End-State §5.8 recommends, with a next-alarm row (the Phase 2 Info line). Phase 1A keeps a single `TIME_FIRST` template, matching the Phase 0 look. Choosing templates per size class and the Clocky Default preset's styling (date weight 500 over time weight 300, etc.) belong to Phase 1B (Quick Tune / Kits).

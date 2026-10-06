@@ -30,6 +30,7 @@
     android:minResizeHeight="40dp"
     android:minResizeWidth="250dp"
     android:previewImage="@drawable/appwidget_digital_clock_preview"
+    android:previewLayout="@layout/clocky_digital_widget_preview"
     android:resizeMode="horizontal|vertical"
     android:targetCellHeight="2"
     android:targetCellWidth="4"
