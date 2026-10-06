@@ -35,7 +35,9 @@ class DigitalWidgetMetadataTest {
         assertEquals("250.0dip", attrs["minWidth"])
         assertEquals("70.0dip", attrs["minHeight"])
         assertEquals("250.0dip", attrs["minResizeWidth"])
-        assertEquals("70.0dip", attrs["minResizeHeight"])
+        // 40dp (one row), not the MVP's 70dp: on the moto g13 / Motorola Launcher3 (API 34) 70dp
+        // produced minSpan(3,2) and the widget could not be resized to 4x1. See contract section 11.
+        assertEquals("40.0dip", attrs["minResizeHeight"])
         assertEquals(DigitalWidgetConfigActivity::class.java.name, attrs["configure"])
     }
 
