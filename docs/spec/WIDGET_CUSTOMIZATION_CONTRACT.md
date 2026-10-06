@@ -130,3 +130,28 @@ This contract removes the former “semantics undefined” blocker for:
 - Current leading-zero UI/behavior.
 
 It does not by itself prove Android/launcher behavior. Device-dependent clipping, RemoteViews translation behavior, resize transitions, theme rendering, and launcher restore/rebind still require the verification gates in the End-State roadmap.
+
+## 11. Current Digital 4×1 / 4×2 geometry (Phase 0)
+
+This pins the geometry of the current Digital provider until the End-State size classes (§9 of `CLOCKY_END_STATE.md`, Phase 1A onward) replace it. It does not change the End-State target.
+
+Provider metadata (`res/xml/digital_appwidget.xml`, `res/xml-v28/digital_appwidget.xml`) is restored from the retained MVP metadata in `ci/Clocky_MVP_source.zip` (`res/xml/clock_widget_info.xml`) rather than the AOSP generic values (`minWidth 206dp`, `minHeight 129dp`, `minResize 136×59dp`). The one exception is `minResizeHeight` (see below):
+
+| Attribute | Value | API |
+|---|---|---|
+| `minWidth` / `minHeight` | 250dp / 70dp | all |
+| `minResizeWidth` / `minResizeHeight` | 250dp / **40dp** | all |
+| `targetCellWidth` / `targetCellHeight` | 4 / 2 | 31+ (ignored below) |
+| `widgetFeatures` | `reconfigurable` | 28+ |
+| `configure` | `DigitalWidgetConfigActivity` (no `configuration_optional`) | all |
+
+**Why `minResizeHeight` is 40dp, not the MVP's 70dp (device evidence, 2026-10-06).** On a moto g13 (API 34, `com.motorola.launcher3`), the MVP value made the launcher record the widget as `minSpan(3,2)`. The resize frame visually allowed one row but snapped back to two on release, so 4×1 was unreachable. Launcher3 derives minimum spans across all of its device profiles, including landscape, where 70dp does not fit one row. With 40dp (one row in Android's widget sizing guidance, and the value Google's search widget uses, which gets `minSpan(2,1)` on the same launcher), the same launcher records `minSpan(3,1)`, and both 4×2 → 4×1 and 4×1 → 4×2 resizes commit. `minHeight` stays 70dp, so pre-API 31 launchers still default to two rows.
+
+Profile resolution is unchanged from the merged implementation and is now pinned by tests:
+
+- Input is the host `OPTION_APPWIDGET_MIN_HEIGHT` in dp, so one widget keeps one profile in both orientations.
+- `0 < height ≤ 94dp` → 4×1 profile; anything else, including missing/zero options and the Issue #31 fresh-add value of 191dp, → 4×2 profile.
+- The 94dp boundary is kept as is because existing per-profile overrides were saved against it. The old MVP used a different input (`OPTION_APPWIDGET_MAX_HEIGHT < 180dp` meant compact) and had no per-profile persistence, so that rule is not adopted here.
+- The End-State §9 relaxation of `minResize` to a 2×1 equivalent belongs to the size-class work, not to this pin.
+
+How a launcher converts these dp values into cells, and the fresh-add → configure → render → resize path, are launcher behavior and need device verification. As of Phase 0 they have been verified on Motorola Launcher3 (API 34, physical) and Pixel Launcher (API 25 and API 30 emulators). On the pre-31 hosts, the 70dp `minHeight` gave a two-row fresh add (≈132dp / ≈125dp landscape height → 4×2 profile), and 40dp `minResizeHeight` allowed committing a one-row resize (≈58dp / ≈54dp → 4×1 profile). Other launchers remain part of the End-State §14 matrix.

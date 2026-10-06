@@ -21,6 +21,19 @@ class DigitalWidgetProfileResolverTest {
     @Test
     fun missingHostHeightFallsBackToRegularProfile() {
         assertEquals(DigitalWidgetProfile.FOUR_BY_TWO, DigitalWidgetProfileResolver.profileForHeightDp(0))
+        assertEquals(DigitalWidgetProfile.FOUR_BY_TWO, DigitalWidgetProfileResolver.profileForHeightDp(-1))
+    }
+
+    @Test
+    fun issue31FreshAddHostHeightResolvesToRegularProfile() {
+        // Issue #31, moto g13 / API 34 fresh add: minH=191dp, maxH=417dp.
+        assertEquals(DigitalWidgetProfile.FOUR_BY_TWO, DigitalWidgetProfileResolver.profileForHeightDp(191))
+    }
+
+    @Test
+    fun boundaryConstantIsPinned() {
+        // Persisted 4x1/4x2 overrides depend on this boundary; changing it is a contract change.
+        assertEquals(94, DigitalWidgetProfileResolver.COMPACT_MAX_HEIGHT_DP)
     }
 
     @Test

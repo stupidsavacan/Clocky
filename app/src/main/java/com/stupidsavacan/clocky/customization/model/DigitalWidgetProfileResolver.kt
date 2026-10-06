@@ -30,10 +30,13 @@ data class ResolvedWidgetOffsets(
 /**
  * Resolves AppWidget host dimensions to Clocky's compact (4x1) or regular (4x2) profile.
  *
- * The AOSP provider declares 59dp as its minimum resize height and 129dp as its normal minimum
- * height. The midpoint (94dp) is used as a launcher-independent boundary instead of assuming
- * exact cell pixel sizes. Larger widgets deliberately inherit the 4x2 profile until Clocky adds
- * more explicit size classes.
+ * Callers pass the host's OPTION_APPWIDGET_MIN_HEIGHT (the landscape height), so one widget keeps
+ * one profile in both orientations. The 94dp boundary is the midpoint of the 59dp / 129dp heights
+ * the original AOSP metadata used when the profiles were introduced; it is kept as a pinned
+ * constant so existing per-profile overrides resolve unchanged, even though the provider metadata
+ * now uses Clocky's own 4x1 / 4x2 geometry (WIDGET_CUSTOMIZATION_CONTRACT.md section 11).
+ * Missing (0) or invalid heights and larger widgets deliberately use the 4x2 profile until the
+ * End-State size classes replace this resolver.
  */
 object DigitalWidgetProfileResolver {
     const val COMPACT_MIN_HEIGHT_DP = 59

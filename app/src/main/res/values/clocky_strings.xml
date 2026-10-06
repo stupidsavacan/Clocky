@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Product name; replaces the AOSP "Clock" app_label so Clocky is not a second "Clock" app. -->
+    <string name="clocky_app_label" translatable="false">Clocky</string>
+</resources>

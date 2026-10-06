@@ -36,6 +36,11 @@ android {
         jvmTarget = "17"
     }
 
+    testOptions {
+        // Robolectric smoke tests inflate real app resources/themes (Issue #31 regression guard).
+        unitTests.isIncludeAndroidResources = true
+    }
+
     packaging {
         resources {
             excludes += setOf(
@@ -66,4 +71,7 @@ dependencies {
 
     // Pure JVM tests cover deterministic Clocky logic; device/launcher behavior stays a Desktop handoff.
     testImplementation("junit:junit:4.13.2")
+    // Robolectric covers resource/theme inflation that pure JVM tests cannot (e.g. Material views
+    // under the configured Activity theme). It is not a substitute for launcher/device checks.
+    testImplementation("org.robolectric:robolectric:4.14.1")
 }
