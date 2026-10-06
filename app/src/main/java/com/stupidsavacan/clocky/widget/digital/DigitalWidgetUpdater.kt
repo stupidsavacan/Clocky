@@ -15,6 +15,8 @@ import com.android.deskclock.DeskClock
 import com.android.deskclock.R
 import com.android.deskclock.Utils
 import com.stupidsavacan.clocky.design.model.DigitalDesign
+import com.stupidsavacan.clocky.design.model.SizeClass
+import com.stupidsavacan.clocky.design.model.SizeClassResolver
 import com.stupidsavacan.clocky.design.model.WidgetInstance
 import com.stupidsavacan.clocky.design.resolve.DesignResolver
 import com.stupidsavacan.clocky.design.resolve.RenderEnvironment
@@ -88,6 +90,14 @@ object DigitalWidgetUpdater {
         return DigitalWidgetComposer.compose(context, spec, sizes, onClick)
     }
 
+    /** The size class the placed widget has now; Card when the host has not reported a size yet. */
+    fun hostSizeClass(context: Context, appWidgetId: Int): SizeClass {
+        val wm = AppWidgetManager.getInstance(context) ?: return SizeClass.CARD
+        val size = sizeContextOf(wm.getAppWidgetOptions(appWidgetId))
+        val known = size.minHeightDp > 0 && size.minWidthDp > 0 && size.maxHeightDp > 0
+        return if (known) SizeClassResolver.resolve(size.minHeightDp) else SizeClass.CARD
+    }
+
     fun sizeContextOf(options: Bundle): SizeContext = SizeContext(
         minWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
         minHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT),
@@ -106,6 +116,8 @@ object DigitalWidgetUpdater {
         return RenderEnvironment(
             sdkInt = Build.VERSION.SDK_INT,
             isRtl = configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL,
+            isNight = (configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES,
             localeAutoDatePattern = DateFormat.getBestDateTimePattern(
                 locale,
                 context.getString(R.string.abbrev_wday_month_day_no_year),

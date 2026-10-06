@@ -8,6 +8,9 @@ import org.json.JSONObject
 /** Per-appWidgetId design persistence: the single source of truth for Clocky widget presentation. */
 interface DesignStore {
     fun load(appWidgetId: Int): WidgetInstance
+
+    /** True when this widget has a persisted design (a fresh launcher add has none until saved). */
+    fun has(appWidgetId: Int): Boolean
     fun save(instance: WidgetInstance)
     fun delete(appWidgetId: Int)
 }
@@ -33,6 +36,8 @@ class SharedPreferencesDesignStore(context: Context) : DesignStore {
         }
         return instance
     }
+
+    override fun has(appWidgetId: Int): Boolean = prefs.contains(key(appWidgetId))
 
     override fun save(instance: WidgetInstance) {
         prefs.edit()
