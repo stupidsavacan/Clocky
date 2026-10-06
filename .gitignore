@@ -22,3 +22,4 @@ vendor-staging/
 # Local analysis scratch
 analysis/apk/
 analysis/decompiled/
+__pycache__/

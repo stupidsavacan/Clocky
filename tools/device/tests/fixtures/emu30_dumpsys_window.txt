@@ -1,0 +1,5 @@
+  mCurrentFocus=Window{4c97417 u0 com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}
+  mFocusedApp=ActivityRecord{648d6dd u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t15}
+    mShowingDream=false mDreamingLockscreen=false    mStatusBar=Window{d4d23d0 u0 StatusBar}    mExpandedPanel=Window{2e8eef6 u0 NotificationShade} isKeyguardShowing=false
+    mRotation=0 mDeferredRotationPauseCount=0
+    mUserRotationMode=USER_ROTATION_FREE mUserRotation=ROTATION_0 mAllowAllRotations=false

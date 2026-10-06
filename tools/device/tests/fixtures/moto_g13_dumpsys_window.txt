@@ -1,0 +1,6 @@
+WINDOW MANAGER (excerpt)
+  mCurrentFocus=Window{dc7dabe u0 com.motorola.launcher3/com.android.launcher3.CustomizationPanelLauncher}
+  mFocusedApp=ActivityRecord{37e3966 u0 com.motorola.launcher3/com.android.launcher3.CustomizationPanelLauncher t104}
+    isKeyguardShowing=false
+    mRotation=0 mDeferredRotationPauseCount=0
+    mUserRotationMode=USER_ROTATION_FREE mUserRotation=ROTATION_0 mCameraRotationMode=0 mAllowAllRotations=false
