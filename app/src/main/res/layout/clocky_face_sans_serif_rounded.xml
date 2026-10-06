@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clocky font fragment (CLOCKY_END_STATE.md section 12): added into a template slot with RemoteViews.addView.
+     No theme attributes: the launcher and the app both inflate it. Generated in Phase 1A; see
+     docs/architecture/PHASE_1A_DIGITAL_CORE.md section 5. -->
+<TextClock
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/clocky_face_single"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:ellipsize="none"
+    android:fontFamily="sans-serif-rounded"
+    android:includeFontPadding="false"
+    android:singleLine="true"
+    android:shadowColor="@color/widget_shadow_color"
+    android:shadowDy="@dimen/widget_shadow_dy"
+    android:shadowRadius="@dimen/widget_shadow_radius"
+    android:textColor="@android:color/white" />

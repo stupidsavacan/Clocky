@@ -6,7 +6,8 @@ import android.content.Intent
 import android.widget.Button
 import com.android.deskclock.R
 import com.google.android.material.slider.Slider
-import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
+import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
+import com.stupidsavacan.clocky.widget.digital.ClockyDigitalWidgetProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -72,7 +73,10 @@ class DigitalWidgetConfigActivityTest {
 
     @Test
     fun saveReturnsOkForTheConfiguredWidgetAndPersistsSettings() {
-        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(43))
+        val app = RuntimeEnvironment.getApplication()
+        val widgetId = shadowOf(AppWidgetManager.getInstance(app))
+            .createWidget(ClockyDigitalWidgetProvider::class.java, R.layout.clocky_digital_widget)
+        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(widgetId))
             .setup()
             .use { controller ->
                 val activity = controller.get()
@@ -83,14 +87,14 @@ class DigitalWidgetConfigActivityTest {
                 val shadow = shadowOf(activity)
                 assertEquals(Activity.RESULT_OK, shadow.resultCode)
                 assertEquals(
-                    43,
+                    widgetId,
                     shadow.resultIntent.getIntExtra(
                         AppWidgetManager.EXTRA_APPWIDGET_ID,
                         AppWidgetManager.INVALID_APPWIDGET_ID,
                     ),
                 )
-                val saved = SharedPreferencesWidgetSettingsStore(activity).load(43)
-                assertEquals(700, saved.time.requestedWeight)
+                val saved = SharedPreferencesDesignStore(activity).load(widgetId)
+                assertEquals(700, saved.design.time.style.weight)
             }
     }
 }

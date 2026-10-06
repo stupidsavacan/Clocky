@@ -11,19 +11,21 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
-import com.android.alarmclock.DigitalAppWidgetProvider
 import com.android.deskclock.R
 import com.google.android.material.slider.Slider
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.stupidsavacan.clocky.customization.font.DigitalWidgetWeightRenderer
 import com.stupidsavacan.clocky.customization.font.WidgetLetterSpacingPolicy
-import com.stupidsavacan.clocky.customization.storage.SharedPreferencesWidgetSettingsStore
 import com.stupidsavacan.clocky.customization.ui.WidgetProfileDateVisibilityEditor
 import com.stupidsavacan.clocky.customization.ui.WidgetProfileSizeEditor
 import com.stupidsavacan.clocky.customization.ui.WidgetProfileWeightEditor
+import com.stupidsavacan.clocky.design.model.SizeClass
+import com.stupidsavacan.clocky.design.model.WidgetInstance
+import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
+import com.stupidsavacan.clocky.widget.digital.DigitalWidgetUpdater
 
 /**
- * Clocky-owned configuration surface for the AOSP digital widget.
+ * Clocky-owned configuration surface for the Clocky Digital widget.
  *
  * Base values are always integers in 100..900. Size-specific profiles can independently override
  * those weights; date visibility additionally keeps a tri-state inherit/show/hide value per
@@ -49,8 +51,10 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
 
         setContentView(R.layout.clocky_digital_widget_config)
 
-        val store = SharedPreferencesWidgetSettingsStore(this)
-        val current = store.load(appWidgetId)
+        val store = SharedPreferencesDesignStore(this)
+        val current = store.load(appWidgetId).design
+        val currentStrip = current.layout.overrides[SizeClass.STRIP]
+        val currentCard = current.layout.overrides[SizeClass.CARD]
 
         val timePreview: TextView = findViewById(R.id.clocky_time_preview)
         val datePreview: TextView = findViewById(R.id.clocky_date_preview)
@@ -113,14 +117,14 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         )
         val saveButton: Button = findViewById(R.id.clocky_widget_save)
 
-        timeSlider.value = current.time.requestedWeight.toFloat()
-        dateSlider.value = current.date.requestedWeight.toFloat()
-        prepareSizeSlider(timeSizeSlider, current.time.sizeSp)
-        prepareSizeSlider(dateSizeSlider, current.date.sizeSp)
-        dateEnabled.isChecked = current.date.enabled
-        datePreview.visibility = if (current.date.enabled) View.VISIBLE else View.GONE
-        timeLetterSpacingSlider.value = WidgetLetterSpacingPolicy.normalize(current.time.letterSpacing)
-        dateLetterSpacingSlider.value = WidgetLetterSpacingPolicy.normalize(current.date.letterSpacing)
+        timeSlider.value = current.time.style.weight.toFloat()
+        dateSlider.value = current.date.style.weight.toFloat()
+        prepareSizeSlider(timeSizeSlider, current.time.style.sizeSp)
+        prepareSizeSlider(dateSizeSlider, current.date.style.sizeSp)
+        dateEnabled.isChecked = current.date.visible
+        datePreview.visibility = if (current.date.visible) View.VISIBLE else View.GONE
+        timeLetterSpacingSlider.value = WidgetLetterSpacingPolicy.normalize(current.time.style.letterSpacingEm)
+        dateLetterSpacingSlider.value = WidgetLetterSpacingPolicy.normalize(current.date.style.letterSpacingEm)
 
         fun refreshTime(weight: Int) {
             timeValue.text = weight.toString()
@@ -154,52 +158,52 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             datePreview.letterSpacing = safe
         }
 
-        refreshTime(current.time.requestedWeight)
-        refreshDate(current.date.requestedWeight)
-        refreshTimeSize(current.time.sizeSp)
-        refreshDateSize(current.date.sizeSp)
-        refreshTimeLetterSpacing(current.time.letterSpacing)
-        refreshDateLetterSpacing(current.date.letterSpacing)
+        refreshTime(current.time.style.weight)
+        refreshDate(current.date.style.weight)
+        refreshTimeSize(current.time.style.sizeSp)
+        refreshDateSize(current.date.style.sizeSp)
+        refreshTimeLetterSpacing(current.time.style.letterSpacingEm)
+        refreshDateLetterSpacing(current.date.style.letterSpacingEm)
 
         configureProfileControls(
             fourByOne,
             WidgetProfileWeightEditor.state(
-                current.fourByOne,
-                current.time.requestedWeight,
-                current.date.requestedWeight,
+                currentStrip,
+                current.time.style.weight,
+                current.date.style.weight,
             ),
         )
         configureProfileControls(
             fourByTwo,
             WidgetProfileWeightEditor.state(
-                current.fourByTwo,
-                current.time.requestedWeight,
-                current.date.requestedWeight,
+                currentCard,
+                current.time.style.weight,
+                current.date.style.weight,
             ),
         )
         configureSizeProfileControls(
             fourByOneSize,
             WidgetProfileSizeEditor.state(
-                current.fourByOne,
-                current.time.sizeSp,
-                current.date.sizeSp,
+                currentStrip,
+                current.time.style.sizeSp,
+                current.date.style.sizeSp,
             ),
         )
         configureSizeProfileControls(
             fourByTwoSize,
             WidgetProfileSizeEditor.state(
-                current.fourByTwo,
-                current.time.sizeSp,
-                current.date.sizeSp,
+                currentCard,
+                current.time.style.sizeSp,
+                current.date.style.sizeSp,
             ),
         )
         configureDateVisibilityControls(
             fourByOneDate,
-            WidgetProfileDateVisibilityEditor.mode(current.fourByOne?.dateEnabled),
+            WidgetProfileDateVisibilityEditor.mode(currentStrip?.dateVisible),
         )
         configureDateVisibilityControls(
             fourByTwoDate,
-            WidgetProfileDateVisibilityEditor.mode(current.fourByTwo?.dateEnabled),
+            WidgetProfileDateVisibilityEditor.mode(currentCard?.dateVisible),
         )
 
         timeSlider.addOnChangeListener { _, value, _ ->
@@ -251,59 +255,63 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         saveButton.setOnClickListener {
             val withBaseSettings = current.copy(
                 time = current.time.copy(
-                    requestedWeight = timeSlider.value.toInt(),
-                    sizeSp = timeSizeSlider.value,
-                    letterSpacing = WidgetLetterSpacingPolicy.normalize(timeLetterSpacingSlider.value),
+                    style = current.time.style.copy(
+                        weight = timeSlider.value.toInt(),
+                        sizeSp = timeSizeSlider.value,
+                        letterSpacingEm = WidgetLetterSpacingPolicy.normalize(timeLetterSpacingSlider.value),
+                    ),
                 ),
                 date = current.date.copy(
-                    requestedWeight = dateSlider.value.toInt(),
-                    sizeSp = dateSizeSlider.value,
-                    letterSpacing = WidgetLetterSpacingPolicy.normalize(dateLetterSpacingSlider.value),
-                    enabled = dateEnabled.isChecked,
+                    visible = dateEnabled.isChecked,
+                    style = current.date.style.copy(
+                        weight = dateSlider.value.toInt(),
+                        sizeSp = dateSizeSlider.value,
+                        letterSpacingEm = WidgetLetterSpacingPolicy.normalize(dateLetterSpacingSlider.value),
+                    ),
                 ),
             )
             val withProfileWeights = WidgetProfileWeightEditor.apply(
-                settings = withBaseSettings,
-                fourByOneEnabled = fourByOne.enabled.isChecked,
-                fourByOneTimeWeight = if (fourByOne.timeInherited) {
+                design = withBaseSettings,
+                stripEnabled = fourByOne.enabled.isChecked,
+                stripTimeWeight = if (fourByOne.timeInherited) {
                     null
                 } else {
                     fourByOne.timeSlider.value.toInt()
                 },
-                fourByOneDateWeight = if (fourByOne.dateInherited) {
+                stripDateWeight = if (fourByOne.dateInherited) {
                     null
                 } else {
                     fourByOne.dateSlider.value.toInt()
                 },
-                fourByTwoEnabled = fourByTwo.enabled.isChecked,
-                fourByTwoTimeWeight = if (fourByTwo.timeInherited) {
+                cardEnabled = fourByTwo.enabled.isChecked,
+                cardTimeWeight = if (fourByTwo.timeInherited) {
                     null
                 } else {
                     fourByTwo.timeSlider.value.toInt()
                 },
-                fourByTwoDateWeight = if (fourByTwo.dateInherited) {
+                cardDateWeight = if (fourByTwo.dateInherited) {
                     null
                 } else {
                     fourByTwo.dateSlider.value.toInt()
                 },
             )
             val withProfileSizes = WidgetProfileSizeEditor.apply(
-                settings = withProfileWeights,
-                fourByOneEnabled = fourByOneSize.enabled.isChecked,
-                fourByOneTimeSizeSp = if (fourByOneSize.timeInherited) null else fourByOneSize.timeSlider.value,
-                fourByOneDateSizeSp = if (fourByOneSize.dateInherited) null else fourByOneSize.dateSlider.value,
-                fourByTwoEnabled = fourByTwoSize.enabled.isChecked,
-                fourByTwoTimeSizeSp = if (fourByTwoSize.timeInherited) null else fourByTwoSize.timeSlider.value,
-                fourByTwoDateSizeSp = if (fourByTwoSize.dateInherited) null else fourByTwoSize.dateSlider.value,
+                design = withProfileWeights,
+                stripEnabled = fourByOneSize.enabled.isChecked,
+                stripTimeSizeSp = if (fourByOneSize.timeInherited) null else fourByOneSize.timeSlider.value,
+                stripDateSizeSp = if (fourByOneSize.dateInherited) null else fourByOneSize.dateSlider.value,
+                cardEnabled = fourByTwoSize.enabled.isChecked,
+                cardTimeSizeSp = if (fourByTwoSize.timeInherited) null else fourByTwoSize.timeSlider.value,
+                cardDateSizeSp = if (fourByTwoSize.dateInherited) null else fourByTwoSize.dateSlider.value,
             )
             val updated = WidgetProfileDateVisibilityEditor.apply(
-                settings = withProfileSizes,
-                baseDateEnabled = dateEnabled.isChecked,
-                fourByOneMode = selectedDateVisibilityMode(fourByOneDate),
-                fourByTwoMode = selectedDateVisibilityMode(fourByTwoDate),
+                design = withProfileSizes,
+                baseDateVisible = dateEnabled.isChecked,
+                stripMode = selectedDateVisibilityMode(fourByOneDate),
+                cardMode = selectedDateVisibilityMode(fourByTwoDate),
             )
-            store.save(updated)
-            requestWidgetRefresh(appWidgetId)
+            store.save(WidgetInstance(appWidgetId, updated))
+            DigitalWidgetUpdater.update(this, AppWidgetManager.getInstance(this), appWidgetId)
 
             val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
             setResult(RESULT_OK, result)
@@ -468,14 +476,6 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
     private fun setProfileDateSize(controls: SizeProfileControls, sizeSp: Float) {
         prepareSizeSlider(controls.dateSlider, sizeSp)
         controls.dateValue.text = getString(R.string.clocky_size_sp_value, sizeSp)
-    }
-
-    private fun requestWidgetRefresh(widgetId: Int) {
-        val updateIntent = Intent(this, DigitalAppWidgetProvider::class.java).apply {
-            action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(widgetId))
-        }
-        sendBroadcast(updateIntent)
     }
 
     private fun applyPreviewWeight(view: TextView, requestedWeight: Int) {

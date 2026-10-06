@@ -1,8 +1,8 @@
 package com.stupidsavacan.clocky.customization.ui
 
-import com.stupidsavacan.clocky.customization.model.ProfileOverride
-import com.stupidsavacan.clocky.customization.model.WidgetSettings
-import com.stupidsavacan.clocky.customization.model.normalized
+import com.stupidsavacan.clocky.design.model.DigitalDesign
+import com.stupidsavacan.clocky.design.model.LayoutPatch
+import com.stupidsavacan.clocky.design.model.SizeClass
 
 /** Pure update rules for size-profile-specific weight overrides. */
 object WidgetProfileWeightEditor {
@@ -15,7 +15,7 @@ object WidgetProfileWeightEditor {
     )
 
     fun state(
-        override: ProfileOverride?,
+        override: LayoutPatch?,
         baseTimeWeight: Int,
         baseDateWeight: Int,
     ): ProfileState {
@@ -31,53 +31,32 @@ object WidgetProfileWeightEditor {
     }
 
     fun updateOverride(
-        original: ProfileOverride?,
+        original: LayoutPatch?,
         enabled: Boolean,
         timeWeight: Int?,
         dateWeight: Int?,
-    ): ProfileOverride? {
+    ): LayoutPatch? {
         val updated = if (enabled) {
-            (original ?: ProfileOverride()).copy(
+            (original ?: LayoutPatch()).copy(
                 timeWeight = timeWeight?.coerceIn(100, 900),
                 dateWeight = dateWeight?.coerceIn(100, 900),
             )
         } else {
             original?.copy(timeWeight = null, dateWeight = null)
         }
-        return updated?.takeIf { it.hasAnyValue() }
+        return updated?.takeIf { !it.isEmpty }
     }
 
     fun apply(
-        settings: WidgetSettings,
-        fourByOneEnabled: Boolean,
-        fourByOneTimeWeight: Int?,
-        fourByOneDateWeight: Int?,
-        fourByTwoEnabled: Boolean,
-        fourByTwoTimeWeight: Int?,
-        fourByTwoDateWeight: Int?,
-    ): WidgetSettings = settings.copy(
-        fourByOne = updateOverride(
-            settings.fourByOne,
-            fourByOneEnabled,
-            fourByOneTimeWeight,
-            fourByOneDateWeight,
-        ),
-        fourByTwo = updateOverride(
-            settings.fourByTwo,
-            fourByTwoEnabled,
-            fourByTwoTimeWeight,
-            fourByTwoDateWeight,
-        ),
-    ).normalized()
-
-    private fun ProfileOverride.hasAnyValue(): Boolean =
-        timeWeight != null ||
-            dateWeight != null ||
-            timeSizeSp != null ||
-            dateSizeSp != null ||
-            timeXDp != null ||
-            timeYDp != null ||
-            dateXDp != null ||
-            dateYDp != null ||
-            dateEnabled != null
+        design: DigitalDesign,
+        stripEnabled: Boolean,
+        stripTimeWeight: Int?,
+        stripDateWeight: Int?,
+        cardEnabled: Boolean,
+        cardTimeWeight: Int?,
+        cardDateWeight: Int?,
+    ): DigitalDesign = design.withPatches(
+        strip = updateOverride(design.patchOrNull(SizeClass.STRIP), stripEnabled, stripTimeWeight, stripDateWeight),
+        card = updateOverride(design.patchOrNull(SizeClass.CARD), cardEnabled, cardTimeWeight, cardDateWeight),
+    )
 }

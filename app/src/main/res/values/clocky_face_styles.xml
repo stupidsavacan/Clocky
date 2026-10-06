@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base for Clocky font-fragment faces: the widget legibility shadow carried over from the AOSP widget. -->
+    <style name="Clocky.Face" parent="">
+        <item name="android:shadowColor">@color/widget_shadow_color</item>
+        <item name="android:shadowDy">@dimen/widget_shadow_dy</item>
+        <item name="android:shadowRadius">@dimen/widget_shadow_radius</item>
+    </style>
+    <!-- Below API 28 only platform family aliases exist (RemoteViewsFontWeightPolicy maps to 100/300/400/500/700/900). -->
+    <style name="Clocky.Face.SystemSans.W100" parent="Clocky.Face">
+        <item name="android:fontFamily">sans-serif-thin</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+    <style name="Clocky.Face.SystemSans.W200" parent="Clocky.Face">
+        <item name="android:fontFamily">sans-serif-thin</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+    <style name="Clocky.Face.SystemSans.W300" parent="Clocky.Face">
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+    <style name="Clocky.Face.SystemSans.W400" parent="Clocky.Face">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+    <style name="Clocky.Face.SystemSans.W500" parent="Clocky.Face">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+    <style name="Clocky.Face.SystemSans.W600" parent="Clocky.Face">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+    <style name="Clocky.Face.SystemSans.W700" parent="Clocky.Face">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="Clocky.Face.SystemSans.W800" parent="Clocky.Face">
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+    <style name="Clocky.Face.SystemSans.W900" parent="Clocky.Face">
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+</resources>

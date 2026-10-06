@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clocky font fragment (CLOCKY_END_STATE.md section 12): added into a template slot with RemoteViews.addView.
+     No theme attributes: the launcher and the app both inflate it. Generated in Phase 1A; see
+     docs/architecture/PHASE_1A_DIGITAL_CORE.md section 5. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <TextClock
+        android:id="@+id/clocky_face_w100"
+        style="@style/Clocky.Face.SystemSans.W100"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="none"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textAllCaps="true"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
+    <TextClock
+        android:id="@+id/clocky_face_w200"
+        style="@style/Clocky.Face.SystemSans.W200"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="none"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textAllCaps="true"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
+    <TextClock
+        android:id="@+id/clocky_face_w300"
+        style="@style/Clocky.Face.SystemSans.W300"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="none"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textAllCaps="true"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
+    <TextClock
+        android:id="@+id/clocky_face_w400"
+        style="@style/Clocky.Face.SystemSans.W400"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="none"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textAllCaps="true"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
+    <TextClock
+        android:id="@+id/clocky_face_w500"
+        style="@style/Clocky.Face.SystemSans.W500"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="none"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textAllCaps="true"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
+    <TextClock
+        android:id="@+id/clocky_face_w600"
+        style="@style/Clocky.Face.SystemSans.W600"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="none"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textAllCaps="true"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
+    <TextClock
+        android:id="@+id/clocky_face_w700"
+        style="@style/Clocky.Face.SystemSans.W700"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="none"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textAllCaps="true"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
+    <TextClock
+        android:id="@+id/clocky_face_w800"
+        style="@style/Clocky.Face.SystemSans.W800"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="none"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textAllCaps="true"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
+    <TextClock
+        android:id="@+id/clocky_face_w900"
+        style="@style/Clocky.Face.SystemSans.W900"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="none"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textAllCaps="true"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+</FrameLayout>

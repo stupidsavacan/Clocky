@@ -1,8 +1,8 @@
 package com.stupidsavacan.clocky.customization.ui
 
-import com.stupidsavacan.clocky.customization.model.ProfileOverride
-import com.stupidsavacan.clocky.customization.model.WidgetSettings
-import com.stupidsavacan.clocky.customization.model.normalized
+import com.stupidsavacan.clocky.design.model.DigitalDesign
+import com.stupidsavacan.clocky.design.model.LayoutPatch
+import com.stupidsavacan.clocky.design.model.SizeClass
 
 /** Pure update rules for base and size-profile-specific date visibility. */
 object WidgetProfileDateVisibilityEditor {
@@ -24,35 +24,23 @@ object WidgetProfileDateVisibilityEditor {
         Mode.HIDE -> false
     }
 
-    fun updateOverride(original: ProfileOverride?, mode: Mode): ProfileOverride? {
+    fun updateOverride(original: LayoutPatch?, mode: Mode): LayoutPatch? {
         val value = explicitValue(mode)
         val updated = when {
-            original != null -> original.copy(dateEnabled = value)
-            value != null -> ProfileOverride(dateEnabled = value)
+            original != null -> original.copy(dateVisible = value)
+            value != null -> LayoutPatch(dateVisible = value)
             else -> null
         }
-        return updated?.takeIf { it.hasAnyValue() }
+        return updated?.takeIf { !it.isEmpty }
     }
 
     fun apply(
-        settings: WidgetSettings,
-        baseDateEnabled: Boolean,
-        fourByOneMode: Mode,
-        fourByTwoMode: Mode,
-    ): WidgetSettings = settings.copy(
-        date = settings.date.copy(enabled = baseDateEnabled),
-        fourByOne = updateOverride(settings.fourByOne, fourByOneMode),
-        fourByTwo = updateOverride(settings.fourByTwo, fourByTwoMode),
-    ).normalized()
-
-    private fun ProfileOverride.hasAnyValue(): Boolean =
-        timeWeight != null ||
-            dateWeight != null ||
-            timeSizeSp != null ||
-            dateSizeSp != null ||
-            timeXDp != null ||
-            timeYDp != null ||
-            dateXDp != null ||
-            dateYDp != null ||
-            dateEnabled != null
+        design: DigitalDesign,
+        baseDateVisible: Boolean,
+        stripMode: Mode,
+        cardMode: Mode,
+    ): DigitalDesign = design.copy(date = design.date.copy(visible = baseDateVisible)).withPatches(
+        strip = updateOverride(design.patchOrNull(SizeClass.STRIP), stripMode),
+        card = updateOverride(design.patchOrNull(SizeClass.CARD), cardMode),
+    )
 }

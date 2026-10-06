@@ -1,9 +1,12 @@
 package com.stupidsavacan.clocky.customization.ui
 
-import com.stupidsavacan.clocky.customization.model.DateSettings
-import com.stupidsavacan.clocky.customization.model.ProfileOverride
-import com.stupidsavacan.clocky.customization.model.TimeSettings
-import com.stupidsavacan.clocky.customization.model.WidgetSettings
+import com.stupidsavacan.clocky.design.model.DateElement
+import com.stupidsavacan.clocky.design.model.DesignLayout
+import com.stupidsavacan.clocky.design.model.DigitalDesign
+import com.stupidsavacan.clocky.design.model.LayoutPatch
+import com.stupidsavacan.clocky.design.model.SizeClass
+import com.stupidsavacan.clocky.design.model.TextStyle
+import com.stupidsavacan.clocky.design.model.TimeElement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -14,7 +17,7 @@ class WidgetProfileSizeEditorTest {
     @Test
     fun stateKeepsPerFieldInheritance() {
         val state = WidgetProfileSizeEditor.state(
-            ProfileOverride(timeSizeSp = 52f),
+            LayoutPatch(timeSizeSp = 52f),
             baseTimeSizeSp = 64f,
             baseDateSizeSp = 14f,
         )
@@ -28,14 +31,14 @@ class WidgetProfileSizeEditorTest {
 
     @Test
     fun disablingSizeOverridePreservesOtherProfileFields() {
-        val original = ProfileOverride(
+        val original = LayoutPatch(
             timeWeight = 575,
             dateWeight = 650,
             timeSizeSp = 52f,
             dateSizeSp = 16f,
             timeXDp = 3f,
             dateYDp = -2f,
-            dateEnabled = false,
+            dateVisible = false,
         )
 
         val updated = WidgetProfileSizeEditor.updateOverride(
@@ -52,14 +55,14 @@ class WidgetProfileSizeEditorTest {
         assertEquals(650, updated.dateWeight)
         assertEquals(3f, updated.timeXDp ?: 0f, 0.001f)
         assertEquals(-2f, updated.dateYDp ?: 0f, 0.001f)
-        assertFalse(updated.dateEnabled ?: true)
+        assertFalse(updated.dateVisible ?: true)
     }
 
     @Test
     fun disablingSizeOnlyProfileCollapsesToNull() {
         assertNull(
             WidgetProfileSizeEditor.updateOverride(
-                original = ProfileOverride(timeSizeSp = 48f, dateSizeSp = 12f),
+                original = LayoutPatch(timeSizeSp = 48f, dateSizeSp = 12f),
                 enabled = false,
                 timeSizeSp = null,
                 dateSizeSp = null,
@@ -70,7 +73,7 @@ class WidgetProfileSizeEditorTest {
     @Test
     fun enabledProfileCanOverrideOnlyOneSizeField() {
         val updated = WidgetProfileSizeEditor.updateOverride(
-            original = ProfileOverride(dateWeight = 650),
+            original = LayoutPatch(dateWeight = 650),
             enabled = true,
             timeSizeSp = 50f,
             dateSizeSp = null,
@@ -84,29 +87,37 @@ class WidgetProfileSizeEditorTest {
 
     @Test
     fun applyUpdatesProfilesIndependentlyAndClampsMinimum() {
-        val settings = WidgetSettings(
-            appWidgetId = 20,
-            time = TimeSettings(sizeSp = 64f),
-            date = DateSettings(sizeSp = 14f),
-            fourByOne = ProfileOverride(timeWeight = 575),
-            fourByTwo = ProfileOverride(dateEnabled = false),
+        val settings = DigitalDesign(
+            time = TimeElement(TextStyle(sizeSp = 64f)),
+            date = DateElement(style = TextStyle(sizeSp = 14f)),
+            layout = DesignLayout(
+
+                overrides = mapOf(
+
+                    SizeClass.STRIP to LayoutPatch(timeWeight = 575),
+
+                    SizeClass.CARD to LayoutPatch(dateVisible = false),
+
+                ),
+
+            ),
         )
 
         val updated = WidgetProfileSizeEditor.apply(
-            settings = settings,
-            fourByOneEnabled = true,
-            fourByOneTimeSizeSp = 0.25f,
-            fourByOneDateSizeSp = null,
-            fourByTwoEnabled = true,
-            fourByTwoTimeSizeSp = null,
-            fourByTwoDateSizeSp = 18f,
+            design = settings,
+            stripEnabled = true,
+            stripTimeSizeSp = 0.25f,
+            stripDateSizeSp = null,
+            cardEnabled = true,
+            cardTimeSizeSp = null,
+            cardDateSizeSp = 18f,
         )
 
-        assertEquals(1f, updated.fourByOne?.timeSizeSp ?: 0f, 0.001f)
-        assertNull(updated.fourByOne?.dateSizeSp)
-        assertEquals(575, updated.fourByOne?.timeWeight)
-        assertNull(updated.fourByTwo?.timeSizeSp)
-        assertEquals(18f, updated.fourByTwo?.dateSizeSp ?: 0f, 0.001f)
-        assertFalse(updated.fourByTwo?.dateEnabled ?: true)
+        assertEquals(1f, updated.layout.overrides[SizeClass.STRIP]?.timeSizeSp ?: 0f, 0.001f)
+        assertNull(updated.layout.overrides[SizeClass.STRIP]?.dateSizeSp)
+        assertEquals(575, updated.layout.overrides[SizeClass.STRIP]?.timeWeight)
+        assertNull(updated.layout.overrides[SizeClass.CARD]?.timeSizeSp)
+        assertEquals(18f, updated.layout.overrides[SizeClass.CARD]?.dateSizeSp ?: 0f, 0.001f)
+        assertFalse(updated.layout.overrides[SizeClass.CARD]?.dateVisible ?: true)
     }
 }
