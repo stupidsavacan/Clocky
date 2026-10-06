@@ -73,11 +73,25 @@ Exit gate: Clocky-owned Digital is stable for the 4×1 / 4×2 family, and the ed
 - [x] PreviewHost: the editor applies the same `buildPortrait` RemoteViews, with a Strip/Card toggle and degradation notices.
 - [x] Editor controls: font, color + opacity, START/CENTER/END, date format (Locale Auto + six literal presets), background (None/Solid, color, opacity, corners, padding).
 - [x] Robolectric: composition, reapply idempotence, gravity remotability, background, fit (native graphics), store migration, preview contract, style controls → save (SDK 23/28/34).
-- Device evidence so far (API 30 emulator, Pixel Launcher):
-  - [x] Phase 0 → 1A in-place upgrade keeps the placed widget and migrates its settings.
-  - [x] Strip hides the date per the migrated override.
-  - [x] The editor preview matches the saved 4×2 widget: font, color, alignment, date format, Solid 24dp background.
-- [ ] Remaining for the gate: the same flows on API 25 (pre-28 faces), the moto g13 (API 34: outline radius, launcher reconfigure, real Motorola resize) and API 35; fresh add → config → save; resize both ways; landscape; delete; and TextClock ticking with no app process.
+- Device evidence (2026-10-06, `google_apis` x86_64 emulators, Pixel Launcher, real launcher driven over ADB):
+  - API 30:
+    - [x] Phase 0 → 1A in-place upgrade keeps the placed widget and migrates its v1 settings to v2.
+    - [x] Strip hides the date per the migrated override.
+    - [x] Editor preview = saved 4×2 widget (Amber System time, Mono `yyyy.MM.dd` date END-aligned, Solid Dark 24dp drawable background).
+    - [x] TextClock ticked 1:39 → 1:41 with the Clocky process killed: no app update loop.
+  - API 35:
+    - [x] Fresh add → config (Card preview from the host's real size).
+    - [x] Coral Serif + Solid with system-radius outline: preview = widget.
+    - [x] 4×2 → 4×1 → 4×2 resize.
+    - [x] Launcher pencil reconfigure opens the saved design; setting the Strip date to Hide updates preview and widget.
+    - [x] Delete clears the settings.
+  - API 25:
+    - [x] Fresh add → config; Mint on Navy Solid 16dp (drawable path) renders identically in preview and launcher.
+    - [x] Requested weight 600 is stored, and the editor discloses "weight 600 shows as 500".
+    - [x] 4×1 resize without clipping.
+    - [x] Delete clears the settings.
+  - [x] No Clocky entries in any emulator's crash buffer.
+- [ ] Remaining for the gate: the same pass on the physical moto g13 (API 34, Motorola Launcher3: OEM launcher geometry, the API 31+ outline path on hardware, the reconfigure button). It was not run because the device sits on a secure lock screen that needs the owner's unlock.
 
 ### Mockup alignment (PR #38 reference; Phase 1B scope, recorded here)
 
