@@ -4,7 +4,7 @@
 
 このフォルダの HTML は、Clocky の長期 End-State を画面へ落とし込むための **UI/UX 基準案・インタラクティブモック** である。
 
-製品境界・機能要件・完成条件の正本は `CLOCKY_END_STATE.md`。HTML と End-State が矛盾する場合は **End-State を優先**する。HTML は production source ではなく、実装時の見た目・情報階層・操作フローを共有するための参照資料として扱う。
+製品境界・機能要件・完成条件の正本は `../CLOCKY_END_STATE.md`。HTML と End-State が矛盾する場合は **End-State を優先**する。HTML は production source ではなく、実装時の見た目・情報階層・操作フローを共有するための参照資料として扱う。
 
 ## この案で維持したい核
 
