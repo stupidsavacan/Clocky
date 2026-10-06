@@ -51,7 +51,9 @@ class PreviewHost(
         val (spec, remoteViews) = DigitalWidgetUpdater.buildPortrait(context, design, size)
 
         frame.removeAllViews()
-        frame.addView(remoteViews.apply(context, frame), FrameLayout.LayoutParams(widthPx, heightPx))
+        // Inflate like a launcher would: an Activity context brings AppCompat's view inflater, whose
+        // AppCompatImageView/TextView overrides are not RemoteViews-callable.
+        frame.addView(remoteViews.apply(context.applicationContext, frame), FrameLayout.LayoutParams(widthPx, heightPx))
         frame.layoutParams = frame.layoutParams.apply {
             width = widthPx
             height = heightPx

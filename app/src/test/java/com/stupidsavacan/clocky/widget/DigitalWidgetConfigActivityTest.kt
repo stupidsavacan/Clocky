@@ -4,7 +4,15 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.widget.Button
+import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageView
+import com.google.android.material.chip.Chip
+import com.google.android.material.button.MaterialButton
+import com.stupidsavacan.clocky.design.model.Alignment
+import com.stupidsavacan.clocky.design.model.BackgroundType
+import com.stupidsavacan.clocky.design.model.ColorRef
 import android.widget.TextClock
 import com.android.alarmclock.DigitalAppWidgetProvider
 import com.android.deskclock.R
@@ -120,6 +128,49 @@ class DigitalWidgetConfigActivityTest {
                     R.id.clocky_face_w700,
                     DigitalWidgetFit.visibleTextIn(frame, R.id.clocky_time_slot)!!.id,
                 )
+            }
+    }
+
+    private fun <T : View> ViewGroup.findAll(type: Class<T>): List<T> = (0 until childCount).flatMap { i ->
+        val child = getChildAt(i)
+        val self = if (type.isInstance(child)) listOf(type.cast(child)!!) else emptyList()
+        self + ((child as? ViewGroup)?.findAll(type) ?: emptyList())
+    }
+
+    private fun ViewGroup.clickText(type: Class<out View>, text: String, occurrence: Int = 0) {
+        val matches = findAll(type).filter { (it as? android.widget.TextView)?.text?.toString() == text }
+        assertTrue("no $text control", matches.size > occurrence)
+        matches[occurrence].performClick()
+    }
+
+    @Test
+    fun styleControlsFeedPreviewAndSave() {
+        val app = RuntimeEnvironment.getApplication()
+        val widgetId = shadowOf(AppWidgetManager.getInstance(app))
+            .createWidget(DigitalAppWidgetProvider::class.java, R.layout.clocky_digital_widget)
+        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(widgetId))
+            .setup()
+            .use { controller ->
+                val activity = controller.get()
+                val section = activity.findViewById<ViewGroup>(R.id.clocky_style_section)
+                section.clickText(Chip::class.java, "Serif") // time font
+                section.clickText(Chip::class.java, "Sky") // time color
+                section.clickText(MaterialButton::class.java, "End", occurrence = 1) // date alignment
+                section.clickText(Chip::class.java, "yyyy.MM.dd".let { java.text.SimpleDateFormat(it).format(java.util.Date()) })
+                section.clickText(MaterialButton::class.java, "Solid")
+                shadowOf(Looper.getMainLooper()).idle()
+
+                val frame = activity.findViewById<FrameLayout>(R.id.clocky_preview_frame)
+                assertEquals(View.VISIBLE, frame.findViewById<ImageView>(R.id.clocky_widget_background).visibility)
+                assertEquals(R.id.clocky_face_single, DigitalWidgetFit.visibleTextIn(frame, R.id.clocky_time_slot)!!.id)
+
+                activity.findViewById<Button>(R.id.clocky_widget_save).performClick()
+                val saved = SharedPreferencesDesignStore(activity).load(widgetId).design
+                assertEquals("serif", saved.time.style.fontId)
+                assertEquals(ColorRef.Fixed(0x8AB4F8), saved.time.style.color)
+                assertEquals(Alignment.END, saved.date.style.alignment)
+                assertEquals("yyyy.MM.dd", saved.date.formatPattern)
+                assertEquals(BackgroundType.SOLID, saved.background.type)
             }
     }
 }

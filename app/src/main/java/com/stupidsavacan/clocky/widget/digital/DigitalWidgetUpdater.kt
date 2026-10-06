@@ -40,9 +40,11 @@ object DigitalWidgetUpdater {
         appWidgetId: Int,
         options: Bundle = wm.getAppWidgetOptions(appWidgetId),
     ) {
-        val instance = SharedPreferencesDesignStore(context).load(appWidgetId)
-        val onClick = if (Utils.isWidgetClickable(wm, appWidgetId)) openClockyIntent(context) else null
-        wm.updateAppWidget(appWidgetId, build(context, instance, sizeContextOf(options), onClick))
+        // Callers include the config Activity; measure with the plain application context.
+        val app = context.applicationContext
+        val instance = SharedPreferencesDesignStore(app).load(appWidgetId)
+        val onClick = if (Utils.isWidgetClickable(wm, appWidgetId)) openClockyIntent(app) else null
+        wm.updateAppWidget(appWidgetId, build(app, instance, sizeContextOf(options), onClick))
     }
 
     /**
@@ -68,8 +70,10 @@ object DigitalWidgetUpdater {
         design: DigitalDesign,
         size: SizeContext,
     ): Pair<ResolvedDigitalSpec, RemoteViews> {
-        val spec = DesignResolver.resolve(design, size, environment(context))
-        return spec to compose(context, spec, size.minWidthDp, size.maxHeightDp, onClick = null)
+        // The application context keeps fit measurement free of an Activity's AppCompat inflater.
+        val app = context.applicationContext
+        val spec = DesignResolver.resolve(design, size, environment(app))
+        return spec to compose(app, spec, size.minWidthDp, size.maxHeightDp, onClick = null)
     }
 
     private fun compose(

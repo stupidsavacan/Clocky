@@ -244,6 +244,15 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             refreshDateLetterSpacing(value)
         }
 
+        var schedulePreviewHook: () -> Unit = {}
+        val styleControls = StyleControls(
+            context = this,
+            container = findViewById(R.id.clocky_style_section),
+            initial = current,
+            localeAutoPattern = DigitalWidgetUpdater.environment(this).localeAutoDatePattern,
+            onChange = { schedulePreviewHook() },
+        )
+
         fun currentDesign(): DigitalDesign {
             val withBaseSettings = current.copy(
                 time = current.time.copy(
@@ -296,8 +305,9 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
                 cardTimeSizeSp = if (fourByTwoSize.timeInherited) null else fourByTwoSize.timeSlider.value,
                 cardDateSizeSp = if (fourByTwoSize.dateInherited) null else fourByTwoSize.dateSlider.value,
             )
+            val withStyle = styleControls.applyTo(withProfileSizes)
             return WidgetProfileDateVisibilityEditor.apply(
-                design = withProfileSizes,
+                design = withStyle,
                 baseDateVisible = dateEnabled.isChecked,
                 stripMode = selectedDateVisibilityMode(fourByOneDate),
                 cardMode = selectedDateVisibilityMode(fourByTwoDate),
@@ -315,6 +325,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         fun selectedPreviewClass(): SizeClass =
             if (previewSizeClass.checkedButtonId == R.id.clocky_preview_strip) SizeClass.STRIP else SizeClass.CARD
         val schedulePreview = { previewHost.schedule(currentDesign(), selectedPreviewClass()) }
+        schedulePreviewHook = schedulePreview
         previewSizeClass.addOnButtonCheckedListener { _, _, isChecked -> if (isChecked) schedulePreview() }
         listOf(
             timeSlider, dateSlider, timeSizeSlider, dateSizeSlider, timeLetterSpacingSlider, dateLetterSpacingSlider,
