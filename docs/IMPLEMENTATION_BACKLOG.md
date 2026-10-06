@@ -68,15 +68,17 @@ Digital, Digital Stacked, Digital Cities, Analog, Stopwatch Widget, resize/updat
 - [x] PR #28: apply explicit widget hour modes: follow-system leaves the existing TextClock formats intact, forced 12h uses `h:mm`, forced 24h uses `HH:mm`.
 - [x] PR #29: delete consolidated per-widget settings when the launcher removes that widget, preventing orphan settings from surviving widget deletion.
 
-### F4 remaining Web-safe candidates — blocked unless semantics are defined
+### F4 remaining Web-safe candidates — contracts defined; implementation pending
 
-- [ ] X/Y offset editing UI: renderer/model exist, but repository does not define range/interaction semantics.
-- [ ] Date-format renderer/editor: current `DateSettings.formatPattern` is non-null with default `EEE, MMM d`, while the provider currently derives its default from locale; there is no explicit “no override” state.
-- [ ] Color/opacity rendering/editing: current contracts do not define how ARGB alpha composes with the separate opacity field.
-- [ ] Alignment rendering/editing: legacy values mean START/CENTER/END, while the current enum is LEFT/CENTER/RIGHT; exact RTL semantics are not defined.
-- [ ] Background rendering/editing: exact transparent/dark/light mapping, fallback colors, padding/radius and API fallback semantics are not fully defined.
-- [ ] Leading-zero behavior: the current model has a field, but the old MVP persisted no leading-zero key; do not synthesize migration behavior.
-- [ ] Requested/effective weight disclosure UI, if a concrete UI contract is added.
+The previously missing semantics are now normative in `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md`, derived from `docs/product/CLOCKY_END_STATE.md` §5.8. These items are no longer blocked on product semantics; implementation must follow that contract rather than infer behavior from model fields.
+
+- [ ] X/Y offset editing UI: use template-relative dp offsets, RTL-aware X direction, ±50% size-class bounds, draw-time clamping, and API 23–30 effective 0dp degradation disclosure.
+- [ ] Date-format renderer/editor: migrate `DateSettings.formatPattern` to an explicit nullable override where `null = Locale Auto`.
+- [ ] Color/opacity rendering/editing: normalize stored RGB alpha to FF and fold legacy/imported ARGB alpha into the separate opacity value.
+- [ ] Alignment rendering/editing: use START/CENTER/END semantics; do not expose absolute LEFT/RIGHT behavior.
+- [ ] Background rendering/editing: implement None / Solid mapping and the exact legacy transparent/dark/light migration mapping, including 18dp base padding and 10dp compact override.
+- [ ] Leading-zero behavior: implement the current End-State behavior; because the old MVP persisted no key, migration must preserve the current default rather than invent a legacy value.
+- [ ] Requested/effective weight and other SDK/launcher degradation disclosure in the editor.
 
 ### F4 device-only verification
 
@@ -84,14 +86,14 @@ Digital, Digital Stacked, Digital Cities, Analog, Stopwatch Widget, resize/updat
 - [ ] Verify RemoteViews X/Y translation/clipping and API 23–30 fallback visually.
 - [ ] Verify resize/profile transitions and touch/config UX on device.
 
-## F5 — existing MVP integration — source persistence contract decoded; importer intentionally deferred
+## F5 — existing MVP integration — source persistence contract decoded; importer contract-unblocked, implementation pending
 
 - [x] Define ownership of old per-widget presentation settings versus AOSP domain state.
 - [x] Retain independent time/date styling and size-profile concepts without duplicating timer/stopwatch state.
 - [x] Decode the authoritative retained source bundle `ci/Clocky_MVP_source.zip` (14,299 bytes; Git blob `6d63be2463ec408824a9b06eec282153c1a2df55`).
 - [x] Verify legacy SharedPreferences file `clocky_widgets`, prefix `w_<appWidgetId>_`, all saved key names/types, enum mappings, defaults, save/delete behavior, font array, date-pattern array, and absence of profile-specific persistence.
 - [x] Verify there is **no old persisted `leadingZero` key**.
-- [ ] Implement one-time primitive SharedPreferences import into `WidgetSettings` only after all persisted old semantics are losslessly representable.
+- [ ] Implement the one-time primitive SharedPreferences import into the current settings model using `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md`; all persisted old semantics now have a defined lossless mapping.
 
 ### F5 exact legacy key contract
 
@@ -100,7 +102,7 @@ Digital, Digital Stacked, Digital Cities, Analog, Stopwatch Widget, resize/updat
 - strings: `timeColor`, `dateColor`
 - no legacy profile keys; no leading-zero key
 
-### F5 importer rules once semantics are resolved
+### F5 importer rules
 
 1. Existing consolidated JSON in `clocky_widget_settings` / `widget.<id>.settings` always wins.
 2. Read exact legacy keys/types; never guess missing values or invent profile data.
@@ -108,7 +110,7 @@ Digital, Digital Stacked, Digital Cities, Analog, Stopwatch Widget, resize/updat
 4. After successful import, remove or permanently ignore that widget's old keys so deleted/edited values cannot be resurrected.
 5. Never dual-write current values to the old primitive key space.
 
-The remaining blocker is **representability**, not source readability: date-format default/override state, color/opacity composition, START/END versus LEFT/RIGHT RTL meaning, and exact old background-layout mapping remain under-specified in the current contract. A partial/lossy importer is intentionally not added.
+Representability is no longer the blocker: `CLOCKY_END_STATE.md` §5.8 and `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md` define date-format default/override state, color/opacity composition, START/CENTER/END RTL semantics, X/Y interaction bounds, and the exact old transparent/dark/light background mapping. The remaining work is importer implementation plus regression/device verification; partial or lossy migration remains unacceptable.
 
 ## F6 — GitHub build/test gate — complete for current main
 

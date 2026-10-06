@@ -51,7 +51,7 @@ Do not duplicate these features:
 - widget-removal lifecycle cleanup through the current settings store
 - resolver/editor/renderer/model regression tests for the merged paths
 
-X/Y **editing UI** is still not implemented because repository sources do not define its range/interaction semantics.
+X/Y **editing UI** is still not implemented, but its range/interaction semantics are now defined in `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md`: template-relative dp offsets, RTL-aware X direction, ±50% size-class bounds, draw-time clamping, and API 23–30 effective 0dp degradation disclosure.
 
 ## Current settings store facts
 
@@ -61,7 +61,7 @@ X/Y **editing UI** is still not implemented because repository sources do not de
 - current settings are the sole write-side source of truth
 - legacy primitive keys are import-only input if a future migration reader is added; never dual-write current values into them
 
-Model/storage fields alone are not sufficient evidence for renderer/editor behavior. In particular, do not guess missing date-format override semantics, alpha composition, RTL alignment behavior, background fallback/API behavior, or X/Y editor interaction rules.
+Model/storage fields alone are not sufficient evidence for renderer/editor behavior. Use `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md` as the implementation contract for date-format override semantics, alpha composition, RTL alignment, legacy background mapping, and X/Y editor interaction rules; do not substitute behavior inferred from current field shapes.
 
 ## Repository-owned MVP source contract — decoded and verified
 
@@ -120,19 +120,17 @@ Verified alignment/background intent:
 - background index 0 = transparent layout, 1 = dark layout, 2 = light layout
 - old background layouts also participate in fallback color/adaptive-padding behavior
 
-## Migration status — source decoded, full importer intentionally deferred
+## Migration status — source decoded; importer contract-unblocked, implementation pending
 
-Do **not** describe migration as blocked by source readability. The blocker is current-model/render **representability**.
+Do **not** describe migration as blocked by source readability or representability. `CLOCKY_END_STATE.md` §5.8 and `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md` now define the previously missing mappings:
 
-A complete old primitive-key importer is intentionally not added until all persisted old semantics can be represented without guessing. Remaining exact blockers:
+1. **Date format default/override:** `formatPattern: String?`; `null = Locale Auto`.
+2. **Color/opacity:** UI/storage treat RGB and opacity separately; saved RGB alpha is normalized to FF, while legacy/imported alpha is folded into opacity.
+3. **RTL alignment:** START/CENTER/END only; X follows writing direction and reverses in RTL.
+4. **Background mapping:** transparent → None; dark → Solid #111111 at 90%; light → Solid #FFFFFF at 90%, with 18dp base padding / 10dp compact override and legacy light default text #111111.
+5. **Leading zero:** old MVP persisted no key. Never synthesize a legacy value; preserve the current default.
 
-1. **Date format default/override:** current `DateSettings.formatPattern` is non-null and defaults to `EEE, MMM d`, while the current provider derives its default date format from locale. There is no explicit “no override” state.
-2. **Color/opacity:** current model stores ARGB plus separate opacity, but repository contracts do not define whether/how ARGB alpha composes with separate opacity.
-3. **RTL alignment:** old values are START/CENTER/END while current enum is LEFT/CENTER/RIGHT; exact RTL semantics are not defined.
-4. **Background mapping:** old transparent/dark/light layouts include fallback colors/adaptive padding, while the current background model/API fallback/radius/padding mapping is not fully specified.
-5. **Leading zero:** current model has a field, but old MVP persisted no key. Never synthesize a legacy value; preserve the current default unless a separate current feature contract says otherwise.
-
-Future importer rules:
+Importer rules:
 
 1. Existing consolidated JSON always wins.
 2. Read only exact proven legacy keys/types/mappings.
@@ -143,18 +141,17 @@ Future importer rules:
 
 ## Remaining Web-safe work boundary
 
-At this handoff, no additional clear implementation item should be coded from the existing repository contracts without first defining missing semantics. Re-audit GitHub before acting because new commits/specs may change that.
-
-Potential future Web-safe work becomes actionable only when the repository defines one of these contracts precisely:
+The previously blocked customization work is now actionable under `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md`. Web-safe implementation may proceed for:
 
 - X/Y editor range and interaction behavior
-- date-format “default/no override” representation
-- ARGB-alpha × separate-opacity composition
-- LEFT/RIGHT versus START/END behavior in RTL
-- background transparent/dark/light mapping, fallback colors, padding/radius and API fallbacks
-- any explicit current leading-zero behavior beyond the model field
+- nullable date-format override / Locale Auto
+- RGB-alpha and separate-opacity normalization/composition
+- START/CENTER/END RTL-aware alignment
+- exact legacy transparent/dark/light background migration
+- the one-way primitive-key importer
+- current leading-zero behavior defined by the End-State, while preserving the absence of any legacy key
 
-Unsupported/missing JSON-schema behavior is also not currently a defined contract; do not invent decoder policy merely because a schema field exists.
+Implementation still must not claim device/launcher verification from Web-only checks. Unsupported/missing JSON-schema behavior remains outside this synchronization unless separately specified; do not invent decoder policy merely because a schema field exists.
 
 ## Device/reference-only / not verified by Web work
 

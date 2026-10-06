@@ -23,8 +23,8 @@ ci/Clocky_MVP_source.zip     previous runnable MVP source bundle retained for re
 | compact/4×1 foundation | size profile | host-size-driven override, no hard-coded launcher assumption |
 | time/date independent size | Clocky model | retained |
 | font-family selection | Clocky typography layer | retained; only redistributable/system fonts |
-| alignment | Clocky layout layer | retained once RTL semantics are explicit |
-| colors/background | Clocky style layer | retained once alpha/background semantics are explicit |
+| alignment | Clocky layout layer | retain as START/CENTER/END with RTL-aware semantics from `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md` |
+| colors/background | Clocky style layer | retain with normalized RGB + separate opacity and exact legacy background mapping from the customization contract |
 | signed MVP pipeline | release tooling | keep signing identity policy separate from source port |
 
 ## Integration boundaries
@@ -87,7 +87,7 @@ The current consolidated source of truth is schema-versioned JSON in `clocky_wid
 5. Never write current values back to the legacy key space.
 6. Leave current defaults untouched for concepts the old MVP did not persist, including `leadingZero` and profile overrides.
 
-A full importer is intentionally deferred while some persisted old semantics remain under-specified in the current model/render contract: date-format default/override state, ARGB-alpha versus separate-opacity composition, LEFT/RIGHT versus legacy START/END in RTL, and exact old transparent/dark/light background mapping including fallback/API behavior. Partial or lossy migration is not acceptable.
+The previously missing representability contracts are now fixed by `docs/product/CLOCKY_END_STATE.md` §5.8 and `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md`: nullable date-format override with Locale Auto, normalized RGB plus separate opacity, START/CENTER/END RTL semantics, X/Y bounds/degradation behavior, and exact transparent/dark/light background migration. The importer is therefore contract-unblocked but still unimplemented. Partial or lossy migration is not acceptable.
 
 ## Migration order
 
@@ -95,7 +95,7 @@ A full importer is intentionally deferred while some persisted old semantics rem
 2. Keep `WidgetSettingsStore` as the sole current settings source of truth.
 3. Layer source-defined Clocky presentation controls onto the Digital provider one at a time.
 4. Preserve old intent only where an exact mapping is proven.
-5. Add the one-way primitive importer after all persisted legacy semantics are representable without guessing.
+5. Implement the one-way primitive importer using `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md`, with regression tests for every proven legacy key/mapping.
 6. Add remaining widget families and perform device/reference parity verification separately.
 
 ## Completion condition

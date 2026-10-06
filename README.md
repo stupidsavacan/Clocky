@@ -83,15 +83,15 @@ GitHub `main` のDigital Widget pathでは、repository内で意味論が確定�
 - launcher widget deletion時のper-widget consolidated settings cleanup
 - resolver/editor/renderer/model regression tests for the merged paths
 
-一方、modelにfieldが存在するだけでは実装契約とはみなしません。現時点では date-format default/override、ARGB alphaとseparate opacityの合成、LEFT/RIGHTとSTART/ENDのRTL意味、旧transparent/dark/light backgroundの正確な対応が不足しています。これらは推測して接続しません。
+modelにfieldが存在するだけでは実装済みとはみなしませんが、以前未定義だった date-format default/override、ARGB alphaとseparate opacityの合成、START/CENTER/ENDのRTL意味、旧transparent/dark/light background、X/Y editing のrange/interaction semantics は `docs/product/CLOCKY_END_STATE.md` §5.8 と [`docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md`](./docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md) で契約を固定しました。
 
-X/Y editing UIもrange/interaction semanticsが未定義のため未実装です。詳細は [`docs/IMPLEMENTATION_BACKLOG.md`](./docs/IMPLEMENTATION_BACKLOG.md) を正本にします。
+これらは **仕様確定済み・実装待ち** です。日々の実装状況は [`docs/IMPLEMENTATION_BACKLOG.md`](./docs/IMPLEMENTATION_BACKLOG.md) を正本にします。
 
 ## Existing MVP integration
 
 旧MVPのrepository-owned source bundleは解析済みで、legacy persistence contractは [`docs/architecture/MVP_INTEGRATION.md`](./docs/architecture/MVP_INTEGRATION.md) に固定しました。
 
-確認済みの旧prefsは `clocky_widgets` / `w_<appWidgetId>_...` で、旧MVPには **persisted `leadingZero` keyもprofile-specific preferenceもありません**。完全なprimitive-key importerは、旧値の全persisted semanticsをcurrent model/render contractへlosslessに表現できるまで意図的に追加しません。
+確認済みの旧prefsは `clocky_widgets` / `w_<appWidgetId>_...` で、旧MVPには **persisted `leadingZero` keyもprofile-specific preferenceもありません**。§5.8で旧値のlossless mapping条件は揃ったため、primitive-key importerは現在 **契約上は実装可能・未実装** です。移行時にleadingZeroやprofile値を捏造しません。
 
 AOSP が Alarm / Timer / Stopwatch / World Clock の状態を所有し、Clocky は typography/layout/preset を所有します。Widget が独自に timer/stopwatch state を持つことは禁止します。
 
