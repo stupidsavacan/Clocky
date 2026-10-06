@@ -1,0 +1,2 @@
+      topResumedActivity=ActivityRecord{37e3966 u0 com.motorola.launcher3/com.android.launcher3.CustomizationPanelLauncher t104}
+  ResumedActivity: ActivityRecord{37e3966 u0 com.motorola.launcher3/com.android.launcher3.CustomizationPanelLauncher t104}
