@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark-mode inversion of the Clocky neutral palette: ink becomes the surface. -->
+<resources>
+    <color name="clocky_surface">#16161A</color>
+    <color name="clocky_surface_container">#232228</color>
+    <color name="clocky_outline">#3A3940</color>
+    <color name="clocky_ink">#F4F2EE</color>
+    <color name="clocky_ink_secondary">#B4B2AE</color>
+    <color name="clocky_on_ink">#16161A</color>
+</resources>

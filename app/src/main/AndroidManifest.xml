@@ -27,7 +27,7 @@
             android:name="com.stupidsavacan.clocky.widget.DigitalWidgetConfigActivity"
             android:exported="true"
             android:label="@string/clocky_widget_config_label"
-            android:theme="@style/Theme.DeskClock.Settings">
+            android:theme="@style/Theme.Clocky.WidgetConfig">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>

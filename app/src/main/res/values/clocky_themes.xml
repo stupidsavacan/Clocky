@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      Clocky-owned theme for the Digital widget configuration Activity (Issue #31).
+      Its layout uses Material Components (Slider, SwitchMaterial, MaterialRadioButton), which need
+      a Material theme; the AOSP AppCompat Theme.DeskClock.Settings chain cannot resolve their
+      attributes and crashed on inflation. Colors are the neutral Clocky palette, not AOSP blue.
+    -->
+    <style name="Theme.Clocky.WidgetConfig" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/clocky_ink</item>
+        <item name="colorOnPrimary">@color/clocky_on_ink</item>
+        <item name="colorPrimaryContainer">@color/clocky_outline</item>
+        <item name="colorOnPrimaryContainer">@color/clocky_ink</item>
+        <item name="colorSecondary">@color/clocky_ink</item>
+        <item name="colorOnSecondary">@color/clocky_on_ink</item>
+        <item name="colorSecondaryContainer">@color/clocky_outline</item>
+        <item name="colorOnSecondaryContainer">@color/clocky_ink</item>
+        <item name="colorSurface">@color/clocky_surface</item>
+        <item name="colorOnSurface">@color/clocky_ink</item>
+        <item name="colorSurfaceVariant">@color/clocky_outline</item>
+        <item name="colorOnSurfaceVariant">@color/clocky_ink_secondary</item>
+        <item name="colorSurfaceContainerHighest">@color/clocky_outline</item>
+        <item name="colorOutline">@color/clocky_ink_secondary</item>
+        <item name="android:colorBackground">@color/clocky_surface</item>
+        <item name="android:windowBackground">@color/clocky_surface</item>
+    </style>
+
+</resources>
