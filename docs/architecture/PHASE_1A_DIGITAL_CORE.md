@@ -171,10 +171,10 @@ widget and the preview differ only in input size, so they cannot drift structura
    (`EEE, MMM d` and `EEE d MMM`) collapse into the same output. Phase 1A renders a non-null
    `formatPattern` **literally** and offers Locale Auto plus the six preset patterns. If presets
    become skeletons later, a deterministic migration maps these six known strings to preset ids.
-5. Provider identity: whether to rename the component later (accepting that placed widgets are
-   deleted on that update) or keep the legacy component name permanently.
+3. Below API 31, "Match system" corner radius falls back to 16dp (the framework default for
+   `system_app_widget_background_radius`).
 4. Text sizes are set in px on the RemoteViews (as in Phase 0), so a system font-scale change is
    picked up only at the next widget update. This is relevant to the End-State §14 font-scale-200%
    check.
-3. Below API 31, "Match system" corner radius falls back to 16dp (the framework default for
-   `system_app_widget_background_radius`).
+5. Provider identity: rename the component later (accepting that placed widgets are deleted on that
+   update), or keep the legacy component name permanently?
