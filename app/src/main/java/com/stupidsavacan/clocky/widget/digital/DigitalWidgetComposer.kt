@@ -89,7 +89,7 @@ object DigitalWidgetComposer {
      * baseline (slots bottom-align, so the date is raised by the difference in font descent).
      */
     private fun arrangeTemplate(rv: RemoteViews, spec: ResolvedDigitalSpec, sizes: FitSizes, density: Float, isRtl: Boolean) {
-        val gapPx = (TEMPLATE_GAP_DP * density).roundToInt()
+        val gapPx = (spec.gapDp * density).roundToInt()
         when (spec.template) {
             Template.TIME_FIRST -> rv.setViewPadding(R.id.clocky_date_slot, 0, gapPx, 0, 0)
             Template.CENTER_STACK -> rv.setViewPadding(R.id.clocky_date_slot, 0, 0, 0, gapPx)
@@ -211,7 +211,6 @@ object DigitalWidgetComposer {
     }
 
     private const val OPAQUE = 0xFF000000.toInt()
-    private const val TEMPLATE_GAP_DP = 4f
     private const val INLINE_GAP_DP = 10f
 
     /** Typical descent as a fraction of font size; lifts the inline date onto the time's baseline. */

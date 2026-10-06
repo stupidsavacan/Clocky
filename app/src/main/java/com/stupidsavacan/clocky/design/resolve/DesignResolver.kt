@@ -34,6 +34,8 @@ object DesignResolver {
     /** RemoteViews.setColorInt(notNight, night) and setColor(@ColorRes) arrived in API 31. */
     const val MIN_THEME_BINDING_SDK = 31
 
+    private const val TEMPLATE_GAP_DP = 4f
+
     /** Corner radii available as drawable variants below API 31. */
     val legacyRadiusVariantsDp: List<Float> = listOf(0f, 8f, 16f, 24f, 32f, 48f)
 
@@ -85,6 +87,7 @@ object DesignResolver {
             datePattern = d.date.formatPattern ?: env.localeAutoDatePattern,
             background = resolveBackground(d, env, degradations, tokens, themeNotes),
             paddingDp = d.background.paddingDp,
+            gapDp = if (tokens != null) TEMPLATE_GAP_DP else 0f,
             degradations = degradations.toList() + themeNotes,
         )
     }

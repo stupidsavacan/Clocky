@@ -175,7 +175,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             initialClass = previewClass,
             onDraftChanged = { draft = it },
             onDone = { finishWith(tune?.draft ?: draft) },
-            onBack = { showGallery() },
+            onBack = { onBack() },
             onDetail = { launchDetailedEditor(tune?.draft ?: draft, offerGallery = false) },
         )
     }

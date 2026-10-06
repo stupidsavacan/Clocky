@@ -83,6 +83,8 @@ data class ResolvedDigitalSpec(
     val datePattern: String,
     val background: ResolvedBackground,
     val paddingDp: Float,
+    /** Time/date gap of the template. Zero for designs without style tokens, so Phase 1A widgets keep their exact look. */
+    val gapDp: Float = 0f,
     /** Every requested ≠ effective difference, for editor disclosure (principle 5). */
     val degradations: List<Degradation>,
 )
