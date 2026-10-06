@@ -2,6 +2,37 @@
 
 This backlog separates **GitHub/Web-validated implementation** from work that still requires device/reference verification. GitHub `main`, current source/tests and required Actions checks are the source of truth for implementation status.
 
+## Phase 0 — Stabilize (`CLOCKY_END_STATE.md` §13) — source fixes done; launcher verification pending
+
+Exit gate: the existing Digital widget can be added, configured, rendered, and resized reliably. The source-side Issue #31 work is done. The gate is **not** closed until the launcher checks below pass.
+
+- [x] Config Activity crash: `DigitalWidgetConfigActivity` now uses the Clocky-owned `Theme.Clocky.WidgetConfig` (Material3 DayNight, neutral mockup palette, night variant) instead of AOSP AppCompat `Theme.DeskClock.Settings`, which could not resolve Material `Slider` attributes.
+- [x] Inflation smoke test: Robolectric `DigitalWidgetConfigActivityTest` (API 23/28/34) inflates the Activity under its manifest theme and checks the AppWidget result contract (missing id / back → canceled, save → OK + id + persisted). It reproduces the Issue #31 `InflateException` without the fix. API 35 is not covered by Robolectric because CI runs JDK 17.
+- [x] Edge-to-edge (targetSdk 35): the config screen applies system-bar insets and uses no action bar.
+- [x] 4×1 / 4×2 geometry pinned from the retained MVP metadata: min/minResize 250×70dp, targetCell 4×2 (API 31+), `reconfigurable` (API 28+). Profile boundary unchanged (`OPTION_APPWIDGET_MIN_HEIGHT` ≤ 94dp → 4×1). Contract: `docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md` §11. Tests: `DigitalWidgetMetadataTest`, `DigitalWidgetProfileResolverTest`.
+- [x] §5.8 contracts fixed in docs/spec (PR #36).
+- [x] AOSP exposure cleanup: Home background `#1A237E` → neutral ink `#16161A`; app/launcher/screensaver label "Clock" → "Clocky"; AOSP launcher icon → interim Clocky adaptive icon.
+- [x] Next-alarm `PendingIntent`s get `FLAG_IMMUTABLE`. Before this, boot/locale/time/timezone/upgrade broadcasts crashed the process on API 31+.
+
+### Phase 0 verification actually performed
+
+- Unit + Robolectric tests, `lintDebug` (0 errors), and `assembleDebug` pass locally (JDK 21).
+- API 35 Pixel 6 emulator with Pixel Launcher: the baseline `main` APK reproduces the Issue #31 crash on a direct launch of the config Activity (`am start`). The fixed APK opens it without crashing, with correct insets. Home shows the neutral surface, and no crash occurs after an upgrade install or a timezone broadcast.
+
+### Phase 0 remaining (device / launcher only)
+
+- [ ] Add the Digital widget from a real launcher picker → config opens → Save → widget renders; Back from config → no widget added.
+- [ ] Fresh-add size is 4×2 on API 31+ launchers; resize to 4×1 and back switches profile overrides; portrait/landscape; reconfigure from the launcher (API 28+).
+- [ ] Repeat on the Issue #31 device (moto g13, API 34) and on an API 23–30 device or emulator.
+- [ ] Verify the API 23–25 layer-list launcher-icon fallback renders acceptably.
+
+### Phase 0 AOSP exposure classification (intentionally not changed)
+
+- AOSP Analog widget: an existing AOSP family, kept exposed. Customizing it belongs to Phase 4.
+- AOSP red accent `#DA4336` (FAB, action text) and the dark-only Home UI: AOSP app UI. A light/neutral Home design pass belongs to the Google-parity app UI work (F2), not Phase 0.
+- Digital widget picker `previewImage` (AOSP image) and the world-city list / autosizer in the Digital path: replaced when Clocky owns the Digital provider (Phase 1A).
+- Other AOSP alarm/timer/stopwatch notification `PendingIntent`s without mutability flags: F1 targetSdk runtime work.
+
 ## F0 — repository / upstream foundation — complete
 
 - [x] Pin AOSP DeskClock `android-17.0.0_r1` / commit `1f6ebf36d0c14f5e16265d80022cb6068d97cebd`.
