@@ -6,6 +6,15 @@
 
 製品境界・機能要件・完成条件の正本は `../CLOCKY_END_STATE.md`。HTML と End-State が矛盾する場合は **End-State を優先**する。HTML は production source ではなく、実装時の見た目・情報階層・操作フローを共有するための参照資料として扱う。
 
+## 現在の参照モック
+
+`Clocky_widget_design_mockup.html` は、当初の4画面中心のモックから **全26ボードを含む all-in-one HTML** へ更新されている。
+
+Gallery / Quick Tune / Studio / My Designs のアプリ導線に加えて、複数の Style Kit / widget design、Fonts、Responsive、Theme Modes などの探索ボードを含む。これらは Clocky のビジュアル言語・responsive behavior・preset design grammar を検討するための参照範囲を広げるもの。
+
+ただし、**26ボードすべてが現在Phaseの実装要求になったわけではない**。実装順序・family追加条件・Phase gate は引き続き End-State と Implementation Backlog に従う。特に後続Phaseの画面・kit・familyを、モックに存在することだけを理由に先行実装しない。
+
+
 ## この案で維持したい核
 
 - **Gallery → Quick Tune → Studio → My Designs / 共有** の段階的な導線。
