@@ -2,9 +2,9 @@
 
 This backlog separates **GitHub/Web-validated implementation** from work that still requires device/reference verification. GitHub `main`, current source/tests and required Actions checks are the source of truth for implementation status.
 
-## Phase 0 — Stabilize (`CLOCKY_END_STATE.md` §13) — verified on API 34 (moto g13); API 23–30 pending
+## Phase 0 — Stabilize (`CLOCKY_END_STATE.md` §13) — complete
 
-Exit gate: the existing Digital widget can be added, configured, rendered, and resized reliably. The source-side Issue #31 work is done and the full launcher flow passes on the Issue #31 device (moto g13, API 34). The gate is **not** closed until the API 23–30 checks below pass.
+Exit gate: the existing Digital widget can be added, configured, rendered, and resized reliably. The gate is closed. The full launcher flow passes on the Issue #31 device (moto g13, API 34, Motorola Launcher3) and on representative pre-Android-12 emulators (API 25 and API 30, Pixel Launcher). This is not a full launcher matrix. One Samsung, Nova, or Lawnchair host and API 26–29 remain unverified, and the End-State §14 launcher matrix still applies to later phases.
 
 - [x] Config Activity crash: `DigitalWidgetConfigActivity` now uses the Clocky-owned `Theme.Clocky.WidgetConfig` (Material3 DayNight, neutral mockup palette, night variant) instead of AOSP AppCompat `Theme.DeskClock.Settings`, which could not resolve Material `Slider` attributes.
 - [x] Inflation smoke test: Robolectric `DigitalWidgetConfigActivityTest` (API 23/28/34) inflates the Activity under its manifest theme and checks the AppWidget result contract (missing id / back → canceled, save → OK + id + persisted). It reproduces the Issue #31 `InflateException` without the fix. API 35 is not covered by Robolectric because CI runs JDK 17.
@@ -30,10 +30,29 @@ Exit gate: the existing Digital widget can be added, configured, rendered, and r
   - [x] Removing the widget (after the launcher's undo window) → `APPWIDGET_DELETED` → `clocky_widget_settings.xml` is empty.
   - [x] No Clocky entries in the device crash buffer during the session.
 
-### Phase 0 remaining (device / launcher only)
+- Pre-Android-12 emulators (2026-10-06, same PR #37 debug APK), Pixel Launcher (`com.google.android.apps.nexuslauncher`), driven over ADB with evidence from `dumpsys appwidget`, provider relayout logs, the `run-as` settings store, and screenshots:
+  - API 25 (`google_apis` x86_64, 1080×1920 @ 420dpi):
+    - [x] The layer-list launcher-icon fallback (API 23–25) renders as a dark circular clock face labelled "Clocky" in the app drawer.
+    - [x] The picker lists Clocky › Digital clock **4×2**. Dropping it on home opens `DigitalWidgetConfigActivity` without a crash.
+    - [x] Back → "appWidgetId was not returned" → `APPWIDGET_DELETED`; nothing is persisted.
+    - [x] Save → renders time + date. On fresh add the landscape target is 1052×346 px ≈ 132dp, so `minHeight` 70dp still defaults to two rows without `targetCell` → 4×2 profile.
+    - [x] Resize 4×2 → 4×1 commits (landscape 152 px ≈ 58dp → 4×1 profile; a 4×1 `dateEnabled=false` override hides the date). 4×1 → 4×2 also commits.
+    - [x] Delete clears `widget.<id>.settings`.
+    - Pre-28 has no `reconfigurable`, and this launcher offers no reconfigure entry.
+  - API 30 (`google_apis` x86_64, 1080×2280 @ 440dpi):
+    - [x] The picker lists **4×2**. Add → config, and Back → cancel + `APPWIDGET_DELETED`.
+    - [x] The 4×1 "Hide date" set through the config UI is saved. Fresh add has a landscape target of 1413×343 px ≈ 125dp → 4×2 with the date.
+    - [x] Resize 4×2 → 4×1 (148 px ≈ 54dp, date hidden) and 4×1 → 4×2 (date back) both commit.
+    - [x] Portrait and landscape (launcher home rotation enabled on the emulator) render 4×2 and 4×1 without clipping.
+    - [x] Re-entering `DigitalWidgetConfigActivity` for the existing id updates the same `widget.<id>.settings`, and the widget refreshes. Pixel Launcher on API 30 has no reconfigure button (that launcher UI starts with Android 12), so the Activity was launched directly with the existing id.
+    - [x] Delete clears the settings.
+  - [x] No Clocky entries in either emulator's crash buffer.
 
-- [ ] Add / configure / render / resize / reconfigure on an API 23–30 device or emulator (no `targetCell`; pre-28 has no `reconfigurable`; pre-31 uses `minWidth`/`minHeight` for the default size).
-- [ ] Verify the API 23–25 layer-list launcher-icon fallback renders acceptably.
+### Phase 0 known non-blocking observations
+
+- A new widget saves `date.formatPattern = "EEE, MMM d"` instead of `null` / Locale Auto. This is the F4 date-format item, which Phase 1A's model v2 resolves.
+- The widget picker preview is still the AOSP image (white text, hard to see on the light Android 11 picker). It is replaced with the Clocky-owned provider in Phase 1A.
+- Launcher restore/rebind (`onRestored`) is not verified. It belongs to backup/restore (Phase 3).
 
 ### Phase 0 AOSP exposure classification (intentionally not changed)
 

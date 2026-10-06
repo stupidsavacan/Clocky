@@ -154,4 +154,4 @@ Profile resolution is unchanged from the merged implementation and is now pinned
 - The 94dp boundary is kept as is because existing per-profile overrides were saved against it. The old MVP used a different input (`OPTION_APPWIDGET_MAX_HEIGHT < 180dp` meant compact) and had no per-profile persistence, so that rule is not adopted here.
 - The End-State §9 relaxation of `minResize` to a 2×1 equivalent belongs to the size-class work, not to this pin.
 
-How a launcher converts these dp values into cells, and the fresh-add → configure → render → resize path, are launcher behavior and need device verification.
+How a launcher converts these dp values into cells, and the fresh-add → configure → render → resize path, are launcher behavior and need device verification. As of Phase 0 they have been verified on Motorola Launcher3 (API 34, physical) and Pixel Launcher (API 25 and API 30 emulators). On the pre-31 hosts, the 70dp `minHeight` gave a two-row fresh add (≈132dp / ≈125dp landscape height → 4×2 profile), and 40dp `minResizeHeight` allowed committing a one-row resize (≈58dp / ≈54dp → 4×1 profile). Other launchers remain part of the End-State §14 matrix.
