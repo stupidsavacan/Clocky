@@ -21,19 +21,27 @@ import com.stupidsavacan.clocky.customization.ui.WidgetProfileWeightEditor
 import com.stupidsavacan.clocky.design.model.DigitalDesign
 import com.stupidsavacan.clocky.design.model.SizeClass
 import com.stupidsavacan.clocky.design.model.WidgetInstance
+import com.stupidsavacan.clocky.design.library.QuickTune
+import com.stupidsavacan.clocky.design.storage.DigitalDesignCodec
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
+import org.json.JSONObject
 import com.stupidsavacan.clocky.widget.digital.DegradationNotices
 import com.stupidsavacan.clocky.widget.digital.DigitalWidgetUpdater
 import com.stupidsavacan.clocky.widget.digital.PreviewHost
 
 /**
- * Clocky-owned configuration surface for the Clocky Digital widget.
+ * Detailed editor for the Clocky Digital widget (the Phase 1A configuration surface). Phase 1B's
+ * Gallery / Quick Tune host ([DigitalWidgetConfigActivity]) opens it for anything beyond the
+ * high-frequency controls; it saves through the same store and updater.
+ *
+ * When launched with [EXTRA_DRAFT_JSON] it edits that draft (token references frozen, see
+ * QuickTune.detach) instead of the stored design, and nothing is persisted until Save.
  *
  * Base values are always integers in 100..900. Size-specific profiles can independently override
  * those weights; date visibility additionally keeps a tri-state inherit/show/hide value per
  * profile so a profile can change date visibility without forcing weight overrides.
  */
-class DigitalWidgetConfigActivity : AppCompatActivity() {
+class DigitalWidgetAdvancedActivity : AppCompatActivity() {
     private var appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,7 +62,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         setContentView(R.layout.clocky_digital_widget_config)
 
         val store = SharedPreferencesDesignStore(this)
-        val current = store.load(appWidgetId).design
+        val current = initialDesign(store)
         val currentStrip = current.layout.overrides[SizeClass.STRIP]
         val currentCard = current.layout.overrides[SizeClass.CARD]
 
@@ -340,6 +348,14 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         }
         schedulePreview()
 
+        findViewById<Button>(R.id.clocky_browse_designs).apply {
+            visibility = if (intent.getBooleanExtra(EXTRA_OFFER_GALLERY, false)) View.VISIBLE else View.GONE
+            setOnClickListener {
+                setResult(RESULT_BROWSE_DESIGNS)
+                finish()
+            }
+        }
+
         saveButton.setOnClickListener {
             val updated = currentDesign()
             store.save(WidgetInstance(appWidgetId, updated))
@@ -349,6 +365,12 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             setResult(RESULT_OK, result)
             finish()
         }
+    }
+
+    private fun initialDesign(store: SharedPreferencesDesignStore): DigitalDesign {
+        val draft = intent.getStringExtra(EXTRA_DRAFT_JSON)
+            ?.let { runCatching { DigitalDesignCodec.decode(JSONObject(it)) }.getOrNull() }
+        return QuickTune.detach(draft ?: store.load(appWidgetId).design)
     }
 
     private fun bindProfileControls(
@@ -544,6 +566,13 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
     )
 
     companion object {
+        /** Design JSON (schema 2) to edit instead of the stored design; never written until Save. */
+        const val EXTRA_DRAFT_JSON = "com.stupidsavacan.clocky.extra.DRAFT_JSON"
+
+        /** Show "Browse designs"; it returns [RESULT_BROWSE_DESIGNS] without saving. */
+        const val EXTRA_OFFER_GALLERY = "com.stupidsavacan.clocky.extra.OFFER_GALLERY"
+        const val RESULT_BROWSE_DESIGNS = RESULT_FIRST_USER
+
         private const val MIN_SIZE_SP = 1f
         private const val DEFAULT_MAX_SIZE_SP = 256f
     }

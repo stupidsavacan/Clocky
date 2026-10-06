@@ -355,6 +355,8 @@ class StyleControls(
 
         fun rgbOf(color: ColorRef): Int = when (color) {
             is ColorRef.Fixed -> color.rgb
+            // Designs reach this editor flattened (QuickTune.detach), so tokens never appear here.
+            is ColorRef.Token -> 0xFFFFFF
         }
     }
 }

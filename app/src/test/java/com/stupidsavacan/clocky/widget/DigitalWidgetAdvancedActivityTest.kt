@@ -40,16 +40,16 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [23, 28, 34])
-class DigitalWidgetConfigActivityTest {
+class DigitalWidgetAdvancedActivityTest {
 
     private fun launchIntent(widgetId: Int?): Intent =
-        Intent(RuntimeEnvironment.getApplication(), DigitalWidgetConfigActivity::class.java)
+        Intent(RuntimeEnvironment.getApplication(), DigitalWidgetAdvancedActivity::class.java)
             .setAction(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
             .apply { if (widgetId != null) putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId) }
 
     @Test
     fun inflatesMaterialControlsUnderManifestTheme() {
-        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(41))
+        Robolectric.buildActivity(DigitalWidgetAdvancedActivity::class.java, launchIntent(41))
             .setup()
             .use { controller ->
                 val activity = controller.get()
@@ -61,7 +61,7 @@ class DigitalWidgetConfigActivityTest {
 
     @Test
     fun missingWidgetIdFinishesCanceled() {
-        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(null))
+        Robolectric.buildActivity(DigitalWidgetAdvancedActivity::class.java, launchIntent(null))
             .setup()
             .use { controller ->
                 val activity = controller.get()
@@ -72,7 +72,7 @@ class DigitalWidgetConfigActivityTest {
 
     @Test
     fun backWithoutSavingLeavesResultCanceled() {
-        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(42))
+        Robolectric.buildActivity(DigitalWidgetAdvancedActivity::class.java, launchIntent(42))
             .setup()
             .use { controller ->
                 val activity = controller.get()
@@ -88,7 +88,7 @@ class DigitalWidgetConfigActivityTest {
         val app = RuntimeEnvironment.getApplication()
         val widgetId = shadowOf(AppWidgetManager.getInstance(app))
             .createWidget(DigitalAppWidgetProvider::class.java, R.layout.clocky_digital_widget)
-        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(widgetId))
+        Robolectric.buildActivity(DigitalWidgetAdvancedActivity::class.java, launchIntent(widgetId))
             .setup()
             .use { controller ->
                 val activity = controller.get()
@@ -112,7 +112,7 @@ class DigitalWidgetConfigActivityTest {
 
     @Test
     fun previewAppliesTheProductionRemoteViewsAndFollowsEdits() {
-        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(44))
+        Robolectric.buildActivity(DigitalWidgetAdvancedActivity::class.java, launchIntent(44))
             .setup()
             .use { controller ->
                 val activity = controller.get()
@@ -148,7 +148,7 @@ class DigitalWidgetConfigActivityTest {
         val app = RuntimeEnvironment.getApplication()
         val widgetId = shadowOf(AppWidgetManager.getInstance(app))
             .createWidget(DigitalAppWidgetProvider::class.java, R.layout.clocky_digital_widget)
-        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(widgetId))
+        Robolectric.buildActivity(DigitalWidgetAdvancedActivity::class.java, launchIntent(widgetId))
             .setup()
             .use { controller ->
                 val activity = controller.get()
@@ -178,7 +178,7 @@ class DigitalWidgetConfigActivityTest {
     @Test
     @Config(qualifiers = "w800dp-h360dp-land")
     fun landscapePutsPreviewBesideTheControls() {
-        Robolectric.buildActivity(DigitalWidgetConfigActivity::class.java, launchIntent(45))
+        Robolectric.buildActivity(DigitalWidgetAdvancedActivity::class.java, launchIntent(45))
             .setup()
             .visible()
             .use { controller ->

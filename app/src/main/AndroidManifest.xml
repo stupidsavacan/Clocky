@@ -32,6 +32,12 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+        <!-- Detailed editor, opened from Quick Tune (Phase 1B). Not a launcher entry point. -->
+        <activity
+            android:name="com.stupidsavacan.clocky.widget.DigitalWidgetAdvancedActivity"
+            android:exported="false"
+            android:label="@string/clocky_widget_config_label"
+            android:theme="@style/Theme.Clocky.WidgetConfig" />
         <activity android:name=".HandleShortcuts" android:excludeFromRecents="true" android:launchMode="singleInstance" android:taskAffinity="" android:theme="@android:style/Theme.NoDisplay" />
         <activity android:name="com.android.deskclock.HandleApiCalls" android:permission="com.android.alarm.permission.SET_ALARM" android:directBootAware="true" android:excludeFromRecents="true" android:launchMode="singleInstance" android:showWhenLocked="true" android:taskAffinity="" android:exported="true" android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>

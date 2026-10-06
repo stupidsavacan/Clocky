@@ -16,6 +16,16 @@
         android:paddingEnd="24dp"
         android:paddingBottom="24dp">
 
+        <Button
+            android:id="@+id/clocky_browse_designs"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:minHeight="48dp"
+            android:text="@string/clocky_browse_designs"
+            android:visibility="gone" />
+
         <!-- Filled by StyleControls (font, color, alignment, date format, background). -->
         <LinearLayout
             android:id="@+id/clocky_style_section"

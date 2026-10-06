@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="12dp">
+
+    <ImageButton
+        android:id="@+id/clocky_tune_back"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/clocky_quick_tune_back"
+        android:src="@drawable/clocky_ic_back"
+        app:tint="?attr/colorOnSurface"
+        xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+    <TextView
+        android:id="@+id/clocky_tune_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/clocky_quick_tune_title"
+        android:textAppearance="?attr/textAppearanceTitleLarge"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/clocky_tune_detail"
+        style="?attr/borderlessButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:text="@string/clocky_quick_tune_detail" />
+</LinearLayout>
