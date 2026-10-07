@@ -216,3 +216,68 @@ class TestTickingLoop(unittest.TestCase):
         with self.assertRaises(CdevError) as c:
             CW.pick_entry([{"host": mock.Mock(bounds=(0, 0, 1, 1)), "time": None, "text": None}], None)
         self.assertEqual((c.exception.exit_code, c.exception.code), (4, "NO_TIME_TEXT"))
+
+
+class TestLaunch(unittest.TestCase):
+    def setUp(self):
+        p = mock.patch("time.sleep", lambda s: None)
+        p.start()
+        self.addCleanup(p.stop)
+        t = mock.patch("time.monotonic", mock.Mock(side_effect=iter(x * 0.5 for x in range(1000))))
+        t.start()
+        self.addCleanup(t.stop)
+
+    def go(self, what, cls=None, ei=None, es=None, ez=None, wait=2.0, widget_id=None, script=None):
+        adb = ScriptedAdb(script or {"am start": "Starting: Intent", "dumpsys window": "mCurrentFocus=Window{a u0 %s/%s}" % (
+            C.PACKAGE, "com.stupidsavacan.clocky.widget.digital.Foo")})
+        args = argparse.Namespace(what=what, cls=cls, ei=ei, es=es, ez=ez, wait=wait, widget_id=widget_id)
+        return adb, M.cmd_launch(Ctx(adb, tempfile.gettempdir()), args)
+
+    def test_activity_component_string_and_extras(self):
+        adb, out = self.go("activity", ".widget.digital.Foo", ei=[["widgetId", "23"]], ez=[["dbg", "true"]])
+        self.assertIn("am start -n com.stupidsavacan.clocky/com.stupidsavacan.clocky.widget.digital.Foo "
+                      "--ei widgetId 23 --ez dbg true", adb.calls)
+        self.assertEqual(out.warnings, [])
+        self.assertIn("Foo", out.result["focus"])
+
+    def test_fully_qualified_and_deskclock(self):
+        self.assertEqual(M.activity_component("com.android.deskclock.Foo"), "com.android.deskclock.Foo")
+        self.assertEqual(M.activity_component("com.stupidsavacan.clocky.X"), "com.stupidsavacan.clocky.X")
+
+    def test_other_package_is_refused(self):
+        for bad in ("com.other/.X", "com.other.X", "com.stupidsavacan.clocky/.X"):
+            with self.assertRaises(CdevError) as c:
+                M.activity_component(bad)
+            self.assertEqual((c.exception.exit_code, c.exception.code), (6, "OTHER_PACKAGE"), bad)
+
+    def test_bad_class_and_extras_exit2(self):
+        with self.assertRaises(CdevError) as c:
+            M.activity_component("..x; rm -rf")
+        self.assertEqual(c.exception.exit_code, 2)
+        for kw in ({"ei": [["bad key", "1"]]}, {"ei": [["k", "1x"]]}, {"ez": [["k", "yes"]]}, {"es": [["k", "a b"]]},
+                   {"es": [["k", "$(x)"]]}):
+            with self.assertRaises(CdevError) as c:
+                M.build_extras(kw.get("ei"), kw.get("es"), kw.get("ez"))
+            self.assertEqual(c.exception.exit_code, 2, kw)
+
+    def test_missing_class_is_launch_failed(self):
+        with self.assertRaises(CdevError) as c:
+            self.go("activity", ".Nope", script={"am start": "Error type 3\nError: Activity class {x/y} does not exist."})
+        self.assertEqual((c.exception.exit_code, c.exception.code), (5, "LAUNCH_FAILED"))
+
+    def test_focus_wait_timeout_is_warning_not_error(self):
+        adb, out = self.go("activity", ".widget.digital.Foo", wait=1.0,
+                           script={"am start": "ok", "dumpsys window": "mCurrentFocus=Window{a u0 com.motorola.launcher3/x.Launcher}"})
+        self.assertTrue(out.warnings and "focus is" in out.warnings[0])
+
+    def test_focus_polled_until_match(self):
+        seq = ["mCurrentFocus=Window{a u0 com.x/y.Z}", "mCurrentFocus=Window{a u0 com.x/y.Z}",
+               "mCurrentFocus=Window{a u0 com.stupidsavacan.clocky/com.stupidsavacan.clocky.widget.DigitalWidgetConfigActivity}"]
+        adb, out = self.go("config", widget_id=7, wait=10.0, script={"am start": "ok", "dumpsys window": seq})
+        self.assertEqual(out.warnings, [])
+        self.assertIn("--ei appWidgetId 7", adb.calls[0])
+        self.assertEqual(len([c for c in adb.calls if c == "dumpsys window"]), 3)
+
+    def test_extras_rejected_for_other_modes(self):
+        with self.assertRaises(CdevError):
+            self.go("app", ei=[["a", "1"]])
