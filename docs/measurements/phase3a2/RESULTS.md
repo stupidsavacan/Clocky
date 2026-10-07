@@ -106,8 +106,8 @@ Fresh placement itself was not performed; existing widgets were preserved.
 Shared-path tests establish effective-spec/geometry parity for all four classes; real placed/Preview
 visual comparison for all classes remains open. Sample alarm text remains the existing editor-only
 placeholder when no real alarm is available. Square/Large own weight editing is hidden; global
-weights remain editable. Info scope now edits visibility/size/color/offsets/alignment without
-inventing a forbidden Info scoped-weight field.
+weights remain editable. Info scoped patches edit visibility/size/offsets/alignment; color/font/opacity remain global.
+No forbidden Info scoped-weight field is introduced.
 
 ## Metadata decision
 
