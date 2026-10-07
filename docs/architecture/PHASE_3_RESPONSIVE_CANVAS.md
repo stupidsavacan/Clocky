@@ -168,6 +168,47 @@ The current capability represents the resolved HOME launcher; other host impleme
 above explicit. This is implementation/verification completion, not a main merge. Phase 3A's prerequisite
 still requires the owner to merge this independent follow-up PR. Phase 3A/3A-0 has not started.
 
+**Additional Phase 2 bundled-font audit (2026-10-07, owner requested; unresolved).** The same remote-font
+restriction also affects ordinary Time/Date bundled fonts. A temporary debug-only Activity published seven
+rows directly into the existing widget on Motorola Launcher3 / moto g13 / API 34 / ja-JP. Each row used the
+existing production `FontFragmentTable` fragment, weight 400, shadow OFF, a 24px TextClock, and literal
+format `'0123456789 AMPM'` in both hour modes. The exact same RemoteViews was applied for same-package
+Preview. This fixed audit sample is not a replacement production clock.
+
+| Requested face | Same-package Preview width (px) | Placed widget width (px) |
+|---|---:|---:|
+| system sans | 209 | 209 |
+| Poppins | 217 | 209 |
+| Bebas Neue | 149 | 209 |
+| DM Serif Display | 195 | 209 |
+| Barlow Condensed | 149 | 209 |
+| IBM Plex Mono | 210 | 209 |
+| Varela Round | 236 | 209 |
+
+Placed widths come from TextClock UI bounds, not a simulated host Context. All six bundled rows' 209×28px
+glyph crops were byte-identical to the placed system-sans crop; the screenshot was also visually inspected.
+The corresponding launcher-package Context probe was restricted and measured 209px for every face;
+same-package Contexts were unrestricted and had distinct Typefaces/widths. The CTS
+[FontResourceTest](https://android.googlesource.com/platform/cts/+/2d7144b53f96b0eebb0f18130dc2cc64aeb97c3f/tests/tests/text/src/android/text/cts/FontResourceTest.java)
+independently expects RemoteViews to ignore custom font files.
+
+This confirms an existing Phase 2 defect on this host: a bundled request can remain undisclosed while the
+widget renders a system face and Preview/fit use the bundled face. Potential fit/clipping consequences were
+not tested. Any earlier same-package/visual-only bundled-font evidence is insufficient to claim real-host
+support. Ordinary bundled-font capability resolution/disclosure is **not fixed by PR #44**; the marker-only
+shipping result above does not establish full font parity for arbitrary designs. No new font fallback
+semantics or ordinary-font production changes were introduced during this audit.
+
+Local cdev evidence: `s-20261007-195819-ZY22GSDPFW`, `0003-inspect` (same-package Preview), `0006-logs`
+(Context/width probe), `0008-inspect` and `0009-collect-bundled-font-placed-proof` (actual launcher rows),
+`0012-collect-bundled-font-audit-restored` (normal widget restored). Saved preferences were byte-identical
+before/after; the audit did not change the design or device clock. The probe was removed, the clean APK
+rebuilt successfully and installed in place, and the session finished. Its 1,367 runtime/resource entry
+digests matched the earlier device-tested production APK; the whole archive hash differed after rebuilding.
+No audit code/resources ship. Not exercised: other real hosts/APIs, other weights/shadows, live production
+bundled designs across size/fit boundaries. The ordinary-font issue needs separate follow-up before claiming
+general Preview/widget font parity.
+
 ---
 
 ## 2. 3A — Responsive core
