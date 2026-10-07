@@ -46,7 +46,7 @@ These come from End-State §3, §12 and the project rules. Every sub-phase PR re
 
 | Sub-phase | What | Depends on | PRs (each one ships alone) |
 |---|---|---|---|
-| **1a** | Phase 2 follow-up: AM/PM marker is Latin `AM`/`PM` in every locale (section 1a) | marker-font spike | one PR, before 3A |
+| **1a** | Phase 2 follow-up: prefer Latin `AM`/`PM`; disclosed localized fallback on incapable hosts (section 1a) | marker-font spike / host capability | one PR, before 3A |
 | **3A-0** | Diagnostic build to measure host sizes on several launchers; spike of `Map<SizeF, RemoteViews>` | — | spike branch, not merged; results recorded in this file |
 | **3A** | Square / Large size classes, general nullable Patch, API 31+ size map and API 23–30 options path, metadata | 3A-0 results, R1–R3 | 3A-1 model + resolver (pure); 3A-2 render path + metadata |
 | **3B** | Canvas: select, drag, snap, pinch, 1dp nudge, pseudo-resize | 3A merged and gated | 3B-1 selection + drag + snap; 3B-2 pinch + pseudo-resize |
