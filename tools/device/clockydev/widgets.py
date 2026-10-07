@@ -139,6 +139,32 @@ def parse_prefs(xml_text):
     return out
 
 
+def parse_prefs_all(xml_text):
+    """prefs XML -> {key: (type, value)} for every entry; widget.N.settings values are JSON-decoded when possible."""
+    out = {}
+    if not xml_text.strip():
+        return out
+    root = ET.fromstring(xml_text)
+    rx = re.compile(C.PREFS_KEY_RE)
+    for el in root:
+        name = el.get("name")
+        if not name:
+            continue
+        if el.tag == "string":
+            val = el.text or ""
+            if rx.match(name):
+                try:
+                    val = json.loads(val)
+                except ValueError:
+                    pass
+        elif el.tag == "set":
+            val = sorted((c.text or "") for c in el)
+        else:
+            val = el.get("value")
+        out[name] = (el.tag, val)
+    return out
+
+
 def summarize_settings(entry):
     """Schema-tolerant summary; absent keys are omitted."""
     if entry.get("decode_error"):

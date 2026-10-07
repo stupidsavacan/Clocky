@@ -4,12 +4,13 @@ import os
 import subprocess
 
 from . import constants as C
+from . import compare as CMP
 from . import devstate, evidence, ui
 from .cli import Out, command
 from .cmd_misc import LOG_BUFFERS, gather_logs, write_log_files
 from .cmd_session import device_epoch
 from .cmd_widget import collect_widget_state
-from .errors import CdevError
+from .errors import CdevError, check_failed
 from .session import load_state, next_step_dir
 
 
@@ -123,3 +124,31 @@ def cmd_collect(ctx, args):
     lines.append("PR-safe summary: %s (attach ONLY this file; others may contain personal data)" % ctx.rel(os.path.join(d, "summary.md")))
     return Out({"dir": ctx.rel(d), "errors": errors, "files": files}, lines,
                dev.warnings + (["%d part(s) failed; see meta.json errors[]" % len(errors)] if errors else []), files)
+
+
+def _compare_setup(p):
+    p.add_argument("a", help="bundle A: collect label, step dir name, <session-id>/<label>, or path")
+    p.add_argument("b", help="bundle B (same forms)")
+    p.add_argument("--only", choices=["settings", "widgets", "meta", "logs"])
+    p.add_argument("--expect-same", choices=["settings", "all"], dest="expect_same",
+                   help="exit 7 unless settings (all: settings and widgets) are identical")
+
+
+def resolve_pair(ctx, a, b):
+    sessions = os.path.join(ctx.build_dir, "sessions")
+    sid = (load_state(ctx.build_dir).get("session") or {}).get("id")
+    return CMP.resolve_bundle(a, sessions, sid), CMP.resolve_bundle(b, sessions, sid)
+
+
+@command("compare", _compare_setup)
+def cmd_compare(ctx, args):
+    """Compare two evidence bundles (settings, widgets, meta, crash/ANR). Device not needed."""
+    da, db = resolve_pair(ctx, args.a, args.b)
+    res = CMP.compare_bundles(da, db, args.only)
+    lines = CMP.render_lines(res)
+    if args.expect_same:
+        bad = CMP.failed_expectations(res, args.expect_same)
+        if bad:
+            raise check_failed("NOT_SAME", "%s differ between %s and %s" % (", ".join(bad), res["a"], res["b"]),
+                               "Run `cdev compare A B` (without --expect-same) for the full diff.", CMP.diff_paths(res))
+    return Out(res, lines, res["warnings"])

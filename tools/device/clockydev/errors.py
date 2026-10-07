@@ -38,3 +38,7 @@ def adb_err(code, message, hint=None):
 
 def refused(code, message, hint=None):
     return CdevError(C.EXIT_REFUSED, code, message, hint)
+
+
+def check_failed(code, message, hint=None, candidates=None):
+    return CdevError(C.EXIT_CHECK, code, message, hint, candidates)

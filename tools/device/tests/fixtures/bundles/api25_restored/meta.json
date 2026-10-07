@@ -1,0 +1,51 @@
+{
+  "label": "api25-restored",
+  "host_time": "2026-10-07T19:30:47+0900",
+  "device_epoch": 1791369046.0,
+  "session": "s-fixture",
+  "marks": {
+    "prepare": 1791368651.0
+  },
+  "device": {
+    "identity": "SERIAL",
+    "model": "Android SDK built for x86_64",
+    "sdk": 25,
+    "release": "7.1.1",
+    "locale": "en-US",
+    "size": [
+      1080,
+      1920
+    ],
+    "density": 420,
+    "rotation": 0
+  },
+  "clocky": {
+    "installed": {
+      "versionCode": 2,
+      "versionName": "0.2.0-aosp-port",
+      "lastUpdateTime": "2026-10-07 10:24:33",
+      "uid": 10084,
+      "debuggable": true
+    },
+    "install_record": {
+      "sha256": "d03bb2031cdffb575a45caa1b4d5e84f09c97ff40bdd3917bb5bd9addeb64917",
+      "apk": "app/build/outputs/apk/debug/app-debug.apk",
+      "versionCode": 2,
+      "versionName": "0.2.0-aosp-port",
+      "lastUpdateTime": "2026-10-07 10:24:33",
+      "time": "2026-10-07T19:24:34"
+    }
+  },
+  "git": {
+    "head": "0000000000000000000000000000000000000000",
+    "branch": "fixture",
+    "dirty": false
+  },
+  "launcher": {
+    "package": "com.google.android.apps.nexuslauncher",
+    "versionName": "7.1.1-3368800",
+    "versionCode": 103
+  },
+  "tool_version": "1.0.0",
+  "errors": []
+}
