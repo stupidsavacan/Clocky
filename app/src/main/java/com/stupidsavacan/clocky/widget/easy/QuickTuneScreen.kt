@@ -78,10 +78,10 @@ class QuickTuneScreen(
             (panel.background?.mutate() as? GradientDrawable)?.setColor(DesignPreview.backdropColor(spec))
         }
         previewClass = initialClass ?: previewHost.hostSizeClass()
-        classToggle.check(if (previewClass == SizeClass.STRIP) R.id.clocky_preview_strip else R.id.clocky_preview_card)
+        classToggle.check(com.stupidsavacan.clocky.widget.digital.SizeClassLabels.button(previewClass))
         classToggle.addOnButtonCheckedListener { _, id, checked ->
             if (checked && !binding) {
-                previewClass = if (id == R.id.clocky_preview_strip) SizeClass.STRIP else SizeClass.CARD
+                previewClass = com.stupidsavacan.clocky.widget.digital.SizeClassLabels.fromButton(id)
                 refresh()
             }
         }

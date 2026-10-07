@@ -37,7 +37,13 @@ object DigitalWidgetFit {
         )
     }
 
-    fun fit(context: Context, spec: ResolvedDigitalSpec, targetWidthPx: Int, targetHeightPx: Int): FitSizes {
+    /** Short-lived, generation-local samples. All entries have the same effective font/format/size. */
+    class Samples {
+        private val texts = mutableMapOf<String, CharSequence>()
+        fun get(key: String, compute: () -> CharSequence): CharSequence = texts.getOrPut(key, compute)
+    }
+
+    fun fit(context: Context, spec: ResolvedDigitalSpec, targetWidthPx: Int, targetHeightPx: Int, samples: Samples = Samples()): FitSizes {
         val requested = requested(context, spec)
         if (targetWidthPx <= 0 || targetHeightPx <= 0) return requested
 
@@ -51,16 +57,19 @@ object DigitalWidgetFit {
         val info = if (spec.info != null) visibleTextIn(root, R.id.clocky_info_slot) else null
 
         val is24 = DateFormat.is24HourFormat(context)
-        time.text = widestTime(time, if (is24) spec.timeFormats.format24Hour else spec.timeFormats.format12Hour)
-        date?.let { it.text = widestDate(it, spec.datePattern) }
+        fun key(role: String, text: com.stupidsavacan.clocky.design.resolve.ResolvedText, format: String) =
+            "$role|${text.face}|${text.sizeSp}|${text.letterSpacingEm}|$format|${spec.dateUppercase}|$is24"
+        val timeFormat = if (is24) spec.timeFormats.format24Hour else spec.timeFormats.format12Hour
+        time.text = samples.get(key("time",spec.time,timeFormat)) { widestTime(time, timeFormat) }
+        date?.let { it.text = samples.get(key("date",spec.date,spec.datePattern)) { widestDate(it, spec.datePattern) } }
         amPm?.let { view ->
             val format = if (is24) spec.amPm!!.format24Hour else spec.amPm!!.format12Hour
-            view.text = if (format.isEmpty()) "" else widestAmPm(view, format)
+            view.text = if (format.isEmpty()) "" else samples.get(key("ampm",spec.amPm!!.text,format)) { widestAmPm(view, format) }
         }
         info?.let { view ->
             val resolved = spec.info!!
             val format = if (is24) resolved.format24Hour else resolved.format12Hour
-            view.text = if (resolved.timeZoneId == null) DateFormat.format(format, Calendar.getInstance()) else widestTime(view, format)
+            view.text = samples.get(key("info",resolved.text,format)) { if (resolved.timeZoneId == null) DateFormat.format(format, Calendar.getInstance()) else widestTime(view, format) }
         }
 
         fun scaled(px: Float, scale: Int) = max(1, (px * scale / MAX_SCALE).roundToInt()).toFloat()
@@ -79,7 +88,10 @@ object DigitalWidgetFit {
             info?.setTextSize(TypedValue.COMPLEX_UNIT_PX, s.infoPx)
             val unspecified = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
             root.measure(unspecified, unspecified)
-            return root.measuredWidth <= targetWidthPx && root.measuredHeight <= targetHeightPx
+            // Text shaping/rounding at the final smaller face can differ by a pixel from the
+            // requested-size widest-string probe. Keep a two-pixel gutter at the host edge.
+            return root.measuredWidth <= (targetWidthPx - 2).coerceAtLeast(1) &&
+                root.measuredHeight <= (targetHeightPx - 2).coerceAtLeast(1)
         }
 
         if (fits(MAX_SCALE)) return requested
@@ -131,15 +143,16 @@ object DigitalWidgetFit {
         }
         cal.set(Calendar.HOUR_OF_DAY, widestHour)
         var widest: CharSequence = DateFormat.format(format, cal)
+        var widestMinute = 0
         best = -1f
         for (minute in 0..59) {
             cal.set(Calendar.MINUTE, minute)
             val candidate = DateFormat.format(format, cal)
             val w = width(view, candidate)
-            if (w > best) { best = w; widest = candidate }
+            if (w > best) { best = w; widest = candidate; widestMinute = minute }
         }
         if (format.contains("ss")) {
-            cal.set(Calendar.MINUTE, cal.get(Calendar.MINUTE))
+            cal.set(Calendar.MINUTE, widestMinute)
             best = -1f
             for (second in 0..59) {
                 cal.set(Calendar.SECOND, second)

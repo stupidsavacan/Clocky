@@ -1,6 +1,6 @@
 # Phase 3 — Responsive Canvas & Library: design record
 
-> Status: **3A-0 complete (#47 merged); 3A-1 model/codec/resolver/edit semantics implemented, awaiting owner merge; 3A-2 not started.** The independent Phase 2 follow-ups (#44–#46) are merged. The owner delegated the open semantics to this record on
+> Status: **3A-0 complete (#47 merged); 3A-1 merged (#48); 3A-2 implemented, required moto/API35 verification pending.** The independent Phase 2 follow-ups (#44–#46) are merged. The owner delegated the open semantics to this record on
 > 2026-10-07; the rulings are in section 8 and are reflected in `CLOCKY_END_STATE.md` (section 9 lists the edits).
 > Universal Latin AM/PM is temporarily paused and is not a Phase 3 gate. Before 3A-0, the Phase 2 font-host parity follow-up (1b below) must make Preview/fit use the same effective font as the placed widget. 3A-0 results and remaining production gates are recorded in §2.10 (2026-10-08).
 > Authority: `docs/product/CLOCKY_END_STATE.md` (§3, §5.8, §7, §8, §9, §10, §12, §13, §14). This record splits the
@@ -561,6 +561,39 @@ no crash in the log; an existing Phase 2 widget unchanged after an in-place `cde
 Cannot be checked now: One UI Home, Nova, Lawnchair (no host available); API 26–29 and 31–33 (no emulator yet; can
 be created); 5-column cells on the moto's 4-column grid; font scale 200 % on a device (`cdev` refuses
 `settings put`, by design).
+
+#### 3A-2 implementation record (2026-10-08)
+
+PRs #44–#48 were confirmed merged before production implementation. Owner-authorized #48 merge
+refreshed main to `7b7ab11bbd0efc38d733b14383d8591b62b60a20`.
+
+- Production `SizeClassRule` runs once from MAX_WIDTH/MIN_HEIGHT. Constants100/160/2.5625 and
+  precedence unchanged. API31+ uses distinct valid OPTION_APPWIDGET_SIZES keys only (maximum16);
+  all share the widget class and fit actual fractional bounds. Missing/malformed lists use the
+  historical pair, never synthetic map anchors. API23–30 always uses the pair/common class.
+- SPLIT Strip now uses a supported weighted TextView spacer. Actual apply fails before and passes
+  after on SDK23/28/31/34/35. Original300-case and fractional-key geometry audits pass.
+- Render broadcasts use goAsync/finish for success, failure and replaced/stale work. One worker
+  expires after one second idle. Pending work coalesces per widget; generation check and send share
+  a lock, preventing stale overwrite. Deletion invalidates jobs. No service or app ticking loop.
+- Preview/Gallery/Quick Tune/Studio use four classes and the production resolver/fit/composer.
+  Matching host geometry wins; otherwise measured moto pairs represent4×1/4×2/2×2/4×3. Info scope,
+  layout padding/alignment/offsets and date gap are connected; Square/Large scoped weights absent.
+  R2 inheritance includes SPLIT Card spacing. Effective-font and localized AM/PM contracts retained.
+- Widest samples are generation-local and keyed by effective face/style/format. A two-pixel fit
+  gutter covers native shaping rounding; bitmap quality unchanged. Debug timings split resolve/
+  fit/compose, RemoteViews construction, send and queue-inclusive end-to-end; additional local
+  apply/bitmap/Parcel diagnostics happen after the production timestamp.
+- **Release metadata retained at250×40dp**: candidate110×40dp passed API30 after the template gate,
+  but required moto/API35 and fresh placement/picker checks remain. Default minWidth250dp and
+  targetCell4×2 preserved. No widening is claimed in the submitted metadata.
+- API30: in-place IDs/settings, pair rotation, resize, scoped UI, process-absent ticking verified.
+  moto awaits owner unlock; API35 emulator awaits recovery of package/activity services. Real
+  API31+ rotation/live resize, allocation/send and full four-class parity remain open. No new
+  built-in content/Stacked/Corner preset, schema or provider rename.
+
+Evidence and remaining gates: [`phase3a2/RESULTS.md`](../measurements/phase3a2/RESULTS.md).
+**Phase3A is not complete**; Phase3B/3C remain gated by owner merge after required verification.
 
 ### 2.10 Measurement results
 

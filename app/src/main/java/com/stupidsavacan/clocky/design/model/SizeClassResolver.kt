@@ -1,7 +1,7 @@
 package com.stupidsavacan.clocky.design.model
 
 /**
- * Legacy Phase 1A render policy. Kept only for provider/Preview compatibility until 3A-2.
+ * Historical Phase 1A helper retained for legacy tests only. Production uses SizeClassRule.
  * Responsive model/resolver code uses [SizeClassRule] with MAX_WIDTH / MIN_HEIGHT.
  *
  * Input is the host's OPTION_APPWIDGET_MIN_HEIGHT (dp): the landscape height, so one widget keeps
@@ -9,6 +9,7 @@ package com.stupidsavacan.clocky.design.model
  * 4×1 ≈ 54–58dp, 4×2 ≈ 125–132dp, Issue #31 fresh add 191dp — classify identically under the
  * former 94dp profile boundary and this 100dp boundary.
  */
+@Deprecated("Historical two-class policy; use SizeClassRule with MAX_WIDTH / MIN_HEIGHT")
 object SizeClassResolver {
     const val STRIP_MAX_HEIGHT_DP_EXCLUSIVE = 100
 

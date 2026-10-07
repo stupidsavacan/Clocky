@@ -28,6 +28,8 @@
     <string name="clocky_widget_save">ウィジェットを保存</string>
     <string name="clocky_preview_strip">4×1 · Strip</string>
     <string name="clocky_preview_card">4×2 · Card</string>
+    <string name="clocky_preview_square">2×2 · Square</string>
+    <string name="clocky_preview_large">4×3 · Large</string>
     <string name="clocky_preview_description">ウィジェットのプレビュー</string>
     <string name="clocky_element_time">時刻</string>
     <string name="clocky_element_date">日付</string>

@@ -355,6 +355,36 @@ class StudioActivityTest {
         }
     }
 
+    @Test fun fourClassSelectorScopesInfoAndSuppressesSquareLargeWeights() {
+        val id = widget()
+        open(id).use { controller ->
+            val activity = controller.get()
+            SizeClass.entries.forEach { cls ->
+                val button = com.stupidsavacan.clocky.widget.digital.SizeClassLabels.button(cls)
+                activity.findViewById<View>(button).performClick()
+                idle()
+                assertEquals(cls,activity.previewClass)
+            }
+            activity.findViewById<View>(R.id.clocky_studio_scope).performClick()
+            idle()
+            for (cls in listOf(SizeClass.SQUARE,SizeClass.LARGE)) {
+                activity.findViewById<View>(com.stupidsavacan.clocky.widget.digital.SizeClassLabels.button(cls)).performClick()
+                idle()
+                for (slot in listOf(Slot.TIME,Slot.DATE)) {
+                    activity.selectTab(slot)
+                    assertFalse(activity.panel().texts().contains("Weight"))
+                }
+            }
+            activity.selectTab(Slot.INFO)
+            assertEquals(View.VISIBLE,activity.findViewById<View>(R.id.clocky_studio_scope).visibility)
+            activity.click("Second time zone")
+            activity.type("Size","20")
+            activity.save()
+            assertEquals(20f,store.load(id).design.layout.patchFor(SizeClass.LARGE).infoSizeSp)
+            assertNull(store.load(id).design.layout.patchFor(SizeClass.SQUARE).infoSizeSp)
+        }
+    }
+
     // ---- slots ----
 
     @Test

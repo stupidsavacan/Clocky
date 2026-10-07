@@ -49,7 +49,7 @@ object DesignResolver {
         design: DigitalDesign,
         size: SizeContext,
         env: RenderEnvironment,
-        /** Callers decide the widget class once; legacy rendering explicitly supplies Strip/Card until 3A-2. */
+        /** Callers decide the widget class once; entry bounds only control geometry and fit. */
         sizeClass: SizeClass = sizeClassOf(size),
     ): ResolvedDigitalSpec {
         val requested = design.normalized()

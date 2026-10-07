@@ -26,11 +26,15 @@
             android:layout_gravity="center_horizontal" />
     </FrameLayout>
 
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        android:scrollbars="none">
     <com.google.android.material.button.MaterialButtonToggleGroup
         android:id="@+id/clocky_preview_size_class"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
         android:layout_marginTop="8dp"
         app:selectionRequired="true"
         app:singleSelection="true">
@@ -48,7 +52,20 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/clocky_preview_card" />
+        <Button
+            android:id="@+id/clocky_preview_square"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/clocky_preview_square" />
+        <Button
+            android:id="@+id/clocky_preview_large"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/clocky_preview_large" />
     </com.google.android.material.button.MaterialButtonToggleGroup>
+    </HorizontalScrollView>
 
     <TextView
         android:id="@+id/clocky_preview_notice"

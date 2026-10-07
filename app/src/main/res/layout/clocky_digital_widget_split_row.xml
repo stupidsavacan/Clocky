@@ -35,7 +35,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal" />
 
-            <View
+            <!-- TextView is RemoteViews-supported on API23+; plain View and Space are not. -->
+            <TextView
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:minWidth="8dp"

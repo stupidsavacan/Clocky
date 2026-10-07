@@ -28,6 +28,8 @@
     <string name="clocky_widget_save" tools:ignore="MissingTranslation">Save widget</string>
     <string name="clocky_preview_strip" tools:ignore="MissingTranslation">4×1 · Strip</string>
     <string name="clocky_preview_card" tools:ignore="MissingTranslation">4×2 · Card</string>
+    <string name="clocky_preview_square" tools:ignore="MissingTranslation">2×2 · Square</string>
+    <string name="clocky_preview_large" tools:ignore="MissingTranslation">4×3 · Large</string>
     <string name="clocky_preview_description" tools:ignore="MissingTranslation">Widget preview</string>
     <string name="clocky_element_time" tools:ignore="MissingTranslation">Time</string>
     <string name="clocky_element_date" tools:ignore="MissingTranslation">Date</string>

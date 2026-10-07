@@ -55,6 +55,8 @@
     <string name="clocky_studio_override_badge">◆ %1$s のみ</string>
     <string name="clocky_studio_override_revert">%1$s を共通の値に戻す</string>
     <string name="clocky_studio_date_show">日付を表示</string>
+    <string name="clocky_studio_info_show">補助行を表示</string>
+    <string name="clocky_studio_date_gap">時刻との間隔</string>
     <string name="clocky_studio_date_format">書式</string>
     <string name="clocky_studio_date_auto">自動（ロケール）</string>
     <string name="clocky_studio_date_custom_chip">カスタム</string>
