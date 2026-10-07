@@ -432,6 +432,23 @@ class StudioActivityTest {
             assertEquals("clocky-poppins", activity.design.time.style.fontId)
             assertEquals("clocky-poppins", activity.design.date.style.fontId)
             assertFalse("not the API-level message: $notes", notes.any { it.contains("Android 8") })
+            // The stand-in face gets no second, misleading weight note ("900 shows as 700" is about Poppins).
+            activity.selectTab(Slot.TIME)
+            activity.type("Weight", "900")
+            val all = activity.findViewById<ViewGroup>(R.id.clocky_studio_checks).texts() + activity.panel().texts()
+            assertFalse("no Poppins weight note on a fallback host: $all", all.any { it.contains("900") && it.contains("700") })
+        }
+    }
+
+    @Test
+    fun reopeningADesignThatRequestsAFallbackFontShowsNoStaleWeightNote() {
+        HostFontCapability.probeOverride = { HostFontCapability.Support.NONE }
+        val design = DigitalDesign(time = TimeElement(TextStyle(fontId = "clocky-poppins", weight = 900, sizeSp = 64f)))
+        open(widget(), design).use { controller ->
+            val activity = controller.get()
+            val all = activity.findViewById<ViewGroup>(R.id.clocky_studio_checks).texts() + activity.panel().texts()
+            assertTrue("fallback notice shown: $all", all.any { it.contains("Poppins") && it.contains("system font") })
+            assertFalse("no weight note about the unused Poppins face: $all", all.any { it.contains("900") && it.contains("700") })
         }
     }
 

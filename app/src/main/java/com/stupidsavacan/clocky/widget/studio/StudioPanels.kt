@@ -70,10 +70,15 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
     var showsSampleNote: Boolean = false
         private set
 
+    /** The host-font fallback set the panel was last built against; the host rebuilds when a render changes it. */
+    var builtHostFallback: Set<String> = emptySet()
+        private set
+
     fun build(slot: Slot) {
         rows.clear()
         builtSlot = slot
         showsSampleNote = false
+        builtHostFallback = hostFallbackFonts(host.spec)
         when (slot) {
             Slot.TIME -> time()
             Slot.DATE -> date()
@@ -493,10 +498,7 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
         val fontId = DesignEdits.fontIdOf(d, target)
         val family = FontCatalog.family(fontId) ?: return
         // Host fallback is disclosed by its own notice; a weight note for the stand-in face would repeat it.
-        if (host.spec?.degradations?.any {
-                it is com.stupidsavacan.clocky.design.resolve.Degradation.FontFallback &&
-                    it.reason == FontCatalog.REASON_HOST_BUNDLED_UNSUPPORTED && it.requestedFontId == fontId
-            } == true) return
+        if (fontId in builtHostFallback) return
         val face = FontCatalog.resolve(fontId, requested, android.os.Build.VERSION.SDK_INT)
         val shown = if (face.fontFallbackReason != null) face.effectiveWeight else face.face.weight
         if (shown != requested) {
@@ -605,3 +607,11 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
         }
     }
 }
+
+/** Requested bundled fonts a resolved spec shows as the system face because the host cannot render them. */
+internal fun hostFallbackFonts(spec: com.stupidsavacan.clocky.design.resolve.ResolvedDigitalSpec?): Set<String> =
+    spec?.degradations.orEmpty()
+        .filterIsInstance<com.stupidsavacan.clocky.design.resolve.Degradation.FontFallback>()
+        .filter { it.reason == FontCatalog.REASON_HOST_BUNDLED_UNSUPPORTED }
+        .map { it.requestedFontId }
+        .toSet()
