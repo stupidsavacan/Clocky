@@ -106,6 +106,26 @@ Exit gate: Clocky-owned Digital is stable for the 4×1 / 4×2 family, and the ed
 
 The 26-board mockup's Clocky Default uses **Center Stack** for Card (date above time, centered) and **Inline** for Strip (time with date beside it), as End-State §5.8 recommends, with a next-alarm row (the Phase 2 Info line). Phase 1A keeps a single `TIME_FIRST` template, matching the Phase 0 look. Choosing templates per size class and the Clocky Default preset's styling (date weight 500 over time weight 300, etc.) belong to Phase 1B (Quick Tune / Kits).
 
+## Phase 1B — Easy Creation (`CLOCKY_END_STATE.md` §6, §13) — implementation complete; wider launcher matrix pending
+
+Exit gate: a first-time user can create an attractive Digital clock in a few taps, starting from a curated design rather than a blank editor. Design record: `docs/architecture/PHASE_1B_EASY_CREATION.md`.
+
+- [x] Design v2 style tokens (palette snapshot, theme mode, font pair, text-size step), built-in provenance, `ColorRef.Token`, five templates (Time first, Center Stack, Inline, Split, Minimal) as additive schema-2 keys; Phase 1A documents decode unchanged.
+- [x] Resolver / composer: token colors and fonts, per-class template, Follow system (`setColorInt` day/night) and Material You (`setColor` onto `clocky_dyn_*` aliases of `system_accent*`) on API 31+, disclosed static degradation below.
+- [x] Library: 4 kits (Default, Minimal, Bold, Editorial) x 2 designs = 8 immutable, versioned built-ins; widgets receive a snapshot.
+- [x] Gallery: live production-RemoteViews cards, kit filter, Clocky Default preselected, direct "Add this clock" (1 tap), "Customize" into Quick Tune.
+- [x] Quick Tune: palette (kit palettes + Material You + Follow system), typography (6 categories), layout (per size class), text size S/M/L (labelled "Text size"), date visibility, Surprise me (kit combination table only), "Detailed edit" into the Phase 1A editor.
+- [x] Clocky Default is Center Stack on Card and Inline on Strip.
+- [x] Fonts: system families only; nothing bundled or redistributed (bundled OFL library stays Phase 2).
+- [x] Robolectric: config host (fresh add, direct add, per-card add, cancel, tune, Surprise me, Material You, reconfigure, Phase 1A fallback, recreation), plus pure tests for kits, Quick Tune, resolver theme modes and codec (SDK 23/28/34). `lintDebug`: 0 errors.
+- Device evidence (2026-10-07, `cdev`, debug build of this branch):
+  - API 35 emulator (Pixel Launcher): launcher drag opens the Gallery (Clocky Default selected); "Add this clock" creates a widget in one tap; Gallery -> Customize -> Mint + Serif + Split -> Done: the widget matches the Quick Tune preview; the launcher reconfigure pencil reopens Quick Tune on the saved design; Material You renders wallpaper-derived colors and flips to light tones with `cmd uimode night yes` **without an app update**; Back from the Gallery leaves no new widget; `am kill` of the Clocky process while a widget is placed: TextClock keeps ticking (11:33 -> 11:34); Strip resize shows Inline.
+  - API 30 emulator: Gallery (live cards, inset tiles), Tonal + Material You shows the "needs Android 12" notice and falls back to the design palette; a Phase 1A widget placed earlier still renders.
+  - API 25 emulator: Gallery -> Poster + Serif -> Done; the editor discloses "weight 600 shows as 500"; widget equals preview.
+  - Physical moto g13 (API 34, Motorola Launcher3, ja-JP, 720x1600; 2026-10-07, `cdev` + scrcpy for unlocking by the owner): launcher drag opens the Gallery with live Japanese dates; Bold Poster -> Customize -> Ocean + Serif -> Done placed widget id 23 and it matches the preview; resize to one row shows the Inline strip; the launcher pencil reopens Quick Tune on the saved design (Strip, Ocean, Serif); Surprise me then Back cancels and the stored design is unchanged (`palette ocean`, `source bold-poster`); no crash or ANR in the log. Not exercised on the moto: Material You / night switch (covered on the API 35 emulator), landscape.
+- Found and fixed during implementation: Surprise me dropped Material You (caught by the new tests); Quick Tune preview was taller than the viewport on 2400px screens (preview now scales down uniformly); S/M truncated to "..." (button padding).
+- Not verified: launcher matrix beyond Pixel Launcher, API 26-29, font scale 200%, RTL, Quick Tune landscape on a device, Follow system on API 30 across a real day/night switch.
+
 ## F0 — repository / upstream foundation — complete
 
 - [x] Pin AOSP DeskClock `android-17.0.0_r1` / commit `1f6ebf36d0c14f5e16265d80022cb6068d97cebd`.

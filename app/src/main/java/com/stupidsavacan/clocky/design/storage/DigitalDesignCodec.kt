@@ -7,7 +7,16 @@ import com.stupidsavacan.clocky.design.model.Behavior
 import com.stupidsavacan.clocky.design.model.ColorRef
 import com.stupidsavacan.clocky.design.model.CornerRadius
 import com.stupidsavacan.clocky.design.model.DateElement
+import com.stupidsavacan.clocky.design.model.ColorRole
 import com.stupidsavacan.clocky.design.model.DesignLayout
+import com.stupidsavacan.clocky.design.model.DesignSource
+import com.stupidsavacan.clocky.design.model.FontSpec
+import com.stupidsavacan.clocky.design.model.Palette
+import com.stupidsavacan.clocky.design.model.PaletteColors
+import com.stupidsavacan.clocky.design.model.PaletteVariant
+import com.stupidsavacan.clocky.design.model.StyleTokens
+import com.stupidsavacan.clocky.design.model.TextSizeStep
+import com.stupidsavacan.clocky.design.model.ThemeMode
 import com.stupidsavacan.clocky.design.model.DigitalDesign
 import com.stupidsavacan.clocky.design.model.FontIds
 import com.stupidsavacan.clocky.design.model.HourMode
@@ -72,8 +81,80 @@ object DigitalDesignCodec {
             put("behavior", JSONObject().apply {
                 put("hourMode", d.behavior.hourMode.name)
             })
+            d.style?.let { put("style", encodeTokens(it)) }
+            d.source?.let {
+                put("source", JSONObject().put("builtinId", it.builtinId).put("version", it.version).put("kitId", it.kitId))
+            }
         }
     }
+
+    // ---- Phase 1B style tokens (additive keys of schema 2) ----
+
+    private fun encodeTokens(t: StyleTokens): JSONObject = JSONObject().apply {
+        put("palette", JSONObject().apply {
+            put("id", t.palette.id)
+            put("fixedVariant", t.palette.fixedVariant.name)
+            put("light", encodePaletteColors(t.palette.light))
+            put("dark", encodePaletteColors(t.palette.dark))
+        })
+        put("themeMode", t.themeMode.name)
+        put("fontPrimary", encodeFontSpec(t.fontPrimary))
+        put("fontSecondary", encodeFontSpec(t.fontSecondary))
+        put("textSize", t.textSize.name)
+    }
+
+    private fun encodePaletteColors(c: PaletteColors) = JSONObject().apply {
+        ColorRole.entries.forEach { put(it.name.lowercase(Locale.ROOT), hex(c.of(it))) }
+    }
+
+    private fun encodeFontSpec(f: FontSpec) = JSONObject().put("font", f.fontId).put("weight", f.weight)
+
+    private fun decodeTokens(o: JSONObject?): StyleTokens? {
+        if (o == null) return null
+        val p = o.optJSONObject("palette") ?: return null
+        val light = decodePaletteColors(p.optJSONObject("light")) ?: return null
+        val dark = decodePaletteColors(p.optJSONObject("dark")) ?: return null
+        val primary = decodeFontSpec(o.optJSONObject("fontPrimary")) ?: return null
+        val secondary = decodeFontSpec(o.optJSONObject("fontSecondary")) ?: return null
+        return StyleTokens(
+            palette = Palette(
+                id = p.optString("id", "custom"),
+                light = light,
+                dark = dark,
+                fixedVariant = enumOr(p.optString("fixedVariant"), PaletteVariant.DARK),
+            ),
+            themeMode = enumOr(o.optString("themeMode"), ThemeMode.FIXED),
+            fontPrimary = primary,
+            fontSecondary = secondary,
+            textSize = enumOr(o.optString("textSize"), TextSizeStep.MEDIUM),
+        )
+    }
+
+    private fun decodePaletteColors(o: JSONObject?): PaletteColors? {
+        if (o == null) return null
+        fun role(r: ColorRole) = parseHex(o.optString(r.name.lowercase(Locale.ROOT)))
+        return PaletteColors(
+            primary = role(ColorRole.PRIMARY) ?: return null,
+            secondary = role(ColorRole.SECONDARY) ?: return null,
+            accent = role(ColorRole.ACCENT) ?: return null,
+            surface = role(ColorRole.SURFACE) ?: return null,
+        )
+    }
+
+    private fun decodeFontSpec(o: JSONObject?): FontSpec? {
+        if (o == null || !o.has("font")) return null
+        return FontSpec(o.getString("font"), o.optInt("weight", 400))
+    }
+
+    private fun decodeSource(o: JSONObject?): DesignSource? {
+        if (o == null || !o.has("builtinId")) return null
+        return DesignSource(o.getString("builtinId"), o.optInt("version", 1), o.optString("kitId"))
+    }
+
+    private fun hex(rgb: Int) = String.format(Locale.ROOT, "#%06X", rgb)
+
+    private fun parseHex(raw: String): Int? =
+        raw.removePrefix("#").takeIf { it.length == 6 }?.toIntOrNull(16)
 
     // ---- v2 ----
 
@@ -111,6 +192,8 @@ object DigitalDesignCodec {
                     defaults.behavior.hourMode,
                 ),
             ),
+            style = decodeTokens(root.optJSONObject("style")),
+            source = decodeSource(root.optJSONObject("source")),
         )
     }
 
@@ -139,16 +222,14 @@ object DigitalDesignCodec {
     )
 
     private fun encodeColor(color: ColorRef): JSONObject = when (color) {
-        is ColorRef.Fixed -> JSONObject()
-            .put("type", "fixed")
-            .put("rgb", String.format(Locale.ROOT, "#%06X", color.rgb))
+        is ColorRef.Fixed -> JSONObject().put("type", "fixed").put("rgb", hex(color.rgb))
+        is ColorRef.Token -> JSONObject().put("type", "token").put("role", color.role.name)
     }
 
-    private fun decodeColor(o: JSONObject?, fallback: ColorRef): ColorRef {
-        if (o == null || o.optString("type") != "fixed") return fallback
-        val raw = o.optString("rgb").removePrefix("#")
-        val value = raw.takeIf { it.length == 6 }?.toIntOrNull(16) ?: return fallback
-        return ColorRef.Fixed(value)
+    private fun decodeColor(o: JSONObject?, fallback: ColorRef): ColorRef = when (o?.optString("type")) {
+        "fixed" -> parseHex(o.optString("rgb"))?.let { ColorRef.Fixed(it) } ?: fallback
+        "token" -> ColorRef.Token(enumOr(o.optString("role"), ColorRole.PRIMARY))
+        else -> fallback
     }
 
     private fun encodeRadius(r: CornerRadius): JSONObject = when (r) {
@@ -171,6 +252,7 @@ object DigitalDesignCodec {
         p.dateXDp?.let { put(PATH_DATE_X, it.toDouble()) }
         p.dateYDp?.let { put(PATH_DATE_Y, it.toDouble()) }
         p.dateVisible?.let { put(PATH_DATE_VISIBLE, it) }
+        p.template?.let { put(PATH_TEMPLATE, it.name) }
     }
 
     private fun decodeOverrides(o: JSONObject?): Map<SizeClass, LayoutPatch> {
@@ -194,6 +276,7 @@ object DigitalDesignCodec {
         } else {
             null
         },
+        template = o.optStringOrNull(PATH_TEMPLATE)?.let { name -> Template.entries.firstOrNull { it.name == name } },
     )
 
     // ---- v1 → v2 migration ----
@@ -300,6 +383,7 @@ object DigitalDesignCodec {
     const val PATH_DATE_X = "date.xDp"
     const val PATH_DATE_Y = "date.yDp"
     const val PATH_DATE_VISIBLE = "date.visible"
+    const val PATH_TEMPLATE = "layout.template"
 
     private val SizeClass.key: String get() = name.lowercase(Locale.ROOT)
 

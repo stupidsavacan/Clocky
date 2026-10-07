@@ -21,6 +21,10 @@ data class DigitalDesign(
     val background: BackgroundElement = BackgroundElement(),
     val layout: DesignLayout = DesignLayout(),
     val behavior: Behavior = Behavior(),
+    /** Phase 1B style tokens (null for designs that predate them: every color is then Fixed). */
+    val style: StyleTokens? = null,
+    /** Built-in provenance of the snapshot this design was copied from (null for custom designs). */
+    val source: DesignSource? = null,
 ) {
     companion object {
         const val DEFAULT_ORIGIN = "google-clock"
@@ -51,7 +55,12 @@ data class DateElement(
     val formatPattern: String? = null,
 )
 
-/** Only fixed colors exist in Phase 1A; Dynamic/Auto references arrive with Phase 1B. */
+/**
+ * Color references (End-State §5.5). [Fixed] is a literal; [Token] follows the design's
+ * [StyleTokens.palette] role, so Quick Tune recolors a whole design by swapping the palette.
+ * Dynamic (Material You) is not a third reference kind: it is a [ThemeMode] of the tokens, so the
+ * same Token resolves to system colors on API 31+.
+ */
 sealed interface ColorRef {
     /** Opaque 0xRRGGBB. Alpha always lives in the element's separate opacity (contract §5). */
     data class Fixed(val rgb: Int) : ColorRef {
@@ -59,6 +68,8 @@ sealed interface ColorRef {
             require(rgb ushr 24 == 0) { "Fixed colors are stored without alpha: ${rgb.toString(16)}" }
         }
     }
+
+    data class Token(val role: ColorRole) : ColorRef
 }
 
 enum class Alignment { START, CENTER, END }
@@ -79,7 +90,13 @@ data class BackgroundElement(
     val paddingDp: Float = 0f,
 )
 
-enum class Template { TIME_FIRST }
+/**
+ * Compositions (End-State §5.8). [TIME_FIRST] is the Phase 1A template and honors each element's
+ * alignment. [CENTER_STACK] puts the date above the time. [INLINE] is one row, time then date.
+ * [SPLIT] is date top-left / time bottom-right on Card and a space-between row on Strip.
+ * [MINIMAL] is time only; the requested date visibility is retained but not rendered.
+ */
+enum class Template { TIME_FIRST, CENTER_STACK, INLINE, SPLIT, MINIMAL }
 
 enum class SizeClass { STRIP, CARD }
 
@@ -98,6 +115,7 @@ data class LayoutPatch(
     val dateXDp: Float? = null,
     val dateYDp: Float? = null,
     val dateVisible: Boolean? = null,
+    val template: Template? = null,
 ) {
     val isEmpty: Boolean get() = this == EMPTY
 
@@ -126,6 +144,12 @@ data class Behavior(
 
 object FontIds {
     const val SYSTEM_SANS = "system-sans"
+
+    /** Reserved ids: the face and weight come from [StyleTokens.fontPrimary] / [StyleTokens.fontSecondary]. */
+    const val TOKEN_PRIMARY = "token:fontPrimary"
+    const val TOKEN_SECONDARY = "token:fontSecondary"
+
+    fun isToken(fontId: String): Boolean = fontId == TOKEN_PRIMARY || fontId == TOKEN_SECONDARY
 }
 
 const val MIN_WEIGHT = 100
@@ -145,6 +169,7 @@ fun DigitalDesign.normalized(): DigitalDesign = copy(
         },
         paddingDp = background.paddingDp.finiteOr(0f).coerceIn(0f, MAX_PADDING_DP),
     ),
+    style = style?.normalized(),
     layout = layout.copy(
         overrides = layout.overrides
             .mapValues { (_, patch) -> patch.normalized() }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Placeholders: only values-v31 / values-night-v31 are ever applied (API 31+). -->
+    <color name="clocky_dyn_primary">#FFFFFF</color>
+    <color name="clocky_dyn_secondary">#FFFFFF</color>
+    <color name="clocky_dyn_accent">#FFFFFF</color>
+    <color name="clocky_dyn_surface">#000000</color>
+</resources>

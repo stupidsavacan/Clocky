@@ -29,6 +29,8 @@ object DegradationNotices {
                     context.getString(R.string.clocky_degraded_offset_clamped, element(context, d.element))
                 is Degradation.RadiusApproximated ->
                     context.getString(R.string.clocky_degraded_radius, d.effectiveDp.roundToInt())
+                Degradation.ThemeSwitchUnavailable -> context.getString(R.string.clocky_degraded_theme_switch)
+                Degradation.DynamicColorUnavailable -> context.getString(R.string.clocky_degraded_dynamic_color)
             }
         }
 

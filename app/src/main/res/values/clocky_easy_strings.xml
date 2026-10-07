@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 1B: Gallery + Quick Tune (docs/architecture/PHASE_1B_EASY_CREATION.md). -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="clocky_degraded_theme_switch" tools:ignore="MissingTranslation">Light and dark follow the system when the widget refreshes on this Android version.</string>
+    <string name="clocky_degraded_dynamic_color" tools:ignore="MissingTranslation">Material You colors need Android 12. This design\'s own colors are shown instead.</string>
+
+    <!-- Gallery -->
+    <string name="clocky_gallery_title" tools:ignore="MissingTranslation">Choose a clock</string>
+    <string name="clocky_gallery_subtitle_card" tools:ignore="MissingTranslation">Live time · shown at 4×2</string>
+    <string name="clocky_gallery_subtitle_strip" tools:ignore="MissingTranslation">Live time · shown at 4×1</string>
+    <string name="clocky_gallery_add" tools:ignore="MissingTranslation">Add this clock</string>
+    <string name="clocky_gallery_customize" tools:ignore="MissingTranslation">Customize</string>
+    <string name="clocky_gallery_selected" tools:ignore="MissingTranslation">%1$s, selected</string>
+    <string name="clocky_mood_all" tools:ignore="MissingTranslation">All</string>
+    <string name="clocky_kit_default" tools:ignore="MissingTranslation">Default</string>
+    <string name="clocky_kit_minimal" tools:ignore="MissingTranslation">Minimal</string>
+    <string name="clocky_kit_bold" tools:ignore="MissingTranslation">Bold</string>
+    <string name="clocky_kit_editorial" tools:ignore="MissingTranslation">Editorial</string>
+    <string name="clocky_design_clocky_default" tools:ignore="MissingTranslation">Clocky Default</string>
+    <string name="clocky_design_default_tonal" tools:ignore="MissingTranslation">Tonal</string>
+    <string name="clocky_design_minimal_hairline" tools:ignore="MissingTranslation">Hairline</string>
+    <string name="clocky_design_minimal_quiet_split" tools:ignore="MissingTranslation">Quiet Split</string>
+    <string name="clocky_design_bold_poster" tools:ignore="MissingTranslation">Poster</string>
+    <string name="clocky_design_bold_block" tools:ignore="MissingTranslation">Block</string>
+    <string name="clocky_design_editorial_serif" tools:ignore="MissingTranslation">Serif</string>
+    <string name="clocky_design_editorial_paper" tools:ignore="MissingTranslation">Paper</string>
+    <string name="clocky_design_custom" tools:ignore="MissingTranslation">Custom clock</string>
+
+    <!-- Quick Tune -->
+    <string name="clocky_quick_tune_title" tools:ignore="MissingTranslation">Quick Tune</string>
+    <string name="clocky_quick_tune_back" tools:ignore="MissingTranslation">Back to clocks</string>
+    <string name="clocky_quick_tune_detail" tools:ignore="MissingTranslation">Detailed edit</string>
+    <string name="clocky_quick_tune_done" tools:ignore="MissingTranslation">Done</string>
+    <string name="clocky_quick_tune_surprise" tools:ignore="MissingTranslation">Surprise me</string>
+    <string name="clocky_browse_designs" tools:ignore="MissingTranslation">Browse clocks</string>
+    <string name="clocky_tune_color" tools:ignore="MissingTranslation">Color</string>
+    <string name="clocky_tune_typeface" tools:ignore="MissingTranslation">Typeface</string>
+    <string name="clocky_tune_layout" tools:ignore="MissingTranslation">Layout</string>
+    <string name="clocky_tune_text_size" tools:ignore="MissingTranslation">Text size</string>
+    <string name="clocky_tune_date" tools:ignore="MissingTranslation">Date</string>
+    <string name="clocky_tune_follow_system" tools:ignore="MissingTranslation">Follow system light and dark</string>
+    <string name="clocky_tune_date_off_by_layout" tools:ignore="MissingTranslation">This layout shows the time only</string>
+    <string name="clocky_palette_kit" tools:ignore="MissingTranslation">Kit colors</string>
+    <string name="clocky_palette_material_you" tools:ignore="MissingTranslation">Material You</string>
+    <string name="clocky_palette_clocky" tools:ignore="MissingTranslation">Clocky</string>
+    <string name="clocky_palette_mint" tools:ignore="MissingTranslation">Mint</string>
+    <string name="clocky_palette_mono" tools:ignore="MissingTranslation">Mono</string>
+    <string name="clocky_palette_sand" tools:ignore="MissingTranslation">Sand</string>
+    <string name="clocky_palette_ocean" tools:ignore="MissingTranslation">Ocean</string>
+    <string name="clocky_palette_rose" tools:ignore="MissingTranslation">Rose</string>
+    <string name="clocky_palette_poster" tools:ignore="MissingTranslation">Poster</string>
+    <string name="clocky_palette_ember" tools:ignore="MissingTranslation">Ember</string>
+    <string name="clocky_palette_paper" tools:ignore="MissingTranslation">Paper</string>
+    <string name="clocky_typeface_modern" tools:ignore="MissingTranslation">Modern</string>
+    <string name="clocky_typeface_rounded" tools:ignore="MissingTranslation">Rounded</string>
+    <string name="clocky_typeface_serif" tools:ignore="MissingTranslation">Serif</string>
+    <string name="clocky_typeface_condensed" tools:ignore="MissingTranslation">Condensed</string>
+    <string name="clocky_typeface_mono" tools:ignore="MissingTranslation">Mono</string>
+    <string name="clocky_typeface_display" tools:ignore="MissingTranslation">Display</string>
+    <string name="clocky_template_center_stack" tools:ignore="MissingTranslation">Centered</string>
+    <string name="clocky_template_time_first" tools:ignore="MissingTranslation">Time first</string>
+    <string name="clocky_template_inline" tools:ignore="MissingTranslation">Side by side</string>
+    <string name="clocky_template_split" tools:ignore="MissingTranslation">Split</string>
+    <string name="clocky_template_minimal" tools:ignore="MissingTranslation">Time only</string>
+    <string name="clocky_text_size_small" tools:ignore="MissingTranslation">S</string>
+    <string name="clocky_text_size_medium" tools:ignore="MissingTranslation">M</string>
+    <string name="clocky_text_size_large" tools:ignore="MissingTranslation">L</string>
+    <string name="clocky_text_size_small_description" tools:ignore="MissingTranslation">Small text</string>
+    <string name="clocky_text_size_medium_description" tools:ignore="MissingTranslation">Medium text</string>
+    <string name="clocky_text_size_large_description" tools:ignore="MissingTranslation">Large text</string>
+    <string name="clocky_sample_time" tools:ignore="MissingTranslation">10</string>
+</resources>

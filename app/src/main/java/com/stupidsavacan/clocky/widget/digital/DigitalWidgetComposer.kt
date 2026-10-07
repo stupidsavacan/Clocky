@@ -10,7 +10,11 @@ import android.widget.RemoteViews
 import androidx.annotation.LayoutRes
 import com.android.deskclock.R
 import com.stupidsavacan.clocky.design.model.Alignment
+import com.stupidsavacan.clocky.design.model.ColorRole
 import com.stupidsavacan.clocky.design.model.FontIds
+import com.stupidsavacan.clocky.design.model.SizeClass
+import com.stupidsavacan.clocky.design.model.Template
+import com.stupidsavacan.clocky.design.resolve.ColorBinding
 import com.stupidsavacan.clocky.design.resolve.DesignResolver
 import com.stupidsavacan.clocky.design.resolve.ResolvedDigitalSpec
 import com.stupidsavacan.clocky.design.resolve.ResolvedFace
@@ -34,7 +38,8 @@ object DigitalWidgetComposer {
         sdkInt: Int = Build.VERSION.SDK_INT,
     ): RemoteViews {
         val density = context.resources.displayMetrics.density
-        val rv = RemoteViews(context.packageName, R.layout.clocky_digital_widget)
+        val isRtl = context.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
+        val rv = RemoteViews(context.packageName, templateLayout(spec.template, spec.sizeClass))
 
         applyBackground(rv, spec, sdkInt)
         val padPx = (spec.paddingDp * density).roundToInt()
@@ -62,10 +67,51 @@ object DigitalWidgetComposer {
         } else {
             rv.setViewVisibility(R.id.clocky_date_slot, View.GONE)
         }
+        arrangeTemplate(rv, spec, sizes, density, isRtl)
 
         onClick?.let { rv.setOnClickPendingIntent(R.id.clocky_widget_root, it) }
         return rv
     }
+
+    /** One layout per composition; every layout carries the same ids (root, background, content, slots). */
+    @LayoutRes
+    fun templateLayout(template: Template, sizeClass: SizeClass): Int = when (template) {
+        Template.TIME_FIRST, Template.MINIMAL -> R.layout.clocky_digital_widget
+        Template.CENTER_STACK -> R.layout.clocky_digital_widget_date_first
+        Template.INLINE -> R.layout.clocky_digital_widget_inline
+        Template.SPLIT ->
+            if (sizeClass == SizeClass.STRIP) R.layout.clocky_digital_widget_split_row else R.layout.clocky_digital_widget_date_first
+    }
+
+    /**
+     * Spacing and alignment that belong to the composition rather than to either element: the
+     * time/date gap, and for Inline the baseline lift that lets the smaller date sit on the time's
+     * baseline (slots bottom-align, so the date is raised by the difference in font descent).
+     */
+    private fun arrangeTemplate(rv: RemoteViews, spec: ResolvedDigitalSpec, sizes: FitSizes, density: Float, isRtl: Boolean) {
+        val gapPx = (spec.gapDp * density).roundToInt()
+        when (spec.template) {
+            Template.TIME_FIRST -> rv.setViewPadding(R.id.clocky_date_slot, 0, gapPx, 0, 0)
+            Template.CENTER_STACK -> rv.setViewPadding(R.id.clocky_date_slot, 0, 0, 0, gapPx)
+            Template.SPLIT -> if (spec.sizeClass == SizeClass.CARD) {
+                rv.setViewPadding(R.id.clocky_date_slot, 0, 0, 0, gapPx)
+            }
+            Template.INLINE -> {
+                rv.setInt(R.id.clocky_row, "setGravity", gravityOf(spec.time.alignment, vertical = false))
+                val lift = ((sizes.timePx - sizes.datePx).coerceAtLeast(0f) * DESCENT_RATIO).roundToInt()
+                val inlineGap = (INLINE_GAP_DP * density).roundToInt()
+                if (isRtl) rv.setViewPadding(R.id.clocky_date_slot, 0, 0, inlineGap, lift)
+                else rv.setViewPadding(R.id.clocky_date_slot, inlineGap, 0, 0, lift)
+            }
+            Template.MINIMAL -> Unit
+        }
+    }
+
+    fun gravityOf(alignment: Alignment, vertical: Boolean): Int = when (alignment) {
+        Alignment.START -> Gravity.START
+        Alignment.CENTER -> Gravity.CENTER_HORIZONTAL
+        Alignment.END -> Gravity.END
+    } or (if (vertical) Gravity.CENTER_VERTICAL else Gravity.NO_GRAVITY)
 
     fun gravityOf(alignment: Alignment): Int = when (alignment) {
         Alignment.START -> Gravity.START
@@ -89,7 +135,7 @@ object DigitalWidgetComposer {
         val id = FontFragments.faceViewId(text.face)
         child.setViewVisibility(id, View.VISIBLE)
         child.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_PX, sizePx)
-        child.setTextColor(id, text.argb)
+        applyTextColor(child, id, text, sdkInt)
         child.setFloat(id, "setLetterSpacing", text.letterSpacingEm)
         child.setCharSequence(id, "setFormat12Hour", format12)
         child.setCharSequence(id, "setFormat24Hour", format24)
@@ -100,6 +146,35 @@ object DigitalWidgetComposer {
         return child
     }
 
+    /**
+     * Static colors set the final ARGB. Theme-bound colors (API 31+) let the launcher choose by its
+     * own night mode or system palette, so the widget follows theme and wallpaper changes with no
+     * app update (End-State 5.5). [ResolvedText.argb] is the value for unsupported hosts.
+     */
+    private fun applyTextColor(child: RemoteViews, id: Int, text: ResolvedText, sdkInt: Int) {
+        val binding = text.binding
+        if (binding == null || sdkInt < DesignResolver.MIN_THEME_BINDING_SDK || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            child.setTextColor(id, text.argb)
+            return
+        }
+        when (binding) {
+            is ColorBinding.DayNight -> child.setColorInt(id, "setTextColor", binding.notNightArgb, binding.nightArgb)
+            is ColorBinding.SystemRole -> {
+                child.setColor(id, "setTextColor", colorResOf(binding.role))
+                // A color resource cannot carry alpha; the element opacity rides on the view instead.
+                if (text.opacity < 1f) child.setFloat(id, "setAlpha", text.opacity)
+            }
+        }
+    }
+
+    @androidx.annotation.ColorRes
+    fun colorResOf(role: ColorRole): Int = when (role) {
+        ColorRole.PRIMARY -> R.color.clocky_dyn_primary
+        ColorRole.SECONDARY -> R.color.clocky_dyn_secondary
+        ColorRole.ACCENT -> R.color.clocky_dyn_accent
+        ColorRole.SURFACE -> R.color.clocky_dyn_surface
+    }
+
     private fun applyBackground(rv: RemoteViews, spec: ResolvedDigitalSpec, sdkInt: Int) {
         val bg = spec.background
         if (!bg.visible) {
@@ -107,7 +182,15 @@ object DigitalWidgetComposer {
             return
         }
         rv.setViewVisibility(R.id.clocky_widget_background, View.VISIBLE)
-        rv.setInt(R.id.clocky_widget_background, "setColorFilter", OPAQUE or bg.rgb)
+        val binding = bg.binding
+        if (binding == null || sdkInt < DesignResolver.MIN_THEME_BINDING_SDK || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            rv.setInt(R.id.clocky_widget_background, "setColorFilter", OPAQUE or bg.rgb)
+        } else when (binding) {
+            is ColorBinding.DayNight ->
+                rv.setColorInt(R.id.clocky_widget_background, "setColorFilter", binding.notNightArgb or OPAQUE, binding.nightArgb or OPAQUE)
+            is ColorBinding.SystemRole ->
+                rv.setColor(R.id.clocky_widget_background, "setColorFilter", colorResOf(binding.role))
+        }
         rv.setInt(R.id.clocky_widget_background, "setImageAlpha", bg.alpha)
         if (sdkInt >= DesignResolver.MIN_OUTLINE_RADIUS_SDK && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             when (val r = bg.radius) {
@@ -128,6 +211,10 @@ object DigitalWidgetComposer {
     }
 
     private const val OPAQUE = 0xFF000000.toInt()
+    private const val INLINE_GAP_DP = 10f
+
+    /** Typical descent as a fraction of font size; lifts the inline date onto the time's baseline. */
+    private const val DESCENT_RATIO = 0.21f
 }
 
 /** Maps resolved faces to fragment layouts and view ids (Phase 1A font set). */

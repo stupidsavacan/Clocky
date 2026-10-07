@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="clocky_dyn_primary">@android:color/system_accent1_100</color>
+    <color name="clocky_dyn_secondary">@android:color/system_accent2_200</color>
+    <color name="clocky_dyn_accent">@android:color/system_accent3_200</color>
+    <color name="clocky_dyn_surface">@android:color/system_accent2_800</color>
+</resources>
