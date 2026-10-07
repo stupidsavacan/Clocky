@@ -48,5 +48,12 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal" />
         </LinearLayout>
+        <LinearLayout
+            android:id="@+id/clocky_info_slot"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal"
+            android:visibility="gone" />
     </LinearLayout>
 </FrameLayout>

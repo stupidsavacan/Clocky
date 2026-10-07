@@ -229,6 +229,8 @@ class AlarmStateManager : BroadcastReceiver() {
                 updateNextAlarmInSystemSettings(context, nextAlarm)
             } else {
                 updateNextAlarmInAlarmManager(context, nextAlarm)
+                // The Clocky Digital widget's Info line shows this alarm as rendered text.
+                runCatching { com.stupidsavacan.clocky.widget.digital.DigitalWidgetUpdater.updateAll(context) }
             }
         }
 

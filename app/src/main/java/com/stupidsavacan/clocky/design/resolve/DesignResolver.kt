@@ -1,6 +1,9 @@
 package com.stupidsavacan.clocky.design.resolve
 
 import com.stupidsavacan.clocky.design.model.Alignment
+import com.stupidsavacan.clocky.design.model.AmPmMode
+import com.stupidsavacan.clocky.design.model.InfoSource
+import com.stupidsavacan.clocky.design.model.ShadowLevel
 import com.stupidsavacan.clocky.design.model.BackgroundType
 import com.stupidsavacan.clocky.design.model.ColorRef
 import com.stupidsavacan.clocky.design.model.FontIds
@@ -73,17 +76,23 @@ object DesignResolver {
             dateStyle = dateStyle.copy(alignment = Alignment.START)
         }
         val themeNotes = linkedSetOf<Degradation>()
+        val shadow = d.effects.shadow
 
+        val time = resolveText(TextElementKind.TIME, timeStyle, size, env, degradations, tokens, themeNotes, shadow)
         return ResolvedDigitalSpec(
             sizeClass = sizeClass,
             template = template,
-            time = resolveText(TextElementKind.TIME, timeStyle, size, env, degradations, tokens, themeNotes),
-            timeFormats = timeFormatsFor(d.behavior.hourMode, d.time.leadingZero),
+            time = time,
+            timeFormats = timeFormatsFor(d.behavior.hourMode, d.time.leadingZero, d.behavior.showSeconds),
+            amPm = resolveAmPm(d, time),
+            info = resolveInfo(d, sizeClass, template, size, env, degradations, tokens, themeNotes, sizeScale),
+            taps = d.behavior.tap,
             date = resolveText(
                 TextElementKind.DATE, dateStyle, size, env, degradations.takeIf { dateVisible }, tokens,
-                themeNotes.takeIf { dateVisible },
+                themeNotes.takeIf { dateVisible }, shadow,
             ),
             dateVisible = dateVisible,
+            dateUppercase = d.date.uppercase,
             datePattern = d.date.formatPattern ?: env.localeAutoDatePattern,
             background = resolveBackground(d, env, degradations, tokens, themeNotes),
             paddingDp = d.background.paddingDp,
@@ -91,6 +100,70 @@ object DesignResolver {
             degradations = degradations.toList() + themeNotes,
         )
     }
+
+    /**
+     * AM/PM is a second TextClock (pattern `a`) next to the time. It exists only when the clock can
+     * be 12-hour: Force 24-hour keeps the request but renders nothing.
+     */
+    private fun resolveAmPm(d: DigitalDesign, time: ResolvedText): ResolvedAmPm? {
+        val style = d.behavior.amPm
+        if (style.mode != AmPmMode.SUFFIX || d.behavior.hourMode == HourMode.FORCE_24_HOUR) return null
+        return ResolvedAmPm(
+            text = time.copy(sizeSp = time.sizeSp * style.scale, xDp = 0f, yDp = 0f),
+            scale = style.scale,
+            format24Hour = if (d.behavior.hourMode == HourMode.FORCE_12_HOUR) "a" else "",
+        )
+    }
+
+    /**
+     * The Info line is one extra TextClock row below the date. Next alarm is a literal pattern of the
+     * text AlarmManager reported (the app re-renders when the alarm changes, not every minute);
+     * second timezone is a real TextClock in that zone and keeps ticking in the host.
+     */
+    private fun resolveInfo(
+        d: DigitalDesign,
+        sizeClass: SizeClass,
+        template: Template,
+        size: SizeContext,
+        env: RenderEnvironment,
+        degradations: MutableList<Degradation>,
+        tokens: StyleTokens?,
+        themeNotes: MutableSet<Degradation>,
+        sizeScale: Float,
+    ): ResolvedInfo? {
+        val info = d.info
+        if (info.source == InfoSource.NONE) return null
+        if (sizeClass == SizeClass.STRIP) {
+            degradations.add(Degradation.InfoNotShown(InfoHiddenReason.STRIP_SIZE))
+            return null
+        }
+        if (template == Template.MINIMAL) {
+            degradations.add(Degradation.InfoNotShown(InfoHiddenReason.MINIMAL_TEMPLATE))
+            return null
+        }
+        val style = info.style.withTokenFont(tokens, null).copy(sizeSp = info.style.sizeSp * sizeScale)
+        val text = resolveText(TextElementKind.INFO, style, size, env, degradations, tokens, themeNotes, d.effects.shadow)
+        return when (info.source) {
+            InfoSource.NEXT_ALARM -> {
+                val shown = env.nextAlarmText ?: env.sampleAlarmText ?: return null
+                val pattern = quotePattern(shown)
+                ResolvedInfo(info.source, text, pattern, pattern, null, isSample = env.nextAlarmText == null)
+            }
+            InfoSource.SECOND_TIMEZONE -> {
+                val formats = timeFormatsFor(d.behavior.hourMode, d.time.leadingZero)
+                val label = info.label?.let { quotePattern(it) + " " } ?: ""
+                ResolvedInfo(
+                    info.source, text,
+                    label + formats.format12Hour, label + formats.format24Hour,
+                    info.timeZoneId ?: "UTC", isSample = false,
+                )
+            }
+            InfoSource.NONE -> null
+        }
+    }
+
+    /** Wraps free text as a literal TextClock/SimpleDateFormat pattern (a quote is doubled). */
+    fun quotePattern(text: String): String = "'" + text.replace("'", "''") + "'"
 
     /** Neutral tokens for a Token color in a design that carries no [StyleTokens] (hand-edited JSON). */
     private val FALLBACK_TOKENS = StyleTokens(
@@ -161,9 +234,10 @@ object DesignResolver {
      * TextClock pick. 24h is always `HH` (End-State §5.1; the AOSP `kk` showed 24:05 after
      * midnight). 12h uses `h`, or `hh` with leading zero (contract §8).
      */
-    fun timeFormatsFor(hourMode: HourMode, leadingZero: Boolean): TimeFormats {
-        val twelve = if (leadingZero) "hh:mm" else "h:mm"
-        val twentyFour = "HH:mm"
+    fun timeFormatsFor(hourMode: HourMode, leadingZero: Boolean, seconds: Boolean = false): TimeFormats {
+        val tail = if (seconds) ":ss" else ""
+        val twelve = (if (leadingZero) "hh:mm" else "h:mm") + tail
+        val twentyFour = "HH:mm$tail"
         return when (hourMode) {
             HourMode.FOLLOW_SYSTEM -> TimeFormats(twelve, twentyFour)
             HourMode.FORCE_12_HOUR -> TimeFormats(twelve, twelve)
@@ -190,10 +264,12 @@ object DesignResolver {
         degradations: MutableList<Degradation>?,
         tokens: StyleTokens?,
         themeNotes: MutableSet<Degradation>?,
+        shadowLevel: ShadowLevel = ShadowLevel.CLASSIC,
     ): ResolvedText {
         val font = FontCatalog.resolve(style.fontId, style.weight, env.sdkInt)
         if (font.requestedWeight != font.effectiveWeight) {
-            degradations?.add(Degradation.WeightApproximated(kind, font.requestedWeight, font.effectiveWeight))
+            val fontId = style.fontId.takeIf { FontCatalog.family(it)?.source == FontCatalog.Source.BUNDLED && font.fontFallbackReason == null }
+            degradations?.add(Degradation.WeightApproximated(kind, font.requestedWeight, font.effectiveWeight, fontId))
         }
         font.fontFallbackReason?.let {
             degradations?.add(Degradation.FontFallback(kind, style.fontId, it))
@@ -223,7 +299,19 @@ object DesignResolver {
             yDp = yDp,
             opacity = style.opacity,
             binding = color.binding,
+            shadow = shadowVariant(shadowLevel, color.argb),
         )
+    }
+
+    /** SOFT/STRONG pick a black shadow for light text and a white one for dark text (End-State 5.6). */
+    fun shadowVariant(level: ShadowLevel, textArgb: Int): ShadowVariant {
+        val light = Contrast.luminance(textArgb) > 0.5
+        return when (level) {
+            ShadowLevel.CLASSIC -> ShadowVariant.CLASSIC
+            ShadowLevel.OFF -> ShadowVariant.OFF
+            ShadowLevel.SOFT -> if (light) ShadowVariant.SOFT_DARK else ShadowVariant.SOFT_LIGHT
+            ShadowLevel.STRONG -> if (light) ShadowVariant.STRONG_DARK else ShadowVariant.STRONG_LIGHT
+        }
     }
 
     private fun clampHalf(value: Float, extentDp: Int): Float {
@@ -240,10 +328,16 @@ object DesignResolver {
         themeNotes: MutableSet<Degradation>,
     ): ResolvedBackground {
         val bg = d.background
-        val visible = bg.type == BackgroundType.SOLID
+        val visible = bg.type != BackgroundType.NONE
+        val rendered = bg.type == BackgroundType.GRADIENT || bg.type == BackgroundType.OUTLINE
         // Opacity travels separately (setImageAlpha), so resolve the color at full alpha.
         val color = resolveColor(bg.color, 1f, tokens, env, themeNotes.takeIf { visible })
+        val end = if (bg.type == BackgroundType.GRADIENT) resolveColor(bg.gradientEnd, 1f, tokens, env, themeNotes) else color
         val rgb = color.argb and 0xFFFFFF
+        // A bitmap cannot switch with the host's night mode or system palette between updates.
+        if (rendered && (color.binding != null || end.binding != null)) {
+            degradations.add(Degradation.RenderedBackgroundStatic)
+        }
         val radius: ResolvedRadius = if (env.sdkInt >= MIN_OUTLINE_RADIUS_SDK) {
             when (val r = bg.cornerRadius) {
                 CornerRadius.System -> ResolvedRadius.System
@@ -262,7 +356,12 @@ object DesignResolver {
             rgb = rgb,
             alpha = alphaOf(bg.opacity),
             radius = radius,
-            binding = color.binding,
+            // A rendered background is a static bitmap, so it never carries a live theme binding.
+            binding = if (rendered) null else color.binding,
+            type = bg.type,
+            endRgb = end.argb and 0xFFFFFF,
+            gradientAngleDeg = bg.gradientAngleDeg,
+            borderWidthDp = if (bg.type == BackgroundType.OUTLINE) bg.borderWidthDp else 0f,
         )
     }
 

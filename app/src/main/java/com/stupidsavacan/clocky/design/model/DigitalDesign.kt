@@ -21,6 +21,10 @@ data class DigitalDesign(
     val background: BackgroundElement = BackgroundElement(),
     val layout: DesignLayout = DesignLayout(),
     val behavior: Behavior = Behavior(),
+    /** Phase 2 Info line (End-State 5.3); [InfoSource.NONE] renders nothing, so older designs are unchanged. */
+    val info: InfoElement = InfoElement(),
+    /** Phase 2 effects (End-State 5.6). */
+    val effects: Effects = Effects(),
     /** Phase 1B style tokens (null for designs that predate them: every color is then Fixed). */
     val style: StyleTokens? = null,
     /** Built-in provenance of the snapshot this design was copied from (null for custom designs). */
@@ -53,6 +57,8 @@ data class DateElement(
     val style: TextStyle = TextStyle(sizeSp = 14f),
     /** `null` = Locale Auto (contract §6); non-null = explicit pattern rendered literally. */
     val formatPattern: String? = null,
+    /** Phase 1A/1B always showed dates in capitals; kept as the default. As-is uses the pattern's own case. */
+    val uppercase: Boolean = true,
 )
 
 /**
@@ -74,7 +80,12 @@ sealed interface ColorRef {
 
 enum class Alignment { START, CENTER, END }
 
-enum class BackgroundType { NONE, SOLID }
+/**
+ * [SOLID] and the Phase 2 rendered types: [GRADIENT] (linear, [BackgroundElement.color] to
+ * [BackgroundElement.gradientEnd]) and [OUTLINE] (stroke only). The rendered types are bitmaps
+ * drawn at the widget's real size (End-State 5.7), regenerated only when size, theme or settings change.
+ */
+enum class BackgroundType { NONE, SOLID, GRADIENT, OUTLINE }
 
 sealed interface CornerRadius {
     /** Follow the launcher's widget radius (API 31+ system_app_widget_background_radius). */
@@ -88,6 +99,12 @@ data class BackgroundElement(
     val opacity: Float = 0.9f,
     val cornerRadius: CornerRadius = CornerRadius.System,
     val paddingDp: Float = 0f,
+    /** Gradient end color ([color] is the start). Only used by [BackgroundType.GRADIENT]. */
+    val gradientEnd: ColorRef = ColorRef.Fixed(0x444444),
+    /** Linear gradient direction in degrees clockwise from "start color at top" (0 = top to bottom). */
+    val gradientAngleDeg: Int = 0,
+    /** Stroke width of [BackgroundType.OUTLINE]. */
+    val borderWidthDp: Float = 2f,
 )
 
 /**
@@ -138,9 +155,60 @@ data class DesignLayout(
 
 enum class HourMode { FOLLOW_SYSTEM, FORCE_12_HOUR, FORCE_24_HOUR }
 
+enum class AmPmMode { HIDDEN, SUFFIX }
+
+/** AM/PM beside the time (End-State 5.1); shown only when the effective clock is 12-hour. */
+data class AmPmStyle(
+    val mode: AmPmMode = AmPmMode.HIDDEN,
+    /** Suffix size as a fraction of the time size (End-State: 25..60%). */
+    val scale: Float = DEFAULT_AM_PM_SCALE,
+)
+
+/** What a tap on a widget zone does (End-State 5.9). [OPEN_CLOCKY] is the pre-Phase-2 whole-widget behavior. */
+enum class TapAction { OPEN_CLOCKY, OPEN_ALARMS, OPEN_TIMER, OPEN_STOPWATCH, OPEN_CALENDAR, EDIT_WIDGET, NONE }
+
+data class TapActions(
+    val time: TapAction = TapAction.OPEN_CLOCKY,
+    val date: TapAction = TapAction.OPEN_CLOCKY,
+    val info: TapAction = TapAction.OPEN_ALARMS,
+) {
+    val isDefault: Boolean get() = this == TapActions()
+}
+
 data class Behavior(
     val hourMode: HourMode = HourMode.FOLLOW_SYSTEM,
+    val amPm: AmPmStyle = AmPmStyle(),
+    /** Seconds make the host redraw every second; the editor warns about battery. */
+    val showSeconds: Boolean = false,
+    val tap: TapActions = TapActions(),
 )
+
+enum class InfoSource { NONE, NEXT_ALARM, SECOND_TIMEZONE }
+
+/**
+ * The single optional Info line (End-State 5.3). Weather, calendar, battery and free data
+ * providers are rejected (End-State 10).
+ */
+data class InfoElement(
+    val source: InfoSource = InfoSource.NONE,
+    val style: TextStyle = TextStyle(
+        fontId = FontIds.TOKEN_SECONDARY,
+        sizeSp = 12f,
+        color = ColorRef.Token(ColorRole.SECONDARY),
+    ),
+    /** IANA id for [InfoSource.SECOND_TIMEZONE]; null falls back to UTC. */
+    val timeZoneId: String? = null,
+    /** Optional city label in front of the second time (max [MAX_INFO_LABEL] chars). */
+    val label: String? = null,
+)
+
+/**
+ * Legibility shadow (End-State 5.6). [CLASSIC] is the shadow carried over from the AOSP widget and
+ * is what every pre-Phase-2 design shows; the others pick a black or white shadow from the text color.
+ */
+enum class ShadowLevel { CLASSIC, OFF, SOFT, STRONG }
+
+data class Effects(val shadow: ShadowLevel = ShadowLevel.CLASSIC)
 
 object FontIds {
     const val SYSTEM_SANS = "system-sans"
@@ -156,6 +224,11 @@ const val MIN_WEIGHT = 100
 const val MAX_WEIGHT = 900
 const val MAX_PADDING_DP = 32f
 const val MAX_CORNER_RADIUS_DP = 48f
+const val MAX_BORDER_DP = 4f
+const val MIN_AM_PM_SCALE = 0.25f
+const val MAX_AM_PM_SCALE = 0.6f
+const val DEFAULT_AM_PM_SCALE = 0.4f
+const val MAX_INFO_LABEL = 24
 
 /** Clamps requested values to their documented domains without filling inherited (null) fields. */
 fun DigitalDesign.normalized(): DigitalDesign = copy(
@@ -168,6 +241,16 @@ fun DigitalDesign.normalized(): DigitalDesign = copy(
             is CornerRadius.Dp -> CornerRadius.Dp(r.value.finiteOr(0f).coerceIn(0f, MAX_CORNER_RADIUS_DP))
         },
         paddingDp = background.paddingDp.finiteOr(0f).coerceIn(0f, MAX_PADDING_DP),
+        gradientAngleDeg = ((background.gradientAngleDeg % 360) + 360) % 360,
+        borderWidthDp = background.borderWidthDp.finiteOr(2f).coerceIn(0f, MAX_BORDER_DP),
+    ),
+    behavior = behavior.copy(
+        amPm = behavior.amPm.copy(scale = behavior.amPm.scale.finiteOr(DEFAULT_AM_PM_SCALE).coerceIn(MIN_AM_PM_SCALE, MAX_AM_PM_SCALE)),
+    ),
+    info = info.copy(
+        style = info.style.normalized(),
+        timeZoneId = info.timeZoneId?.takeIf { it.isNotBlank() },
+        label = info.label?.trim()?.take(MAX_INFO_LABEL)?.takeIf { it.isNotEmpty() },
     ),
     style = style?.normalized(),
     layout = layout.copy(

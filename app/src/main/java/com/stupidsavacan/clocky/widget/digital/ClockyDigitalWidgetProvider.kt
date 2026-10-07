@@ -1,5 +1,6 @@
 package com.stupidsavacan.clocky.widget.digital
 
+import android.app.AlarmManager
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
@@ -22,7 +23,11 @@ abstract class ClockyDigitalWidgetProvider : AppWidgetProvider() {
         super.onReceive(context, intent)
         when (intent.action) {
             Intent.ACTION_LOCALE_CHANGED,
-            Intent.ACTION_TIME_CHANGED -> DigitalWidgetUpdater.updateAll(context)
+            Intent.ACTION_TIME_CHANGED,
+            // The Info line's next alarm is rendered text, so it is refreshed when the alarm changes.
+            AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED -> DigitalWidgetUpdater.updateAll(context)
+            // A "Do nothing" tap zone points here so the tap is consumed instead of reaching the widget.
+            TapIntents.ACTION_NOOP -> Unit
         }
     }
 

@@ -23,6 +23,7 @@ import com.stupidsavacan.clocky.design.storage.DigitalDesignCodec
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
 import com.stupidsavacan.clocky.widget.digital.DigitalWidgetUpdater
 import com.stupidsavacan.clocky.widget.easy.GalleryScreen
+import com.stupidsavacan.clocky.widget.studio.StudioActivity
 import com.stupidsavacan.clocky.widget.easy.QuickTuneScreen
 import org.json.JSONObject
 
@@ -54,7 +55,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
     private val detailedEditor = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         when (result.resultCode) {
             RESULT_OK -> finishOk()
-            DigitalWidgetAdvancedActivity.RESULT_BROWSE_DESIGNS -> {
+            StudioActivity.RESULT_BROWSE_DESIGNS -> {
                 selectedId = BuiltinDesigns.CLOCKY_DEFAULT_ID
                 draft = BuiltinDesigns.default.instantiate()
                 showGallery()
@@ -183,10 +184,10 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
     private fun launchDetailedEditor(design: DigitalDesign, offerGallery: Boolean) {
         previewClass = tune?.previewClass ?: previewClass
         detailedEditor.launch(
-            Intent(this, DigitalWidgetAdvancedActivity::class.java)
+            Intent(this, StudioActivity::class.java)
                 .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                .putExtra(DigitalWidgetAdvancedActivity.EXTRA_DRAFT_JSON, DigitalDesignCodec.encode(design).toString())
-                .putExtra(DigitalWidgetAdvancedActivity.EXTRA_OFFER_GALLERY, offerGallery),
+                .putExtra(StudioActivity.EXTRA_DRAFT_JSON, DigitalDesignCodec.encode(design).toString())
+                .putExtra(StudioActivity.EXTRA_OFFER_GALLERY, offerGallery),
         )
     }
 

@@ -118,6 +118,11 @@ class DeskClock : BaseActivity(), FabContainer, AlarmLabelDialogHandler {
     /** Generates the fragments that are displayed by the [.mFragmentTabPager].  */
     private lateinit var mFragmentTabPagerAdapter: FragmentTabPagerAdapter
 
+    companion object {
+        /** String extra naming a [UiDataModel.Tab] to show when launched (Clocky widget tap zones). */
+        const val EXTRA_SELECT_TAB = "com.stupidsavacan.clocky.extra.SELECT_TAB"
+    }
+
     /** The container that stores the tab headers.  */
     private lateinit var mTabLayout: TabLayout
 
@@ -129,10 +134,18 @@ class DeskClock : BaseActivity(), FabContainer, AlarmLabelDialogHandler {
 
         // Fragments may query the latest intent for information, so update the intent.
         setIntent(newIntent)
+        selectTabRequestedBy(newIntent)
+    }
+
+    /** Clocky widget tap zones ask for a tab by name (docs/architecture/PHASE_2_STUDIO.md section 7). */
+    private fun selectTabRequestedBy(intent: Intent?) {
+        val name = intent?.getStringExtra(EXTRA_SELECT_TAB) ?: return
+        UiDataModel.Tab.entries.firstOrNull { it.name == name }?.let { UiDataModel.uiDataModel.selectedTab = it }
     }
 
     protected override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) selectTabRequestedBy(getIntent())
 
         setContentView(R.layout.desk_clock)
         mSnackbarAnchor = findViewById(R.id.content)

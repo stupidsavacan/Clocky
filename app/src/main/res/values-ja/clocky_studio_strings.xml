@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="clocky_element_info">情報</string>
+    <string name="clocky_degraded_weight_font">%1$s: この書体には太さ %2$d がないため、%3$d で表示します。</string>
+    <string name="clocky_degraded_font_needs_api">%1$s: 同梱書体は Android 8 以降で使えるため、システム書体で表示します。</string>
+    <string name="clocky_degraded_info_strip">1 行の Strip サイズでは情報行は表示されません。大きいサイズでは表示されます。</string>
+    <string name="clocky_degraded_info_minimal">Minimal 配置は時刻のみのため、情報行は保存されますが表示されません。</string>
+    <string name="clocky_degraded_rendered_background">グラデーションと枠線の背景は画像として描かれるため、ウィジェットが更新されるまで昼夜や Material You の色には切り替わりません。</string>
+</resources>

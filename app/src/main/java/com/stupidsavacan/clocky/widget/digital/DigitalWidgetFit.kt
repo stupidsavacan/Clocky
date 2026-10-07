@@ -33,6 +33,7 @@ object DigitalWidgetFit {
         return FitSizes(
             timePx = max(1f, (spec.time.sizeSp * sp).roundToInt().toFloat()),
             datePx = max(1f, (spec.date.sizeSp * sp).roundToInt().toFloat()),
+            infoPx = spec.info?.let { max(1f, (it.text.sizeSp * sp).roundToInt().toFloat()) } ?: 0f,
         )
     }
 
@@ -42,22 +43,40 @@ object DigitalWidgetFit {
 
         val root = DigitalWidgetComposer.compose(context, spec, requested)
             .apply(context, FrameLayout(context))
-        val time = visibleTextIn(root, R.id.clocky_time_slot) ?: return requested
+        // The time slot holds the time and, with AM/PM on, a second smaller TextClock after it.
+        val timeTexts = visibleTextsIn(root, R.id.clocky_time_slot)
+        val time = timeTexts.firstOrNull() ?: return requested
+        val amPm = if (spec.amPm != null) timeTexts.getOrNull(1) else null
         val date = if (spec.dateVisible) visibleTextIn(root, R.id.clocky_date_slot) else null
+        val info = if (spec.info != null) visibleTextIn(root, R.id.clocky_info_slot) else null
 
         val is24 = DateFormat.is24HourFormat(context)
         time.text = widestTime(time, if (is24) spec.timeFormats.format24Hour else spec.timeFormats.format12Hour)
         date?.let { it.text = widestDate(it, spec.datePattern) }
+        amPm?.let { view ->
+            val format = if (is24) spec.amPm!!.format24Hour else spec.amPm!!.format12Hour
+            view.text = if (format.isEmpty()) "" else widestAmPm(view, format)
+        }
+        info?.let { view ->
+            val resolved = spec.info!!
+            val format = if (is24) resolved.format24Hour else resolved.format12Hour
+            view.text = if (resolved.timeZoneId == null) DateFormat.format(format, Calendar.getInstance()) else widestTime(view, format)
+        }
+
+        fun scaled(px: Float, scale: Int) = max(1, (px * scale / MAX_SCALE).roundToInt()).toFloat()
 
         fun sizesAt(scale: Int) = FitSizes(
-            timePx = max(1, (requested.timePx * scale / MAX_SCALE).roundToInt()).toFloat(),
-            datePx = max(1, (requested.datePx * scale / MAX_SCALE).roundToInt()).toFloat(),
+            timePx = scaled(requested.timePx, scale),
+            datePx = scaled(requested.datePx, scale),
+            infoPx = if (spec.info != null) scaled(requested.infoPx, scale) else 0f,
         )
 
         fun fits(scale: Int): Boolean {
             val s = sizesAt(scale)
             time.setTextSize(TypedValue.COMPLEX_UNIT_PX, s.timePx)
+            amPm?.setTextSize(TypedValue.COMPLEX_UNIT_PX, max(1f, s.timePx * spec.amPm!!.scale))
             date?.setTextSize(TypedValue.COMPLEX_UNIT_PX, s.datePx)
+            info?.setTextSize(TypedValue.COMPLEX_UNIT_PX, s.infoPx)
             val unspecified = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
             root.measure(unspecified, unspecified)
             return root.measuredWidth <= targetWidthPx && root.measuredHeight <= targetHeightPx
@@ -78,6 +97,12 @@ object DigitalWidgetFit {
     internal fun visibleTextIn(root: View, slotId: Int): TextView? {
         val slot = root.findViewById<ViewGroup>(slotId) ?: return null
         return findVisibleText(slot)
+    }
+
+    /** Every visible text face directly inside a slot, in order (time, then AM/PM). */
+    internal fun visibleTextsIn(root: View, slotId: Int): List<TextView> {
+        val slot = root.findViewById<ViewGroup>(slotId) ?: return emptyList()
+        return (0 until slot.childCount).mapNotNull { findVisibleText(slot.getChildAt(it)) }
     }
 
     private fun findVisibleText(view: View): TextView? {
@@ -113,7 +138,26 @@ object DigitalWidgetFit {
             val w = width(view, candidate)
             if (w > best) { best = w; widest = candidate }
         }
+        if (format.contains("ss")) {
+            cal.set(Calendar.MINUTE, cal.get(Calendar.MINUTE))
+            best = -1f
+            for (second in 0..59) {
+                cal.set(Calendar.SECOND, second)
+                val candidate = DateFormat.format(format, cal)
+                val w = width(view, candidate)
+                if (w > best) { best = w; widest = candidate }
+            }
+        }
         return widest
+    }
+
+    /** AM or PM, whichever renders wider in [format]. */
+    internal fun widestAmPm(view: TextView, format: String): CharSequence {
+        val cal = Calendar.getInstance()
+        return listOf(0, 12).map { hour ->
+            cal.set(Calendar.HOUR_OF_DAY, hour)
+            DateFormat.format(format, cal)
+        }.maxBy { width(view, it) }
     }
 
     /** Widest rendering of [pattern] over every day of the current year. */

@@ -269,8 +269,8 @@ class DigitalWidgetConfigActivityTest {
         launch(60).use { controller ->
             val activity = controller.get()
             val next = shadowOf(activity).nextStartedActivity
-            assertEquals(DigitalWidgetAdvancedActivity::class.java.name, next.component?.className)
-            assertTrue(next.getBooleanExtra(DigitalWidgetAdvancedActivity.EXTRA_OFFER_GALLERY, false))
+            assertEquals(com.stupidsavacan.clocky.widget.studio.StudioActivity::class.java.name, next.component?.className)
+            assertTrue(next.getBooleanExtra(com.stupidsavacan.clocky.widget.studio.StudioActivity.EXTRA_OFFER_GALLERY, false))
         }
     }
 
