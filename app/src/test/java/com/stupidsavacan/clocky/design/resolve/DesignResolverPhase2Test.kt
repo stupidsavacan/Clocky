@@ -52,11 +52,11 @@ class DesignResolverPhase2Test {
         val design = DigitalDesign(behavior = Behavior(amPm = AmPmStyle(AmPmMode.SUFFIX, 0.5f)))
         val follow = DesignResolver.resolve(design, card, api34).amPm!!
         assertEquals(32f, follow.text.sizeSp, 0.001f)
-        assertEquals("a", follow.format12Hour)
+        assertEquals("HH", follow.format12Hour)
         assertEquals("", follow.format24Hour)
 
         val forced12 = DesignResolver.resolve(design.copy(behavior = design.behavior.copy(hourMode = HourMode.FORCE_12_HOUR)), card, api34)
-        assertEquals("a", forced12.amPm!!.format24Hour)
+        assertEquals("HH", forced12.amPm!!.format24Hour)
 
         val forced24 = DesignResolver.resolve(design.copy(behavior = design.behavior.copy(hourMode = HourMode.FORCE_24_HOUR)), card, api34)
         assertNull(forced24.amPm)

@@ -139,11 +139,25 @@ def styles_xml():
 
 def main():
     table = []
+    marker_table = []
     for slug, font_id, kind, extra in FAMILIES:
         for caps in (False, True):
             for suffix, variant, shadow in SHADOWS:
                 name = f"clocky_face_{slug}{'_caps' if caps else ''}{suffix}"
                 table.append((font_id, caps, variant, name))
+                if not caps and kind in ("sans", "platform"):
+                    marker_name = f"clocky_ampm_fallback_{slug}{suffix}"
+                    marker_table.append((font_id, variant, marker_name))
+                    # Clone the original: the only change is accessibility on the marker clocks.
+                    original = os.path.join(RES, "layout", name + ".xml")
+                    if slug in HAND_WRITTEN and not suffix:
+                        with open(original, encoding="utf-8") as f:
+                            marker_xml = f.read()
+                    else:
+                        marker_xml = layout_xml(kind, extra, caps, suffix, shadow)
+                    marker_xml = marker_xml.replace("<TextClock", '<TextClock android:importantForAccessibility="no"')
+                    with open(os.path.join(RES, "layout", marker_name + ".xml"), "w", encoding="utf-8", newline="\n") as f:
+                        f.write(marker_xml)
                 if slug in HAND_WRITTEN and not suffix:
                     continue
                 path = os.path.join(RES, "layout", name + ".xml")
@@ -176,6 +190,19 @@ def main():
     ]
     with open(KOTLIN, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines))
+    marker_lines = [
+        "package com.stupidsavacan.clocky.widget.digital", "",
+        "import androidx.annotation.LayoutRes", "import com.android.deskclock.R",
+        "import com.stupidsavacan.clocky.design.resolve.ShadowVariant", "",
+        "/** Generated localized-marker variants; same geometry, accessibility excluded in XML. */",
+        "internal object AmPmFallbackFragmentTable {",
+        "    private data class Key(val fontId: String, val shadow: ShadowVariant)",
+        "    private val layouts = mapOf(",
+    ]
+    marker_lines += [f'        Key("{font_id}", ShadowVariant.{variant}) to R.layout.{name},' for font_id, variant, name in marker_table]
+    marker_lines += ["    )", "", "    @LayoutRes", "    fun layoutFor(fontId: String, shadow: ShadowVariant): Int = layouts.getValue(Key(fontId, shadow))", "}", ""]
+    with open(os.path.join(os.path.dirname(KOTLIN), "AmPmFallbackFragmentTable.kt"), "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(marker_lines))
     print(f"{len(table)} layouts mapped")
 
 

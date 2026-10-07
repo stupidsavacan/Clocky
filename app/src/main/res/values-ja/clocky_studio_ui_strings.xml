@@ -119,11 +119,11 @@
     <string name="clocky_studio_hour_system">システム</string>
     <string name="clocky_studio_hour_12">12時間</string>
     <string name="clocky_studio_hour_24">24時間</string>
-    <string name="clocky_studio_ampm">午前・午後</string>
+    <string name="clocky_studio_ampm">AM/PM</string>
     <string name="clocky_studio_ampm_hidden">表示しない</string>
     <string name="clocky_studio_ampm_suffix">小さく添える</string>
-    <string name="clocky_studio_ampm_size">午前・午後のサイズ</string>
-    <string name="clocky_studio_ampm_24_note">午前・午後は12時間表示のときだけ表示されます。選択は保存されます。</string>
+    <string name="clocky_studio_ampm_size">AM/PMのサイズ</string>
+    <string name="clocky_studio_ampm_24_note">AM/PMは12時間表示のときだけ表示されます。選択は保存されます。</string>
     <string name="clocky_studio_ampm_follow_note">システムが12時間表示のときだけ表示されます。</string>
     <string name="clocky_studio_theme">テーマ</string>
     <string name="clocky_studio_theme_fixed">固定</string>

@@ -84,7 +84,7 @@ object DesignResolver {
             template = template,
             time = time,
             timeFormats = timeFormatsFor(d.behavior.hourMode, d.time.leadingZero, d.behavior.showSeconds),
-            amPm = resolveAmPm(d, time),
+            amPm = resolveAmPm(d, time, env.sdkInt, degradations),
             info = resolveInfo(d, sizeClass, template, size, env, degradations, tokens, themeNotes, sizeScale),
             taps = d.behavior.tap,
             date = resolveText(
@@ -102,16 +102,21 @@ object DesignResolver {
     }
 
     /**
-     * AM/PM is a second TextClock (pattern `a`) next to the time. It exists only when the clock can
+     * AM/PM is a second TextClock (HH + marker face, or localized a below API 26). It exists when the clock can
      * be 12-hour: Force 24-hour keeps the request but renders nothing.
      */
-    private fun resolveAmPm(d: DigitalDesign, time: ResolvedText): ResolvedAmPm? {
+    private fun resolveAmPm(d: DigitalDesign, time: ResolvedText, sdkInt: Int, degradations: MutableList<Degradation>): ResolvedAmPm? {
         val style = d.behavior.amPm
         if (style.mode != AmPmMode.SUFFIX || d.behavior.hourMode == HourMode.FORCE_24_HOUR) return null
+        val latin = sdkInt >= FontCatalog.MIN_BUNDLED_FONT_SDK
+        if (!latin) degradations.add(Degradation.AmPmLocalized)
+        val format = if (latin) "HH" else "a"
         return ResolvedAmPm(
             text = time.copy(sizeSp = time.sizeSp * style.scale, xDp = 0f, yDp = 0f),
             scale = style.scale,
-            format24Hour = if (d.behavior.hourMode == HourMode.FORCE_12_HOUR) "a" else "",
+            format12Hour = format,
+            format24Hour = if (d.behavior.hourMode == HourMode.FORCE_12_HOUR) format else "",
+            useLatinMarkerFont = latin,
         )
     }
 

@@ -13,6 +13,7 @@ object DegradationNotices {
     fun describe(context: Context, degradations: List<Degradation>): List<String> =
         degradations.distinct().map { d ->
             when (d) {
+                Degradation.AmPmLocalized -> context.getString(R.string.clocky_degraded_ampm_localized)
                 is Degradation.WeightApproximated -> context.getString(
                     if (d.fontId != null) R.string.clocky_degraded_weight_font else R.string.clocky_degraded_weight,
                     element(context, d.element), d.requested, d.effective,

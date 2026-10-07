@@ -63,7 +63,8 @@ object DigitalWidgetComposer {
             rv.addView(
                 R.id.clocky_time_slot,
                 fragment(context, amPm.text, caps = false, sizes.timePx * amPm.scale, amPm.format12Hour,
-                    amPm.format24Hour, density, sdkInt, startPaddingDp = AM_PM_GAP_DP),
+                    amPm.format24Hour, density, sdkInt, startPaddingDp = AM_PM_GAP_DP,
+                    markerFont = amPm.useLatinMarkerFont, decorative = true),
             )
         }
         rv.setInt(R.id.clocky_time_slot, "setGravity", gravityOf(spec.time.alignment))
@@ -176,11 +177,18 @@ object DigitalWidgetComposer {
         sdkInt: Int,
         startPaddingDp: Float = 0f,
         timeZoneId: String? = null,
+        markerFont: Boolean = false,
+        decorative: Boolean = false,
     ): RemoteViews {
-        val child = RemoteViews(context.packageName, FontFragments.layoutFor(text.face.fontId, caps, text.shadow))
+        val layout = when {
+            markerFont -> markerLayout(text.shadow)
+            decorative -> AmPmFallbackFragmentTable.layoutFor(text.face.fontId, text.shadow)
+            else -> FontFragments.layoutFor(text.face.fontId, caps, text.shadow)
+        }
+        val child = RemoteViews(context.packageName, layout)
         // Actions on the child apply inside the child's own tree, so time and date can share
         // fragment layouts (and therefore view ids) without ambiguity.
-        val id = FontFragments.faceViewId(text.face)
+        val id = if (markerFont) R.id.clocky_ampm_marker else FontFragments.faceViewId(text.face)
         child.setViewVisibility(id, View.VISIBLE)
         child.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_PX, sizePx)
         applyTextColor(child, id, text, sdkInt)
@@ -194,6 +202,16 @@ object DigitalWidgetComposer {
             child.setFloat(id, "setTranslationY", text.yDp * density)
         }
         return child
+    }
+
+    @LayoutRes
+    private fun markerLayout(shadow: ShadowVariant): Int = when (shadow) {
+        ShadowVariant.CLASSIC -> R.layout.clocky_face_ampm_marker
+        ShadowVariant.OFF -> R.layout.clocky_face_ampm_marker_off
+        ShadowVariant.SOFT_DARK -> R.layout.clocky_face_ampm_marker_soft_dark
+        ShadowVariant.SOFT_LIGHT -> R.layout.clocky_face_ampm_marker_soft_light
+        ShadowVariant.STRONG_DARK -> R.layout.clocky_face_ampm_marker_strong_dark
+        ShadowVariant.STRONG_LIGHT -> R.layout.clocky_face_ampm_marker_strong_light
     }
 
     /**

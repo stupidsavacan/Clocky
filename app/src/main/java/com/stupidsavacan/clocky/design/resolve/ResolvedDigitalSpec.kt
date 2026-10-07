@@ -102,13 +102,15 @@ data class ResolvedInfo(
     val isSample: Boolean,
 )
 
-/** AM/PM suffix next to the time: a TextClock with pattern `a`, empty in 24-hour mode. */
+/** Host-ticking suffix: HH with the marker face on API 26+, localized a below it. */
 data class ResolvedAmPm(
     val text: ResolvedText,
     val scale: Float,
     val format12Hour: String = "a",
     /** Empty when the system decides: a 24-hour system clock shows no AM/PM. */
     val format24Hour: String = "",
+    /** Renderer-only choice; never stored in behavior.amPm or offered in FontCatalog. */
+    val useLatinMarkerFont: Boolean = false,
 )
 
 data class ResolvedDigitalSpec(
@@ -140,6 +142,8 @@ enum class TextElementKind { TIME, DATE, INFO }
 enum class InfoHiddenReason { STRIP_SIZE, MINIMAL_TEMPLATE }
 
 sealed interface Degradation {
+    /** API 23–25 cannot load the dedicated marker face in RemoteViews. */
+    data object AmPmLocalized : Degradation
     data class WeightApproximated(
         val element: TextElementKind,
         val requested: Int,

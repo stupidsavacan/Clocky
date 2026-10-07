@@ -111,7 +111,7 @@ class DigitalWidgetComposerPhase2Test {
         assertEquals(2, timeSlot.childCount)
         val faces = DigitalWidgetFit.visibleTextsIn(root, R.id.clocky_time_slot)
         assertEquals(2, faces.size)
-        assertEquals("a", (faces[1] as TextClock).format12Hour.toString())
+        assertEquals("HH", (faces[1] as TextClock).format12Hour.toString())
         assertEquals("", (faces[1] as TextClock).format24Hour.toString())
         assertTrue("AM/PM is smaller than the time", faces[1].textSize < faces[0].textSize)
     }
