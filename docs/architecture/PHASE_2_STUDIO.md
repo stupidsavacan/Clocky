@@ -118,6 +118,17 @@ Removed as superseded: `DigitalWidgetAdvancedActivity`, `StyleControls`, `Widget
 
 ## 7. Deferred / limitations
 
+* **Bundled-font host audit (2026-10-07, discovered during PR #44):** Motorola Launcher3 / moto g13 /
+  API 34 ignores the six bundled resource fonts in the placed widget. A temporary debug-only probe used
+  the existing production face fragments at weight 400, shadow OFF, 24px, and the same literal TextClock
+  sample `0123456789 AMPM`. Same-package Preview widths differed, but all seven placed rows (system sans
+  plus Poppins, Bebas Neue, DM Serif Display, Barlow Condensed, IBM Plex Mono, Varela Round) were 209px;
+  the six glyph crops were byte-identical to the system-sans crop. This supersedes any inference that a
+  same-package Preview or visual-only Poppins check established bundled-font support on this launcher.
+  The Phase 2 resolver currently checks API level, not remote-host font capability, for ordinary Time/Date
+  fonts. The resulting silent fallback, Preview/widget mismatch and possible fit mismatch remain unresolved;
+  PR #44 fixes AM/PM capability only. API 26+ is a resource-font prerequisite, not proof of RemoteViews host
+  support. Other APIs/launchers/weights are not audited. Full measurements and evidence are in Phase 3 §1a.
 * Info: icon and "only within 24 h" (needs a scheduled update), free text, any other provider.
 * Date lower-case, "link Time and Date" editing, per-property reset dots (slot and revert-override resets exist).
 * Rendered background: 3 stops, radial, border on filled types; day/night for bitmaps (needs re-render).

@@ -1,8 +1,8 @@
 # Phase 3 — Responsive Canvas & Library: design record
 
-> Status: **design only; nothing here is implemented yet.** The owner delegated the open semantics to this record on
+> Status: **Phase 3 is design only; PR #44 completes the independent Phase 2 marker follow-up and records a separate bundled-font host defect.** The owner delegated the open semantics to this record on
 > 2026-10-07; the rulings are in section 8 and are reflected in `CLOCKY_END_STATE.md` (section 9 lists the edits).
-> Implementation can start with 3A-0. Values marked *provisional* still wait for measurement.
+> Universal Latin AM/PM is temporarily paused and is not a Phase 3 gate. Before 3A-0, the Phase 2 font-host parity follow-up (1b below) must make Preview/fit use the same effective font as the placed widget. Values marked *provisional* still wait for measurement.
 > Authority: `docs/product/CLOCKY_END_STATE.md` (§3, §5.8, §7, §8, §9, §10, §12, §13, §14). This record splits the
 > End-State Phase 3 into four sub-phases. It builds on the Phase 1A and Phase 2 records
 > (`PHASE_1A_DIGITAL_CORE.md`, `PHASE_2_STUDIO.md`).
@@ -38,7 +38,8 @@ These come from End-State §3, §12 and the project rules. Every sub-phase PR re
 ## 1. Sub-phases, order and PR boundaries
 
 ```
-1a AM/PM marker fix (Phase 2 follow-up, small PR; independent)
+1a AM/PM host-aware marker/fallback (Phase 2 follow-up; PR #44)
+1b Bundled-font host parity (Phase 2 follow-up; separate PR)
 3A-0 measurement (diagnostic build, no product change)
   └─ 3A Responsive core ──┬─ 3B Canvas (UI only; separate PRs)
                           └─ 3C Library & Stacked ── 3D Platform integration
@@ -46,8 +47,9 @@ These come from End-State §3, §12 and the project rules. Every sub-phase PR re
 
 | Sub-phase | What | Depends on | PRs (each one ships alone) |
 |---|---|---|---|
-| **1a** | Phase 2 follow-up: AM/PM marker is Latin `AM`/`PM` in every locale (section 1a) | marker-font spike | one PR, before 3A |
-| **3A-0** | Diagnostic build to measure host sizes on several launchers; spike of `Map<SizeF, RemoteViews>` | — | spike branch, not merged; results recorded in this file |
+| **1a** | Phase 2 follow-up: host-aware AM/PM path; localized `a` is accepted on incapable hosts and universal Latin is temporarily paused (section 1a) | marker-font spike / host capability | PR #44, before 1b |
+| **1b** | Phase 2 follow-up: ordinary bundled-font host capability, explicit degradation, Preview/fit/placed-widget parity | PR #44 font audit / owner ruling | one product PR, before 3A-0 |
+| **3A-0** | Diagnostic build to measure host sizes on several launchers; spike of `Map<SizeF, RemoteViews>` | 1b merged | spike branch, not merged; results recorded in this file |
 | **3A** | Square / Large size classes, general nullable Patch, API 31+ size map and API 23–30 options path, metadata | 3A-0 results, R1–R3 | 3A-1 model + resolver (pure); 3A-2 render path + metadata |
 | **3B** | Canvas: select, drag, snap, pinch, 1dp nudge, pseudo-resize | 3A merged and gated | 3B-1 selection + drag + snap; 3B-2 pinch + pseudo-resize |
 | **3C** | My Designs, duplicate, favorites, Import/Export (`.clocky`, `CLOCKY2:`), share, apply to other widgets, Stacked family | 3A (Square class) | 3C-1 Library store + My Designs; 3C-2 Import/Export/share; 3C-3 apply-to-others; 3C-4 Stacked provider |
@@ -63,8 +65,8 @@ both touch `DesignEdits`, 3B lands first.
 **Problem.** The Phase 2 AM/PM suffix is a `TextClock` with the pattern `a` (`DesignResolver.resolveAmPm`,
 `ResolvedAmPm.format12Hour`). `TextClock` formats with the **host's** locale, so on a ja-JP launcher the widget shows
 `午前` / `午後`. The Japanese Studio labels say 午前・午後 as well (`values-ja/clocky_studio_ui_strings.xml`:
-`clocky_studio_ampm*`). Owner decision (2026-10-07, END_STATE §5.1 amended): the marker is always Latin `AM` / `PM`,
-in every locale.
+`clocky_studio_ampm*`). Owner decision (2026-10-07, END_STATE §5.1 amended): Latin `AM` / `PM` remains preferred.
+The later owner ruling below permits a disclosed localized fallback when a real host cannot apply the dedicated font, including API 26+.
 
 **Constraint.** `TextClock` has no locale setter, and the pattern letter `a` is always localized. Switching the text
 from the app at 00:00 and 12:00 would be an app-driven clock update: an alarm can be deferred by Doze, so the marker
@@ -79,21 +81,161 @@ time view already speaks the time), and the font is used only for this view.
 Spike checks: ligatures apply in RemoteViews `TextClock` on API 26 / 28 / 31 / 34 / 35 (`res/font` needs API 26);
 the switch at 11:59 → 12:00 and 23:59 → 00:00 with Clocky killed; fit still measures the marker correctly.
 
-**Fallback.** On API 23–25 (no `res/font` in RemoteViews), or if the spike fails on a host, the widget keeps the
-locale marker (`a`) and the editor discloses it as a degradation (`AmPmLocalized`). No app-driven switching.
+**Owner ruling / fallback (2026-10-07, before further production implementation).** API 23–25 and any API 26+
+launcher / RemoteViews host where the dedicated font cannot be applied use the localized host-ticking pattern `a`.
+The resolver handles host font capability explicitly; it must not equate API 26+ with support. The requested
+`behavior.amPm` is preserved and Studio always discloses `AmPmLocalized` as Requested → Effective. Preview and
+placed widget use the same effective path and host capability: a Latin preview with a raw-hour widget is forbidden.
+Hosts where the font path is established may use Latin `AM` / `PM`. A future stable Latin approach can be
+reconsidered, but this ruling does not authorize app-driven noon/midnight changes, AlarmManager / WorkManager
+marker updates, bitmap markers, resident/foreground Services, or a preview-only renderer.
 
-**Studio strings.** The ja labels change from 午前・午後 to `AM/PM` (for example `AM/PMのサイズ`), so the editor
-uses the same word as the widget. This is a string change only.
+**Owner pause ruling (2026-10-07, after the real-host audit).** Universal Latin AM/PM is temporarily not pursued.
+PR #44 keeps the host-capability probe, safe localized fallback, accessibility work and the experimental Latin path
+because they are useful infrastructure and preserve a future option, but Phase 3 does not wait for a launcher that
+can apply the marker font. On ordinary unsupported hosts, localized `a` is the expected effective result.
 
-**Compatibility.** No model change: `behavior.amPm` keeps its keys. Designs that had the suffix on show `AM` / `PM`
-after the update; that is the intended change.
+**Shipping criteria after this ruling.** Localized `a` is acceptable on unsupported hosts; a proven-capable host may
+use the retained Latin path. Preview = placed widget, host-side ticking and requested-value preservation remain
+mandatory. Universal Latin is not a shipping gate.
+
+**Observed blocker (2026-10-07).** moto g13 / API 34 / Motorola Launcher3 / ja-JP: Preview rendered `PM`,
+but the placed widget rendered raw `18`. A debug-only cross-package RemoteViews probe showed Preview
+`restricted=false`, marker Typeface applied; launcher resource Context `restricted=true`, marker Typeface absent.
+Android 14 RemoteViews creates a restricted resource Context for another package, and TextView skips font resource
+loading there. This is font non-application, not a GSUB failure. Same-package Robolectric apply tests did not cover
+this boundary. This evidence led to the owner ruling above; a raw-hour marker must never ship. The probe was
+removed, the original widget preferences were restored, and the cdev sessions were finished.
+
+**Studio strings.** PR #44 keeps the neutral `AM/PM` control wording while the degradation notice explicitly tells
+ja-JP users that the effective host marker is the locale form（午前/午後）. This avoids changing the stored semantics
+again while universal Latin is paused.
+
+**Compatibility.** No model change: `behavior.amPm` keeps its keys. Designs that had the suffix on show Latin markers on capable hosts and localized markers on incapable hosts.
+This is a presentation decision at resolve time, with no migration or schema change.
 
 **Tests.** Pure: resolver chooses the marker face vs the localized fallback per SDK and records the degradation.
 Robolectric: the marker fragment carries `HH` and the marker font; ja strings. Device (cdev): moto g13 in ja-JP with a
-12-hour widget shows `AM`/`PM`; API 25 emulator shows the disclosed fallback. The noon/midnight flip is observed
+12-hour widget shows the same effective marker as Preview (the observed API 34 host uses disclosed fallback);
+API 25 emulator shows the disclosed fallback. The noon/midnight flip is observed
 only if a session spans it (the device clock is not changed: that needs settings outside cdev's allowlist).
 
+
+**Implementation result (2026-10-07, independent follow-up PR #44; ready for owner merge).**
+- `RenderEnvironment.supportsLatinAmPmMarker` is an explicit runtime-only fact. API < 26, unknown HOME,
+  system resolver, probe failure, or an unapplied/unshaped marker face resolves to localized `a` and
+  `AmPmLocalized`. No requested values or capability flags are written to the design.
+- `AmPmHostCapability` resolves the HOME launcher (scoped manifest package-visibility query), then applies
+  the production marker RemoteViews in that launcher's package Context. It checks the dedicated Typeface
+  and all 24 hour advances against the two substituted groups. The `android` package is deliberately
+  excluded: its special Context falsely advertised support in the first capability attempt. Both provider
+  and Preview use the same probe. This is a framework/launcher-context capability check, not a launcher allowlist.
+- On a supported path the 3,132-byte OFL-derived, renamed Clocky AM PM Marker font has required `rlig`
+  substitutions and Unicode decimal-digit aliases. It stays outside FontCatalog. Marker-only layouts carry
+  accessibility exclusion in XML because the setter is not RemoteViews-remotable. Localized markers inherit
+  platform faces; an inherited bundled face falls back to system sans for the marker alone, with disclosure.
+  The requested time face is kept. Fit measures the same effective fragment used for display.
+- Font regeneration (fontTools 4.53.1) reproduced the same SHA-256. No spike Activity, debug manifest,
+  temporary resources, app clock updater, schema change, or provider/domain change is in the final tree.
+
+**Tests.** `testDebugUnitTest`: 366 tests, 0 failures/errors/skips; `lintDebug`: successful; `assembleDebug`:
+successful. Each production commit was followed by successful full unit/lint checks before subsequent
+production work. cdev pure tests: 99 passed. Pure tests cover SDK × supported/unsupported host, unchanged
+requests, hidden/24-hour cases, and platform marker fallback. RemoteViews apply/reapply, marker accessibility,
+font/shadow variants, fit, disclosure and Preview/provider parity run at SDK 23/25/26/28/31/34/35.
+Native raster/advance tests verify all 24 Latin and Arabic-digit hours plus tracking at SDK 26/28/31/34/35;
+restricted Context and unknown/system HOME regression tests cover the false-positive capability boundary.
+Existing built-in 8 and Phase 1A/1B/2 codec/regression tests pass.
+
+**Device evidence (cdev, final production APK).**
+- moto g13 / API 34 / Motorola Launcher3 / ja-JP: in-place install retained widget 23 and its original
+  appearance before editing. Force 12-hour + suffix displayed `午後` in both Studio Preview and placed widget;
+  Studio displayed `AM/PM → ロケールの表記` and explained the font fallback and retained choice. Screenshots
+  showed no clipping/overlap. With Clocky absent (`pidof`), the host clock advanced `7:19 → 7:20`, retaining
+  `午後`. Saved requests remained Force 12 / Suffix during fallback. Original preferences were then restored
+  byte-for-byte; session finished. Local evidence: `s-20261007-190630-ZY22GSDPFW`, `0018-inspect`,
+  `0020-inspect`, `0021-inspect`/`0023-inspect`, `0022-collect-fallback-post-kill`, `0033-collect-fallback-restored`.
+- clocky-api25 emulator / API 25 / Pixel (Nexus) Launcher / en-US: in-place install retained widget 4.
+  Localized `a` displayed `AM` in both Preview and placed widget, with the fallback notice in Studio and no
+  observed clipping/overlap. `am kill` did not remove the process on this host; a cdev-wrapped `run-as` kill
+  of the observed Clocky PID did. With Clocky absent before and after, the host clock advanced `10:27 → 10:29`.
+  Original JSON values were all restored; Save added only existing optional default keys. Session finished.
+  Local evidence: `s-20261007-192412-emulator-5554`, `0011-inspect`, `0013-inspect`, `0017-inspect`/`0018-inspect`,
+  `0019-collect-api25-ticking-proof`, `0027-collect-api25-restored`.
+- Collected crash buffers were empty and no crash/ANR was reported. The moto log buffer rolled over during
+  the long session; API 25's Clocky-filtered log summary had zero relevant lines, so these logs are not
+  comprehensive runtime-error evidence. Display and ticking claims above come from direct observations.
+
+**Not exercised.** Natural 11:59 → 12:00 or 23:59 → 00:00 transitions; a real launcher positively supporting
+this dedicated font; physical/API 26/28/31/35 launchers; One UI/Nova/Lawnchair; TalkBack spoken output;
+non-HOME widget hosts; device RTL/large font scale; launcher landscape/resize during this follow-up.
+Native shaping and same-package probe success are not described as real-launcher Latin verification.
+The current capability represents the resolved HOME launcher; other host implementations need separate evidence.
+
+**Shipping result.** The amended marker gate is satisfied on the two exercised hosts, with the limitations
+above explicit. This is implementation/verification completion, not a main merge. Phase 3A's prerequisite
+still requires the owner to merge this independent follow-up PR. Phase 3A/3A-0 has not started.
+
+**Additional Phase 2 bundled-font audit (2026-10-07, owner requested; unresolved).** The same remote-font
+restriction also affects ordinary Time/Date bundled fonts. A temporary debug-only Activity published seven
+rows directly into the existing widget on Motorola Launcher3 / moto g13 / API 34 / ja-JP. Each row used the
+existing production `FontFragmentTable` fragment, weight 400, shadow OFF, a 24px TextClock, and literal
+format `'0123456789 AMPM'` in both hour modes. The exact same RemoteViews was applied for same-package
+Preview. This fixed audit sample is not a replacement production clock.
+
+| Requested face | Same-package Preview width (px) | Placed widget width (px) |
+|---|---:|---:|
+| system sans | 209 | 209 |
+| Poppins | 217 | 209 |
+| Bebas Neue | 149 | 209 |
+| DM Serif Display | 195 | 209 |
+| Barlow Condensed | 149 | 209 |
+| IBM Plex Mono | 210 | 209 |
+| Varela Round | 236 | 209 |
+
+Placed widths come from TextClock UI bounds, not a simulated host Context. All six bundled rows' 209×28px
+glyph crops were byte-identical to the placed system-sans crop; the screenshot was also visually inspected.
+The corresponding launcher-package Context probe was restricted and measured 209px for every face;
+same-package Contexts were unrestricted and had distinct Typefaces/widths. The CTS
+[FontResourceTest](https://android.googlesource.com/platform/cts/+/2d7144b53f96b0eebb0f18130dc2cc64aeb97c3f/tests/tests/text/src/android/text/cts/FontResourceTest.java)
+independently expects RemoteViews to ignore custom font files.
+
+This confirms an existing Phase 2 defect on this host: a bundled request can remain undisclosed while the
+widget renders a system face and Preview/fit use the bundled face. Potential fit/clipping consequences were
+not tested. Any earlier same-package/visual-only bundled-font evidence is insufficient to claim real-host
+support. Ordinary bundled-font capability resolution/disclosure is **not fixed by PR #44**; the marker-only
+shipping result above does not establish full font parity for arbitrary designs. No new font fallback
+semantics or ordinary-font production changes were introduced during this audit.
+
+Local cdev evidence: `s-20261007-195819-ZY22GSDPFW`, `0003-inspect` (same-package Preview), `0006-logs`
+(Context/width probe), `0008-inspect` and `0009-collect-bundled-font-placed-proof` (actual launcher rows),
+`0012-collect-bundled-font-audit-restored` (normal widget restored). Saved preferences were byte-identical
+before/after; the audit did not change the design or device clock. The probe was removed, the clean APK
+rebuilt successfully and installed in place, and the session finished. Its 1,367 runtime/resource entry
+digests matched the earlier device-tested production APK; the whole archive hash differed after rebuilding.
+No audit code/resources ship. Not exercised: other real hosts/APIs, other weights/shadows, live production
+bundled designs across size/fit boundaries. The ordinary-font issue needs separate follow-up before claiming
+general Preview/widget font parity.
+
 ---
+
+## 1b. Phase 2 follow-up: bundled-font host parity (required before 3A-0)
+
+PR #44's real-launcher audit found that the six Phase 2 bundled weight-400 faces (Poppins, Bebas Neue,
+DM Serif Display, Barlow Condensed, IBM Plex Mono and Varela Round) all render as the same system-sans glyphs
+on moto g13 / API 34 / Motorola Launcher3, while same-package Preview renders the requested faces. Width and
+pixel-glyph comparisons confirmed the placed fallback; this supersedes the earlier visual-only Poppins claim.
+
+**Owner ruling (2026-10-07).** Keep the requested font ids and the long-term typography library, but never assume
+that an APK-bundled font is usable in cross-package RemoteViews merely because the SDK is API 26+. Generalize the
+host-capability approach proven in PR #44: resolve bundled-font support at render time, fall back to a platform-safe
+system face on unsupported/unknown hosts, disclose the degradation, and make Preview and fit consume that same
+effective face. Silent placed-widget fallback is forbidden. This follow-up is a Phase 2 correctness repair, not a
+Phase 3 feature, and must merge before 3A-0 measurements so size/fit data is not collected against a Preview font
+that the real widget cannot render.
+
+The follow-up may additionally inventory platform/system families on API 34 hosts, but it must not block on reaching
+the long-term 24-family count. The immediate gate is truthful requested→effective resolution and Preview/fit parity.
 
 ## 2. 3A — Responsive core
 

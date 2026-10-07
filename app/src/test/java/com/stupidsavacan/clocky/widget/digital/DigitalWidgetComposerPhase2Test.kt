@@ -51,7 +51,7 @@ class DigitalWidgetComposerPhase2Test {
     private val strip = SizeContext(363, 58, 667, 122)
 
     private fun spec(design: DigitalDesign, size: SizeContext = card, alarm: String? = "Mon 7:30 AM"): ResolvedDigitalSpec =
-        DesignResolver.resolve(design, size, DigitalWidgetUpdater.environment(context).copy(nextAlarmText = alarm))
+        DesignResolver.resolve(design, size, DigitalWidgetUpdater.environment(context).copy(nextAlarmText = alarm, supportsLatinAmPmMarker = true))
 
     private fun applied(
         s: ResolvedDigitalSpec,
@@ -111,7 +111,7 @@ class DigitalWidgetComposerPhase2Test {
         assertEquals(2, timeSlot.childCount)
         val faces = DigitalWidgetFit.visibleTextsIn(root, R.id.clocky_time_slot)
         assertEquals(2, faces.size)
-        assertEquals("a", (faces[1] as TextClock).format12Hour.toString())
+        assertEquals("HH", (faces[1] as TextClock).format12Hour.toString())
         assertEquals("", (faces[1] as TextClock).format24Hour.toString())
         assertTrue("AM/PM is smaller than the time", faces[1].textSize < faces[0].textSize)
     }

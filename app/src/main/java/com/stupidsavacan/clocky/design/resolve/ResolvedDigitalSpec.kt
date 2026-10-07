@@ -28,6 +28,8 @@ data class RenderEnvironment(
     val nextAlarmText: String? = null,
     /** Editor-only stand-in shown for the next-alarm Info line when no alarm is set. Never set by the provider. */
     val sampleAlarmText: String? = null,
+    /** Cross-package RemoteViews marker font/shaping capability; unknown hosts use localized a. */
+    val supportsLatinAmPmMarker: Boolean = false,
 )
 
 /**
@@ -102,13 +104,15 @@ data class ResolvedInfo(
     val isSample: Boolean,
 )
 
-/** AM/PM suffix next to the time: a TextClock with pattern `a`, empty in 24-hour mode. */
+/** Host-ticking suffix: HH on font-capable hosts, localized a otherwise. */
 data class ResolvedAmPm(
     val text: ResolvedText,
     val scale: Float,
     val format12Hour: String = "a",
     /** Empty when the system decides: a 24-hour system clock shows no AM/PM. */
     val format24Hour: String = "",
+    /** Renderer-only choice; never stored in behavior.amPm or offered in FontCatalog. */
+    val useLatinMarkerFont: Boolean = false,
 )
 
 data class ResolvedDigitalSpec(
@@ -140,6 +144,8 @@ enum class TextElementKind { TIME, DATE, INFO }
 enum class InfoHiddenReason { STRIP_SIZE, MINIMAL_TEMPLATE }
 
 sealed interface Degradation {
+    /** The host cannot apply the dedicated Latin marker font (including API 23–25). */
+    data object AmPmLocalized : Degradation
     data class WeightApproximated(
         val element: TextElementKind,
         val requested: Int,

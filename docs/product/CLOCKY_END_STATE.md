@@ -131,7 +131,7 @@ Design
 | Size | B | Fit モードでは「領域に対する割合 40〜100%」、Fixed モードでは sp |
 | 12h/24h | B | System / 12h / 24h（既存） |
 | 先頭ゼロ | A | 12h で `h` と `hh` を切り替える。24h は常に `HH`。旧MVPには保存値がないので、既定は off（`h`） |
-| AM/PM | B（12h のときだけ表示） | Hidden / Small suffix（時刻の 25〜60%）/ Inline / Above（Stacked のとき）。**表記はロケールによらず常に Latin の `AM` / `PM`**（ja でも「午前/午後」にしない。2026-10-07 改訂）。ホスト側で自走する TextClock だけで実現する（`a` パターンはホストのロケールで「午前/午後」になるため、そのままでは使えない。方式は `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md` §1a）。自走を保ったまま実現できない端末では、ロケールの表記に縮退してエディタで開示する。アプリ駆動の更新で切り替えることはしない |
+| AM/PM | B（12h のときだけ表示） | Hidden / Small suffix（時刻の 25〜60%）/ Inline / Above（Stacked のとき）。**API 34 を含む現行の製品基準は、host が自走する TextClock の localized `a` を正しい fallback として受け入れる**（ja-JP では `午前` / `午後`）。PR #44 の host-capability probe と専用fontによる Latin marker 実験は将来の再検討用に保持するが、Latin 固定は 2026-10-07 owner ruling で一時保留とし、Phase 3 の shipping gate にはしない。専用font方式が実hostで成立する場合は opportunistic に Latin `AM` / `PM` を表示してよい。成立しない場合は API 23–25 に限らず API 26+ でも localized `a` に縮退し、requested `behavior.amPm` は保持、Preview と placed widget は同じ effective path を使う。app-drivenな正午/深夜更新、AlarmManager / WorkManagerによる切替、bitmap marker、resident / foreground Service、Preview専用rendererは禁止のまま。方式・実測は `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md` §1a |
 | 区切り文字 | A | `:` / `.` / ` ` / なし / `·`。点滅させない |
 | 秒 | A | Off（既定）/ On。TextClock の `ss` で出すので、ランチャー側で毎秒再描画される。電池への注意を表示する |
 | 時と分を個別にスタイル | A | 色と weight を時と分で分ける（例: 時は Bold、分は Light。分だけ Accent 色）。`HH` と `mm` を2つの TextClock に分けて実現する |
@@ -171,6 +171,7 @@ Design
 - 1カテゴリあたり4つ程度にして、「似たものを並べない」原則を守る。各フォントには、カバーしている文字体系・数字の形（等幅か）・使える weight をメタデータとして持たせる。
 - **CJK の日付**（例: `10月6日(月)`）はシステムのフォールバックに任せる。選んだフォントが CJK をカバーしていない場合は、エディタに「日付の和文部分はシステム書体で表示されます」と表示する。
 - システムフォント（sans-serif 系5種）も「System」カテゴリとして残す。旧MVPとの互換のため。
+- **RemoteViews host capability（2026-10-07 owner ruling）:** 24-family の長期目標と requested font id は維持するが、同梱fontが placed widget で使えるとは仮定しない。moto g13 / API 34 / Motorola Launcher3 では Phase 2 の同梱6書体がすべて system sans と同じglyphへ縮退した。通常の Time / Date / Info について host capability を描画時に解決し、非対応hostでは platform-safe system face へ縮退して `Degradation` を開示する。Preview と fit は必ず同じ effective face を使い、silent fallback を禁止する。この Phase 2 font-host follow-up は Phase 3A-0 のサイズ/fit計測より先に完了させる。
 - **ユーザーによる TTF/OTF の読み込みはやらない**（§10）。
 
 ### 5.5 Color / opacity / theme
