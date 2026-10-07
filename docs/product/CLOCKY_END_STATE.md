@@ -397,19 +397,19 @@ Design
 | Class | 判定（host から渡される dp。幅 w と高さ h の両方で判定） | 代表的なセル | 推奨 template |
 |---|---|---|---|
 | **Strip** | h < 100 | 4×1, 3×1, 5×1, 2×1 | Inline / Minimal |
-| **Card** | 100 ≤ h < 200 かつ w ≥ 1.4h | 4×2, 5×2, 3×2 | Center Stack / Split |
-| **Square** | w < 1.4h かつ h ≥ 100 | 2×2, 3×3 | Stacked / Minimal / Analog |
-| **Large** | h ≥ 200 かつ w ≥ 1.4h | 4×3, 5×3 以上 | Corner / Center Stack |
+| **Card** | 100 ≤ h < 160 かつ w ≥ 2.5625h | 4×2, 5×2, 3×2 | Center Stack / Split |
+| **Square** | w < 2.5625h かつ h ≥ 100 | 2×2, 3×3, 4×4 | Stacked / Minimal / Analog |
+| **Large** | h ≥ 160 かつ w ≥ 2.5625h | 横長の4×3, 5×3以上 | Corner / Center Stack |
 
-- しきい値は定数としてまとめ、実機で測ってから確定させる（Issue #31 で実測された 268×191dp は Card に入る）。
-- **判定の入力（2026-10-07 改訂）**: 1つのウィジェットは縦向きでも横向きでも同じ1つのサイズクラスを持つ（サイズクラス別 override の結果を予測可能にするため）。上の表の 100dp / 200dp / 1.4 は **暫定値**。moto g13 の 4×2 は縦向きで 363×260dp（比 1.396）となり、比を縦向きの寸法で判定すると Square に入ってしまう。そのため、判定に使う寸法（どちらの向きか）と各しきい値は、複数ランチャーで計測してから確定し、この節を更新する（計測計画: `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md` §2.4）。
+- **2026-10-08実測値**: `STRIP_MAX_H=100dp`、`LARGE_MIN_H=160dp`、`SQUARE_RATIO=2.5625`。Strip → Square → Large → Card の順に判定する。4×4は形状優先でSquare（owner確認）。
+- **判定の入力（2026-10-08実測改訂）**: `w=OPTION_APPWIDGET_MAX_WIDTH`、`h=OPTION_APPWIDGET_MIN_HEIGHT`（dp）。1つのウィジェットは縦向きでも横向きでも同じサイズクラスを持つ。このlandscape-like options pairは、現在表示中のcanvas寸法ではない。各entryのfitにはその実サイズを使う。moto API34、Pixel API35/API30の30 host/cell組合せで代表cellと一致し、最小境界marginは高さ23dp、ratio 0.100379。moto 4×2は667×132dpからCardとなる。追加launcherは再検証が必要（全raw table: `docs/measurements/phase3a0/RESULTS.md`）。
 - **継承（2026-10-07 改訂）**: override がないとき、Square と Large は Card の override を継承し、Card にもなければ base を使う（`square → card → base`、`large → card → base`）。Strip と Card は base を継承する。今 Card として表示されている大きいウィジェットの見た目を、クラスの追加で変えないため。
 - **override のモデル**: 今の `ProfileOverride`（フィールドを手で列挙したもの）を、汎用の nullable patch に置き換える。キーはサイズクラス、中身は「プロパティのパス → 値」。override できるのは Layout 系のプロパティだけ（template、要素ごとの size・offset・visible・間隔、padding、alignment）。書体と色はサイズによらず共通にし、override の対象にしない（サイズによって印象が変わるのを防ぐ）。**例外（2026-10-07 改訂）**: v1 から移行した Strip / Card の weight override は、損失のない除去方法がないため読み書きできるまま残す。Square / Large では weight の override を提供しない。知らないサイズクラスやパスは、読み込んだまま保存し直す（新しい版で作られたデータを古い版が壊さないため）。
 
 ### 描画
-- **API 31 以上**: `RemoteViews(Map<SizeF, RemoteViews>)` を使い、ランチャーはリサイズ中もアプリを呼ばずに切り替えられる。マップのキーをホストが報告するサイズ（`OPTION_APPWIDGET_SIZES`）にするか、各クラスの代表サイズを加えるかは、Bitmap メモリ上限（画面の1.5倍）を踏まえて spike で決める（2026-10-07 改訂。当初は「4クラス分をまとめて送る」）。
+- **API 31 以上（2026-10-08実測改訂）**: `RemoteViews(Map<SizeF, RemoteViews>)`、**Keying A**（ホスト報告の`OPTION_APPWIDGET_SIZES`だけ）を採用する。各entryは同一widget classを解決し、実サイズへfitする。B（他class anchor追加）はAPI35の4×4でBitmap上限を超過した。ホストは既存entryを独立に選択できるが、drag中にcallbackが届く場合もある。callbackがdrop後のみという前提は置かず、callback更新とhost単独選択を区別する（owner承認）。
 - **API 23〜30**: `onAppWidgetOptionsChanged` を受けて、縦向き用と横向き用のペアを作る（今の AOSP の方式）。
-- **metadata**: `targetCellWidth/Height`（API 31 以上）、`minResize` は 2×1 相当、`widgetFeatures="reconfigurable"`。`configuration_optional` は付けない（初回の Gallery を必ず通すため。そこは1タップで抜けられる）。
+- **metadata**: `targetCellWidth/Height`（API 31 以上）、`minResize` は最終的に2×1相当を目指すが、3A-0で見つかったSPLIT→StripのRemoteViews適用エラー修正・検証までreleaseは250/40dpを維持する。`widgetFeatures="reconfigurable"`。`configuration_optional` は付けない（初回の Gallery を必ず通すため。そこは1タップで抜けられる）。
 - **ランチャーごとの差への対応**:
   1. `OPTION_APPWIDGET_SIZES`（API 31 以上）を最優先で使う。
   2. targetSdk 31 以上では既定の padding が付かないので、Clocky が内側の余白を自分で持つ（§5.7）。
@@ -655,7 +655,7 @@ Design
 - **残る不確実性（前提として明示する）**:
   - 可変フォントで `textFontWeight` が wght 軸にどこまで効くかは、端末とバージョンによって違う可能性がある。実機で確認するまでは、静的な9 weight を前提にする。
   - `AnalogClock` に Icon で文字盤と針を渡す方法が OEM のランチャーで動くか、実機で確認が必要。
-  - サイズクラスのしきい値（100dp / 200dp / 1.4）は実測で確定させる。
+  - サイズクラスは3A-0実測（maxW/minH、100dp / 160dp / 2.5625）を用いる。追加hostで再検証する。
   - RemoteCompose がウィジェット向けに安定するかどうかが、Future 項目を解禁する条件になる。
 
 ## Verification（この仕様の検証方法）

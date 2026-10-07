@@ -1,0 +1,126 @@
+[
+  {
+    "source": "s-20261008-012219-ZY22GSDPFW/0005-logs/logcat_main.txt",
+    "mode": "A",
+    "updates": 30,
+    "entries": 60,
+    "updateCounts": [
+      2
+    ],
+    "bitmapBytes": [
+      4689984
+    ],
+    "mapParcelBytes": [
+      5148
+    ],
+    "entryComposeP95Ms": 12.822154,
+    "entryFitComposeP95Ms": 180.17777,
+    "updateComposeP95Ms": 25.56223,
+    "updateFitComposeP95Ms": 388.834,
+    "updateInstrumentedElapsedP95Ms": 539.283076,
+    "warmUpdateFitComposeP95Ms": 274.464923,
+    "api": 34,
+    "firstSample": {
+      "count": 2,
+      "fit": 523946155,
+      "compose": 26908846,
+      "elapsed": 752709231,
+      "bitmap": 4689984,
+      "parcelSum": 6592,
+      "parcel": 5148
+    }
+  },
+  {
+    "source": "s-20261008-012219-ZY22GSDPFW/0006-logs/logcat_main.txt",
+    "mode": "B",
+    "updates": 30,
+    "entries": 150,
+    "updateCounts": [
+      5
+    ],
+    "bitmapBytes": [
+      6615684
+    ],
+    "mapParcelBytes": [
+      10256
+    ],
+    "entryComposeP95Ms": 11.653846,
+    "entryFitComposeP95Ms": 144.271461,
+    "updateComposeP95Ms": 45.241769,
+    "updateFitComposeP95Ms": 645.672537,
+    "updateInstrumentedElapsedP95Ms": 921.117615,
+    "warmUpdateFitComposeP95Ms": 644.296693,
+    "api": 34,
+    "firstSample": {
+      "count": 5,
+      "fit": 635791000,
+      "compose": 34587616,
+      "elapsed": 921117615,
+      "bitmap": 6615684,
+      "parcelSum": 16116,
+      "parcel": 10256
+    }
+  },
+  {
+    "source": "s-20261008-010141-emulator-5560/0008-logs/logcat_main.txt",
+    "mode": "A",
+    "updates": 30,
+    "entries": 90,
+    "updateCounts": [
+      3
+    ],
+    "bitmapBytes": [
+      14203708
+    ],
+    "mapParcelBytes": [
+      7460
+    ],
+    "entryComposeP95Ms": 18.6411,
+    "entryFitComposeP95Ms": 122.2225,
+    "updateComposeP95Ms": 84.7619,
+    "updateFitComposeP95Ms": 386.0775,
+    "updateInstrumentedElapsedP95Ms": 534.8061,
+    "warmUpdateFitComposeP95Ms": 248.034,
+    "api": 35,
+    "firstSample": {
+      "count": 3,
+      "fit": 1076340400,
+      "compose": 35036400,
+      "elapsed": 1889663200,
+      "bitmap": 14203708,
+      "parcelSum": 11148,
+      "parcel": 7460
+    }
+  },
+  {
+    "source": "s-20261008-010141-emulator-5560/0009-logs/logcat_main.txt",
+    "mode": "B",
+    "updates": 1,
+    "entries": 6,
+    "updateCounts": [
+      6
+    ],
+    "bitmapBytes": [
+      18534224
+    ],
+    "mapParcelBytes": [
+      12656
+    ],
+    "entryComposeP95Ms": null,
+    "entryFitComposeP95Ms": null,
+    "updateComposeP95Ms": null,
+    "updateFitComposeP95Ms": null,
+    "updateInstrumentedElapsedP95Ms": null,
+    "warmUpdateFitComposeP95Ms": null,
+    "api": 35,
+    "firstSample": {
+      "count": 6,
+      "fit": 273813800,
+      "compose": 51795600,
+      "elapsed": 515939100,
+      "bitmap": 18534224,
+      "parcelSum": 21924,
+      "parcel": 12656
+    }
+  }
+]
