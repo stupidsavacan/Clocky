@@ -61,7 +61,7 @@ class StudioRows(private val context: Context, private val container: LinearLayo
 
     /** A text button; [enabled] false greys it out (e.g. reset when nothing changed). */
     fun button(label: CharSequence, enabled: Boolean = true, onClick: () -> Unit): Button =
-        Button(context, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+        com.google.android.material.button.MaterialButton(context, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
             text = label
             isEnabled = enabled
             minimumHeight = dp(48)
