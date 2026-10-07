@@ -45,8 +45,14 @@ object DigitalWidgetUpdater {
         // Callers include the config Activity; measure with the plain application context.
         val app = context.applicationContext
         val instance = SharedPreferencesDesignStore(app).load(appWidgetId)
-        val onClick = if (Utils.isWidgetClickable(wm, appWidgetId)) openClockyIntent(app) else null
-        wm.updateAppWidget(appWidgetId, build(app, instance, sizeContextOf(options), onClick))
+        val clickable = Utils.isWidgetClickable(wm, appWidgetId)
+        val onClick = if (clickable) openClockyIntent(app) else null
+        val zones = if (clickable && !instance.design.behavior.tap.isDefault) {
+            TapIntents.create(app, appWidgetId, instance.design.behavior.tap)
+        } else {
+            null
+        }
+        wm.updateAppWidget(appWidgetId, build(app, instance, sizeContextOf(options), onClick, zones))
     }
 
     /**
@@ -59,10 +65,11 @@ object DigitalWidgetUpdater {
         instance: WidgetInstance,
         size: SizeContext,
         onClick: PendingIntent?,
+        zones: ZoneClicks? = null,
     ): RemoteViews {
         val spec = DesignResolver.resolve(instance.design, size, environment(context))
-        val portrait = compose(context, spec, size.minWidthDp, size.maxHeightDp, onClick)
-        val landscape = compose(context, spec, size.maxWidthDp, size.minHeightDp, onClick)
+        val portrait = compose(context, spec, size.minWidthDp, size.maxHeightDp, onClick, zones)
+        val landscape = compose(context, spec, size.maxWidthDp, size.minHeightDp, onClick, zones)
         return RemoteViews(landscape, portrait)
     }
 
@@ -74,7 +81,8 @@ object DigitalWidgetUpdater {
     ): Pair<ResolvedDigitalSpec, RemoteViews> {
         // The application context keeps fit measurement free of an Activity's AppCompat inflater.
         val app = context.applicationContext
-        val spec = DesignResolver.resolve(design, size, environment(app))
+        // The editor shows a sample next-alarm line when none is set, so the Info row can be styled.
+        val spec = DesignResolver.resolve(design, size, environment(app, forEditor = true))
         return spec to compose(app, spec, size.minWidthDp, size.maxHeightDp, onClick = null)
     }
 
@@ -84,10 +92,14 @@ object DigitalWidgetUpdater {
         widthDp: Int,
         heightDp: Int,
         onClick: PendingIntent?,
+        zones: ZoneClicks? = null,
     ): RemoteViews {
         val density = context.resources.displayMetrics.density
-        val sizes = DigitalWidgetFit.fit(context, spec, px(widthDp, density), px(heightDp, density))
-        return DigitalWidgetComposer.compose(context, spec, sizes, onClick)
+        val widthPx = px(widthDp, density)
+        val heightPx = px(heightDp, density)
+        val sizes = DigitalWidgetFit.fit(context, spec, widthPx, heightPx)
+        val bounds = if (widthPx > 0 && heightPx > 0) widthPx to heightPx else null
+        return DigitalWidgetComposer.compose(context, spec, sizes, onClick, zones = zones, boundsPx = bounds)
     }
 
     /** The size class the placed widget has now; Card when the host has not reported a size yet. */
@@ -105,7 +117,7 @@ object DigitalWidgetUpdater {
         maxHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT),
     )
 
-    fun environment(context: Context): RenderEnvironment {
+    fun environment(context: Context, forEditor: Boolean = false): RenderEnvironment {
         val configuration = context.resources.configuration
         val locale: Locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             configuration.locales[0]
@@ -122,7 +134,23 @@ object DigitalWidgetUpdater {
                 locale,
                 context.getString(R.string.abbrev_wday_month_day_no_year),
             ),
+            nextAlarmText = nextAlarmText(context),
+            sampleAlarmText = if (forEditor) sampleAlarmText(context, locale) else null,
         )
+    }
+
+    /** The system's next alarm as Clocky formats it, or null when none is set (or it cannot be read). */
+    private fun nextAlarmText(context: Context): String? =
+        runCatching { Utils.getNextAlarm(context) }.getOrNull()?.takeIf { it.isNotBlank() }
+
+    /** A plausible alarm for the editor preview: tomorrow 7:30, in the same format a real one would use. */
+    private fun sampleAlarmText(context: Context, locale: Locale): String {
+        val cal = java.util.Calendar.getInstance(locale).apply {
+            add(java.util.Calendar.DAY_OF_YEAR, 1)
+            set(java.util.Calendar.HOUR_OF_DAY, 7)
+            set(java.util.Calendar.MINUTE, 30)
+        }
+        return com.android.deskclock.AlarmUtils.getFormattedTime(context, cal)
     }
 
     private fun openClockyIntent(context: Context): PendingIntent = PendingIntent.getActivity(

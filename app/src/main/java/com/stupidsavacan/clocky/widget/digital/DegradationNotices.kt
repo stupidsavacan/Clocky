@@ -4,6 +4,7 @@ import android.content.Context
 import com.android.deskclock.R
 import com.stupidsavacan.clocky.design.resolve.Degradation
 import com.stupidsavacan.clocky.design.resolve.FontCatalog
+import com.stupidsavacan.clocky.design.resolve.InfoHiddenReason
 import com.stupidsavacan.clocky.design.resolve.TextElementKind
 import kotlin.math.roundToInt
 
@@ -13,16 +14,24 @@ object DegradationNotices {
         degradations.distinct().map { d ->
             when (d) {
                 is Degradation.WeightApproximated -> context.getString(
-                    R.string.clocky_degraded_weight, element(context, d.element), d.requested, d.effective,
+                    if (d.fontId != null) R.string.clocky_degraded_weight_font else R.string.clocky_degraded_weight,
+                    element(context, d.element), d.requested, d.effective,
                 )
                 is Degradation.FontFallback -> context.getString(
-                    if (d.reason == FontCatalog.REASON_UNKNOWN_FONT) {
-                        R.string.clocky_degraded_font_unknown
-                    } else {
-                        R.string.clocky_degraded_font_weight
+                    when (d.reason) {
+                        FontCatalog.REASON_UNKNOWN_FONT -> R.string.clocky_degraded_font_unknown
+                        FontCatalog.REASON_NEEDS_API_26 -> R.string.clocky_degraded_font_needs_api
+                        else -> R.string.clocky_degraded_font_weight
                     },
                     element(context, d.element),
                 )
+                is Degradation.InfoNotShown -> context.getString(
+                    when (d.reason) {
+                        InfoHiddenReason.STRIP_SIZE -> R.string.clocky_degraded_info_strip
+                        InfoHiddenReason.MINIMAL_TEMPLATE -> R.string.clocky_degraded_info_minimal
+                    },
+                )
+                Degradation.RenderedBackgroundStatic -> context.getString(R.string.clocky_degraded_rendered_background)
                 is Degradation.OffsetUnsupported ->
                     context.getString(R.string.clocky_degraded_offset, element(context, d.element))
                 is Degradation.OffsetClamped ->
@@ -38,6 +47,7 @@ object DegradationNotices {
         when (kind) {
             TextElementKind.TIME -> R.string.clocky_element_time
             TextElementKind.DATE -> R.string.clocky_element_date
+            TextElementKind.INFO -> R.string.clocky_element_info
         },
     )
 }

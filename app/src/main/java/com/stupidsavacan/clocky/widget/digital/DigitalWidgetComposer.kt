@@ -20,10 +20,12 @@ import com.stupidsavacan.clocky.design.resolve.ResolvedDigitalSpec
 import com.stupidsavacan.clocky.design.resolve.ResolvedFace
 import com.stupidsavacan.clocky.design.resolve.ResolvedRadius
 import com.stupidsavacan.clocky.design.resolve.ResolvedText
+import com.stupidsavacan.clocky.design.resolve.FontCatalog
+import com.stupidsavacan.clocky.design.resolve.ShadowVariant
 import kotlin.math.roundToInt
 
-/** Final text sizes in px after fitting the host bounds. */
-data class FitSizes(val timePx: Float, val datePx: Float)
+/** Final text sizes in px after fitting the host bounds. The AM/PM suffix is derived from [timePx]. */
+data class FitSizes(val timePx: Float, val datePx: Float, val infoPx: Float = 0f)
 
 /**
  * Builds the one RemoteViews that both the launcher and the editor's PreviewHost apply
@@ -36,12 +38,16 @@ object DigitalWidgetComposer {
         sizes: FitSizes,
         onClick: PendingIntent? = null,
         sdkInt: Int = Build.VERSION.SDK_INT,
+        /** Extra per-zone click targets (Behavior > Tap); [onClick] stays the whole-widget target. */
+        zones: ZoneClicks? = null,
+        /** Real widget size in px; needed only to draw a rendered (gradient / outline) background. */
+        boundsPx: Pair<Int, Int>? = null,
     ): RemoteViews {
         val density = context.resources.displayMetrics.density
         val isRtl = context.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
         val rv = RemoteViews(context.packageName, templateLayout(spec.template, spec.sizeClass))
 
-        applyBackground(rv, spec, sdkInt)
+        applyBackground(context, rv, spec, sdkInt, boundsPx)
         val padPx = (spec.paddingDp * density).roundToInt()
         rv.setViewPadding(R.id.clocky_widget_content, padPx, padPx, padPx, padPx)
 
@@ -53,13 +59,20 @@ object DigitalWidgetComposer {
             fragment(context, spec.time, caps = false, sizes.timePx, spec.timeFormats.format12Hour,
                 spec.timeFormats.format24Hour, density, sdkInt),
         )
+        spec.amPm?.let { amPm ->
+            rv.addView(
+                R.id.clocky_time_slot,
+                fragment(context, amPm.text, caps = false, sizes.timePx * amPm.scale, amPm.format12Hour,
+                    amPm.format24Hour, density, sdkInt, startPaddingDp = AM_PM_GAP_DP),
+            )
+        }
         rv.setInt(R.id.clocky_time_slot, "setGravity", gravityOf(spec.time.alignment))
 
         rv.removeAllViews(R.id.clocky_date_slot)
         if (spec.dateVisible) {
             rv.addView(
                 R.id.clocky_date_slot,
-                fragment(context, spec.date, caps = true, sizes.datePx, spec.datePattern,
+                fragment(context, spec.date, caps = spec.dateUppercase, sizes.datePx, spec.datePattern,
                     spec.datePattern, density, sdkInt),
             )
             rv.setInt(R.id.clocky_date_slot, "setGravity", gravityOf(spec.date.alignment))
@@ -67,10 +80,40 @@ object DigitalWidgetComposer {
         } else {
             rv.setViewVisibility(R.id.clocky_date_slot, View.GONE)
         }
+        applyInfo(context, rv, spec, sizes, density, sdkInt)
         arrangeTemplate(rv, spec, sizes, density, isRtl)
 
         onClick?.let { rv.setOnClickPendingIntent(R.id.clocky_widget_root, it) }
+        zones?.let {
+            it.time?.let { pi -> rv.setOnClickPendingIntent(R.id.clocky_time_slot, pi) }
+            it.date?.let { pi -> rv.setOnClickPendingIntent(R.id.clocky_date_slot, pi) }
+            if (spec.info != null) it.info?.let { pi -> rv.setOnClickPendingIntent(R.id.clocky_info_slot, pi) }
+        }
         return rv
+    }
+
+    /** The Info line: one more TextClock fragment, whose pattern carries either a literal or a time zone. */
+    private fun applyInfo(
+        context: Context,
+        rv: RemoteViews,
+        spec: ResolvedDigitalSpec,
+        sizes: FitSizes,
+        density: Float,
+        sdkInt: Int,
+    ) {
+        rv.removeAllViews(R.id.clocky_info_slot)
+        val info = spec.info
+        if (info == null) {
+            rv.setViewVisibility(R.id.clocky_info_slot, View.GONE)
+            return
+        }
+        rv.addView(
+            R.id.clocky_info_slot,
+            fragment(context, info.text, caps = false, sizes.infoPx, info.format12Hour, info.format24Hour,
+                density, sdkInt, timeZoneId = info.timeZoneId),
+        )
+        rv.setInt(R.id.clocky_info_slot, "setGravity", gravityOf(info.text.alignment))
+        rv.setViewVisibility(R.id.clocky_info_slot, View.VISIBLE)
     }
 
     /** One layout per composition; every layout carries the same ids (root, background, content, slots). */
@@ -105,6 +148,9 @@ object DigitalWidgetComposer {
             }
             Template.MINIMAL -> Unit
         }
+        if (spec.info != null) {
+            rv.setViewPadding(R.id.clocky_info_slot, 0, gapPx.coerceAtLeast((INFO_GAP_DP * density).roundToInt()), 0, 0)
+        }
     }
 
     fun gravityOf(alignment: Alignment, vertical: Boolean): Int = when (alignment) {
@@ -128,8 +174,10 @@ object DigitalWidgetComposer {
         format24: String,
         density: Float,
         sdkInt: Int,
+        startPaddingDp: Float = 0f,
+        timeZoneId: String? = null,
     ): RemoteViews {
-        val child = RemoteViews(context.packageName, FontFragments.layoutFor(text.face.fontId, caps))
+        val child = RemoteViews(context.packageName, FontFragments.layoutFor(text.face.fontId, caps, text.shadow))
         // Actions on the child apply inside the child's own tree, so time and date can share
         // fragment layouts (and therefore view ids) without ambiguity.
         val id = FontFragments.faceViewId(text.face)
@@ -139,6 +187,8 @@ object DigitalWidgetComposer {
         child.setFloat(id, "setLetterSpacing", text.letterSpacingEm)
         child.setCharSequence(id, "setFormat12Hour", format12)
         child.setCharSequence(id, "setFormat24Hour", format24)
+        timeZoneId?.let { child.setString(id, "setTimeZone", it) }
+        if (startPaddingDp > 0f) child.setViewPadding(id, (startPaddingDp * density).roundToInt(), 0, 0, 0)
         if (sdkInt >= DesignResolver.MIN_TRANSLATION_SDK && (text.xDp != 0f || text.yDp != 0f)) {
             child.setFloat(id, "setTranslationX", text.xDp * density)
             child.setFloat(id, "setTranslationY", text.yDp * density)
@@ -175,10 +225,31 @@ object DigitalWidgetComposer {
         ColorRole.SURFACE -> R.color.clocky_dyn_surface
     }
 
-    private fun applyBackground(rv: RemoteViews, spec: ResolvedDigitalSpec, sdkInt: Int) {
+    private fun applyBackground(
+        context: Context,
+        rv: RemoteViews,
+        spec: ResolvedDigitalSpec,
+        sdkInt: Int,
+        boundsPx: Pair<Int, Int>?,
+    ) {
         val bg = spec.background
         if (!bg.visible) {
             rv.setViewVisibility(R.id.clocky_widget_background, View.GONE)
+            return
+        }
+        if (bg.isRendered) {
+            // Gradient / outline are a bitmap drawn at the real size. Without a size (fit measurement)
+            // there is nothing to draw and nothing to measure, so the view just stays hidden.
+            val bitmap = boundsPx?.let { (w, h) -> RenderedBackground.create(context, bg, w, h) }
+            if (bitmap == null) {
+                rv.setViewVisibility(R.id.clocky_widget_background, View.GONE)
+                return
+            }
+            rv.setViewVisibility(R.id.clocky_widget_background, View.VISIBLE)
+            // A previous solid design may have left a tint on a reused view; a transparent filter clears it.
+            rv.setInt(R.id.clocky_widget_background, "setColorFilter", 0)
+            rv.setImageViewBitmap(R.id.clocky_widget_background, bitmap)
+            rv.setInt(R.id.clocky_widget_background, "setImageAlpha", bg.alpha)
             return
         }
         rv.setViewVisibility(R.id.clocky_widget_background, View.VISIBLE)
@@ -212,25 +283,30 @@ object DigitalWidgetComposer {
 
     private const val OPAQUE = 0xFF000000.toInt()
     private const val INLINE_GAP_DP = 10f
+    private const val AM_PM_GAP_DP = 2f
+    private const val INFO_GAP_DP = 4f
 
     /** Typical descent as a fraction of font size; lifts the inline date onto the time's baseline. */
     private const val DESCENT_RATIO = 0.21f
 }
 
-/** Maps resolved faces to fragment layouts and view ids (Phase 1A font set). */
+/** Maps resolved faces to fragment layouts and view ids (FontFragmentTable is generated; see tools/fonts). */
 object FontFragments {
     @LayoutRes
-    fun layoutFor(fontId: String, caps: Boolean): Int = when (fontId) {
-        "sans-serif-light" -> if (caps) R.layout.clocky_face_sans_serif_light_caps else R.layout.clocky_face_sans_serif_light
-        "sans-serif-rounded" -> if (caps) R.layout.clocky_face_sans_serif_rounded_caps else R.layout.clocky_face_sans_serif_rounded
-        "serif" -> if (caps) R.layout.clocky_face_serif_caps else R.layout.clocky_face_serif
-        "sans-serif-condensed" -> if (caps) R.layout.clocky_face_sans_serif_condensed_caps else R.layout.clocky_face_sans_serif_condensed
-        "monospace" -> if (caps) R.layout.clocky_face_monospace_caps else R.layout.clocky_face_monospace
-        else -> if (caps) R.layout.clocky_face_system_sans_caps else R.layout.clocky_face_system_sans
-    }
+    fun layoutFor(fontId: String, caps: Boolean, shadow: ShadowVariant = ShadowVariant.CLASSIC): Int =
+        FontFragmentTable.layoutFor(fontId, caps, shadow)
+            ?: FontFragmentTable.layoutFor(FontIds.SYSTEM_SANS, caps, shadow)
+            ?: error("No font fragment for $fontId / $shadow")
 
+    /**
+     * The view that shows [face] inside its fragment: platform alias families have one face; the
+     * system sans and the bundled families have one view per weight, named by weight.
+     */
     fun faceViewId(face: ResolvedFace): Int {
-        if (face.fontId != FontIds.SYSTEM_SANS) return R.id.clocky_face_single
+        val family = FontCatalog.family(face.fontId)
+        if (family != null && family.source == FontCatalog.Source.SYSTEM && face.fontId != FontIds.SYSTEM_SANS) {
+            return R.id.clocky_face_single
+        }
         return when (face.weight) {
             100 -> R.id.clocky_face_w100
             200 -> R.id.clocky_face_w200

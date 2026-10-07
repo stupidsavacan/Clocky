@@ -1,6 +1,14 @@
 package com.stupidsavacan.clocky.design.storage
 
 import com.stupidsavacan.clocky.design.model.Alignment
+import com.stupidsavacan.clocky.design.model.AmPmMode
+import com.stupidsavacan.clocky.design.model.AmPmStyle
+import com.stupidsavacan.clocky.design.model.Effects
+import com.stupidsavacan.clocky.design.model.InfoElement
+import com.stupidsavacan.clocky.design.model.InfoSource
+import com.stupidsavacan.clocky.design.model.ShadowLevel
+import com.stupidsavacan.clocky.design.model.TapAction
+import com.stupidsavacan.clocky.design.model.TapActions
 import com.stupidsavacan.clocky.design.model.BackgroundElement
 import com.stupidsavacan.clocky.design.model.BackgroundType
 import com.stupidsavacan.clocky.design.model.Behavior
@@ -62,6 +70,7 @@ object DigitalDesignCodec {
                 put("visible", d.date.visible)
                 putStyle(d.date.style)
                 put("formatPattern", d.date.formatPattern ?: JSONObject.NULL)
+                put("uppercase", d.date.uppercase)
             })
             put("background", JSONObject().apply {
                 put("type", d.background.type.name)
@@ -69,6 +78,9 @@ object DigitalDesignCodec {
                 put("opacity", d.background.opacity.toDouble())
                 put("cornerRadius", encodeRadius(d.background.cornerRadius))
                 put("paddingDp", d.background.paddingDp.toDouble())
+                put("gradientEnd", encodeColor(d.background.gradientEnd))
+                put("gradientAngleDeg", d.background.gradientAngleDeg)
+                put("borderWidthDp", d.background.borderWidthDp.toDouble())
             })
             put("layout", JSONObject().apply {
                 put("template", d.layout.template.name)
@@ -80,7 +92,20 @@ object DigitalDesignCodec {
             })
             put("behavior", JSONObject().apply {
                 put("hourMode", d.behavior.hourMode.name)
+                put("amPm", JSONObject().put("mode", d.behavior.amPm.mode.name).put("scale", d.behavior.amPm.scale.toDouble()))
+                put("showSeconds", d.behavior.showSeconds)
+                put("tap", JSONObject()
+                    .put("time", d.behavior.tap.time.name)
+                    .put("date", d.behavior.tap.date.name)
+                    .put("info", d.behavior.tap.info.name))
             })
+            put("info", JSONObject().apply {
+                put("source", d.info.source.name)
+                putStyle(d.info.style)
+                put("timeZoneId", d.info.timeZoneId ?: JSONObject.NULL)
+                put("label", d.info.label ?: JSONObject.NULL)
+            })
+            put("effects", JSONObject().put("shadow", d.effects.shadow.name))
             d.style?.let { put("style", encodeTokens(it)) }
             d.source?.let {
                 put("source", JSONObject().put("builtinId", it.builtinId).put("version", it.version).put("kitId", it.kitId))
@@ -174,6 +199,7 @@ object DigitalDesignCodec {
                 visible = d.optBoolean("visible", defaults.date.visible),
                 style = decodeStyle(d, defaults.date.style),
                 formatPattern = d.optStringOrNull("formatPattern"),
+                uppercase = d.optBoolean("uppercase", defaults.date.uppercase),
             ),
             background = BackgroundElement(
                 type = enumOr(b.optString("type"), defaults.background.type),
@@ -181,19 +207,53 @@ object DigitalDesignCodec {
                 opacity = b.optDouble("opacity", defaults.background.opacity.toDouble()).toFloat(),
                 cornerRadius = decodeRadius(b.optJSONObject("cornerRadius")),
                 paddingDp = b.optDouble("paddingDp", defaults.background.paddingDp.toDouble()).toFloat(),
+                gradientEnd = decodeColor(b.optJSONObject("gradientEnd"), defaults.background.gradientEnd),
+                gradientAngleDeg = b.optInt("gradientAngleDeg", defaults.background.gradientAngleDeg),
+                borderWidthDp = b.optDouble("borderWidthDp", defaults.background.borderWidthDp.toDouble()).toFloat(),
             ),
             layout = DesignLayout(
                 template = enumOr(l.optString("template"), defaults.layout.template),
                 overrides = decodeOverrides(l.optJSONObject("overrides")),
             ),
-            behavior = Behavior(
-                hourMode = enumOr(
-                    (root.optJSONObject("behavior") ?: JSONObject()).optString("hourMode"),
-                    defaults.behavior.hourMode,
+            behavior = decodeBehavior(root.optJSONObject("behavior"), defaults.behavior),
+            info = decodeInfo(root.optJSONObject("info"), defaults.info),
+            effects = Effects(
+                shadow = enumOr(
+                    (root.optJSONObject("effects") ?: JSONObject()).optString("shadow"),
+                    defaults.effects.shadow,
                 ),
             ),
             style = decodeTokens(root.optJSONObject("style")),
             source = decodeSource(root.optJSONObject("source")),
+        )
+    }
+
+    private fun decodeBehavior(o: JSONObject?, defaults: Behavior): Behavior {
+        val b = o ?: JSONObject()
+        val amPm = b.optJSONObject("amPm") ?: JSONObject()
+        val tap = b.optJSONObject("tap") ?: JSONObject()
+        return Behavior(
+            hourMode = enumOr(b.optString("hourMode"), defaults.hourMode),
+            amPm = AmPmStyle(
+                mode = enumOr(amPm.optString("mode"), defaults.amPm.mode),
+                scale = amPm.optDouble("scale", defaults.amPm.scale.toDouble()).toFloat(),
+            ),
+            showSeconds = b.optBoolean("showSeconds", defaults.showSeconds),
+            tap = TapActions(
+                time = enumOr(tap.optString("time"), defaults.tap.time),
+                date = enumOr(tap.optString("date"), defaults.tap.date),
+                info = enumOr(tap.optString("info"), defaults.tap.info),
+            ),
+        )
+    }
+
+    private fun decodeInfo(o: JSONObject?, defaults: InfoElement): InfoElement {
+        val i = o ?: return defaults
+        return InfoElement(
+            source = enumOr(i.optString("source"), defaults.source),
+            style = decodeStyle(i, defaults.style),
+            timeZoneId = i.optStringOrNull("timeZoneId"),
+            label = i.optStringOrNull("label"),
         )
     }
 
