@@ -1,6 +1,7 @@
 package com.stupidsavacan.clocky.widget.digital
 
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.widget.FrameLayout
 import android.widget.RemoteViews
@@ -9,8 +10,8 @@ import com.android.deskclock.R
 
 /**
  * RemoteViews inflates foreign-package resources differently from a same-package preview.
- * Android's framework resource Context is shared by ordinary remote hosts; the installed android
- * package supplies a foreign caller without relying on launcher names or package visibility.
+ * Probe the resolved HOME launcher resource Context, matching the real widget host on the home
+ * screen. The platform android package has a special Context and must not stand in for a launcher.
  * Use this same capability for provider and Preview. Unknown/failed probes never ship raw HH.
  * This only measures an unattached view; no ticking state or capability is persisted.
  */
@@ -18,7 +19,11 @@ internal object AmPmHostCapability {
     fun supportsLatin(context: Context): Boolean {
         if (Build.VERSION.SDK_INT < 26) return false
         return runCatching {
-            supportsLatinIn(context, context.createPackageContext("android", 0))
+            val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            val hostPackage = context.packageManager.resolveActivity(home, 0)?.activityInfo?.packageName
+                ?: return false
+            if (hostPackage == "android" || hostPackage == context.packageName) return false
+            supportsLatinIn(context, context.createPackageContext(hostPackage, 0))
         }.getOrDefault(false)
     }
 
