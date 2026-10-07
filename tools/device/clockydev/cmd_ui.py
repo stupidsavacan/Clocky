@@ -1,12 +1,13 @@
 """inspect, tap, long-press, drag, swipe, scroll, key, wait."""
 import os
+import re
 import time
 
 from . import devstate, gestures, ui
 from .cli import Out, command
 from .cmd_session import pending_lines
 from .errors import ui_err, usage
-from .session import get_setting, load_state, next_step_dir
+from .session import get_setting, load_state, next_step_dir, session_dir
 
 
 # ------------------------------------------------------------ selector args
@@ -264,6 +265,49 @@ def _inspect_setup(p):
     p.add_argument("--no-screenshot", action="store_true")
     p.add_argument("--wait-for", metavar="LABEL", help="wait until a node with this text/desc appears")
     p.add_argument("--timeout", type=float, default=10)
+    p.add_argument("--diff", action="store_true", help="show only what changed since the previous inspect in this session")
+
+
+def previous_inspect(ctx):
+    """-> (xml text, focus or None, step dir name) of the newest earlier inspect step in the open session, or None."""
+    sd = session_dir(ctx.build_dir, load_state(ctx.build_dir))
+    if not sd or not os.path.isdir(sd):
+        return None
+    dirs = sorted(n for n in os.listdir(sd) if re.fullmatch(r"\d{4}-inspect", n))
+    for name in reversed(dirs):
+        try:
+            with open(os.path.join(sd, name, "ui.xml"), encoding="utf-8") as f:
+                xml = f.read()
+        except OSError:
+            continue
+        focus = None
+        try:
+            with open(os.path.join(sd, name, "focus.txt"), encoding="utf-8") as f:
+                focus = f.read().strip() or None
+        except OSError:
+            pass
+        return xml, focus, name
+    return None
+
+
+MIN_DIFF_OVERLAP = 0.5
+
+
+def _diff_against(prev, vis, focus):
+    """-> (diff dict | None, reason). Falls back to the full table when the screens are not comparable."""
+    if prev is None:
+        return None, "none earlier in this session"
+    xml, pfocus, name = prev
+    if pfocus is not None and focus is not None and pfocus != focus:
+        return None, "focus changed"
+    try:
+        pnodes, pscreen = ui.parse_hierarchy(xml)
+    except ValueError:
+        return None, "previous dump unreadable"
+    raw = ui.diff_nodes(ui.visible(pnodes, pscreen), vis)
+    if raw["overlap"] < MIN_DIFF_OVERLAP:
+        return None, "different screen"
+    return {"against": name, "raw": raw}, None
 
 
 @command("inspect", _inspect_setup)
@@ -295,6 +339,7 @@ def cmd_inspect(ctx, args):
                 pass
         raise
     vis = usable(nodes, screen)
+    prev = previous_inspect(ctx) if args.diff else None
     d, files = save_dump(ctx, "inspect", xml, nodes)
     if not args.no_screenshot:
         p = os.path.join(d, "screen.png")
@@ -314,11 +359,32 @@ def cmd_inspect(ctx, args):
     lines = [devstate.human_line(dev.serial, dev.transport, st), "focus  %s" % win.get("focus"),
              "saved  " + ", ".join(files)]
     lines += pending_lines(dev.adb, load_state(ctx.build_dir))
-    lines += ui.render_table(vis, only_interesting=not args.all)
-    return Out({"focus": win.get("focus"), "rotation": win.get("rotation"), "ime_shown": ime,
-                "nodes": [n.brief(i) for i, n in enumerate(vis) if args.all or n.label or n.is_host or n.scrollable
-                          or (n.clickable and n.rid)]},
-               lines, warnings, files)
+    try:
+        with open(os.path.join(d, "focus.txt"), "w", encoding="utf-8") as f:
+            f.write(win.get("focus") or "")
+    except OSError:
+        pass
+    diff = None
+    if args.diff:
+        diff, why = _diff_against(prev, vis, win.get("focus"))
+        if diff is None:
+            lines.append("(no comparable previous inspect: %s; full table)" % why)
+    if diff is not None:
+        lines.append("diff against %s" % diff["against"])
+        lines += ui.render_diff(diff["raw"])
+    else:
+        lines += ui.render_table(vis, only_interesting=not args.all)
+    result = {"focus": win.get("focus"), "rotation": win.get("rotation"), "ime_shown": ime,
+              "nodes": [n.brief(i) for i, n in enumerate(vis) if args.all or n.label or n.is_host or n.scrollable
+                        or (n.clickable and n.rid)]}
+    if diff is not None:
+        raw = diff["raw"]
+        result["diff"] = {"against": diff["against"],
+                          "added": [n.brief() for n in raw["added"] if ui.interesting(n)],
+                          "removed": [n.brief() for n in raw["removed"] if ui.interesting(n)],
+                          "changed": [{"from": o.brief(), "to": n.brief()} for o, n in raw["changed"]],
+                          "moved_only": raw["bounds_only"]}
+    return Out(result, lines, warnings, files)
 
 
 # --------------------------------------------------------------------- tap

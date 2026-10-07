@@ -214,3 +214,37 @@ class StudioScroll(unittest.TestCase):
     def test_near_misses_never_auto_pick(self):
         n, _ = ui.pick(self.vis, ui.Selector(label="動作", contains=True))
         self.assertEqual(n.label, "動作 •")
+
+
+class InspectDiff(unittest.TestCase):
+    def test_studio_before_after_tab_panel_opened(self):
+        a, b = vis(fixture("moto_g13_studio_landscape.xml")), vis(fixture("moto_g13_studio_landscape_after.xml"))
+        d = ui.diff_nodes(a, b)
+        added = {n.label for n in d["added"] if ui.interesting(n)}
+        removed = {n.label for n in d["removed"] if ui.interesting(n)}
+        self.assertIn("12時間", added)
+        self.assertIn("表示しない", added)
+        self.assertIn("表示する項目", removed)
+        # header controls are unchanged and therefore not repeated
+        self.assertFalse({"元に戻す", "やり直す", "保存", "スタジオ"} & (added | removed))
+        self.assertGreater(d["overlap"], 0.5)
+        lines = ui.render_diff(d)
+        self.assertTrue(any(l.startswith("+ 12時間") for l in lines))
+        self.assertLess(len(lines), len(ui.render_table(b)))
+
+    def test_identical_dumps_have_no_changes(self):
+        a = vis(fixture("moto_g13_studio_landscape.xml"))
+        d = ui.diff_nodes(a, a)
+        self.assertEqual((d["added"], d["removed"], d["changed"], d["bounds_only"]), ([], [], [], 0))
+        self.assertEqual(d["overlap"], 1.0)
+
+    def test_label_change_is_changed_when_node_has_id(self):
+        a = vis(fixture("moto_g13_launcher_tick_a.xml"))
+        b = vis(fixture("moto_g13_launcher_tick_b.xml"))
+        d = ui.diff_nodes(a, b)
+        self.assertEqual([(o.label, n.label) for o, n in d["changed"]], [("7:19", "7:20")])
+        self.assertEqual((d["added"], d["removed"]), ([], []))
+
+    def test_different_screens_have_low_overlap(self):
+        d = ui.diff_nodes(vis(fixture("moto_g13_launcher_home.xml")), vis(fixture("moto_g13_studio_landscape.xml")))
+        self.assertLess(d["overlap"], 0.5)
