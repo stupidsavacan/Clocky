@@ -65,3 +65,12 @@ class Gestures(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestHScroll(unittest.TestCase):
+    def test_forward_and_back(self):
+        from clockydev import gestures as G
+        self.assertEqual(G.hscroll_points((807, 126, 1530, 210), "forward"), ((1349, 168), (987, 168)))
+        self.assertEqual(G.hscroll_points((807, 126, 1530, 210), "back"), ((987, 168), (1349, 168)))
+        with self.assertRaises(CdevError):
+            G.hscroll_points((0, 0, 10, 10), "down")
