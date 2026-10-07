@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import com.android.deskclock.R
 import com.stupidsavacan.clocky.design.library.TypefaceCategory
 import com.stupidsavacan.clocky.design.model.DigitalDesign
+import com.stupidsavacan.clocky.design.model.TapAction
 import com.stupidsavacan.clocky.design.model.Template
 
 /** User-facing names for library assets; ids stay language-neutral in the model. */
@@ -55,6 +56,33 @@ object DesignLabels {
         TypefaceCategory.CONDENSED -> R.string.clocky_typeface_condensed
         TypefaceCategory.MONO -> R.string.clocky_typeface_mono
         TypefaceCategory.DISPLAY -> R.string.clocky_typeface_display
+    }
+
+    @StringRes
+    fun font(fontId: String): Int = when (fontId) {
+        "sans-serif-light" -> R.string.clocky_font_light
+        "sans-serif-rounded" -> R.string.clocky_font_rounded
+        "serif" -> R.string.clocky_font_serif
+        "sans-serif-condensed" -> R.string.clocky_font_condensed
+        "monospace" -> R.string.clocky_font_mono
+        "clocky-poppins" -> R.string.clocky_font_poppins
+        "clocky-varela-round" -> R.string.clocky_font_varela_round
+        "clocky-dm-serif-display" -> R.string.clocky_font_dm_serif_display
+        "clocky-barlow-condensed" -> R.string.clocky_font_barlow_condensed
+        "clocky-plex-mono" -> R.string.clocky_font_plex_mono
+        "clocky-bebas-neue" -> R.string.clocky_font_bebas_neue
+        else -> R.string.clocky_font_system
+    }
+
+    @StringRes
+    fun tapAction(action: TapAction): Int = when (action) {
+        TapAction.OPEN_CLOCKY -> R.string.clocky_tap_open_clocky
+        TapAction.OPEN_ALARMS -> R.string.clocky_tap_alarms
+        TapAction.OPEN_TIMER -> R.string.clocky_tap_timer
+        TapAction.OPEN_STOPWATCH -> R.string.clocky_tap_stopwatch
+        TapAction.OPEN_CALENDAR -> R.string.clocky_tap_calendar
+        TapAction.EDIT_WIDGET -> R.string.clocky_tap_edit
+        TapAction.NONE -> R.string.clocky_tap_none
     }
 
     @StringRes

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 2 Studio UI strings (docs/architecture/PHASE_2_STUDIO.md). Japanese lives in values-ja. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="clocky_studio_title" tools:ignore="MissingTranslation">Studio</string>
+    <string name="clocky_studio_undo" tools:ignore="MissingTranslation">Undo</string>
+    <string name="clocky_studio_redo" tools:ignore="MissingTranslation">Redo</string>
+    <string name="clocky_studio_more" tools:ignore="MissingTranslation">More</string>
+    <string name="clocky_studio_save" tools:ignore="MissingTranslation">Save</string>
+    <string name="clocky_studio_reset_all" tools:ignore="MissingTranslation">Reset everything</string>
+    <string name="clocky_studio_reset_all_title" tools:ignore="MissingTranslation">Reset everything?</string>
+    <string name="clocky_studio_reset_all_message" tools:ignore="MissingTranslation">Every Studio setting goes back to how this clock started. You can undo this.</string>
+    <string name="clocky_studio_reset_confirm" tools:ignore="MissingTranslation">Reset</string>
+    <string name="clocky_studio_mode_basic" tools:ignore="MissingTranslation">Basic</string>
+    <string name="clocky_studio_mode_advanced" tools:ignore="MissingTranslation">Advanced</string>
+    <string name="clocky_studio_mode_label" tools:ignore="MissingTranslation">Controls</string>
+    <string name="clocky_studio_only_size" tools:ignore="MissingTranslation">Only for %1$s</string>
+    <string name="clocky_studio_only_size_hint" tools:ignore="MissingTranslation">Size, weight, position, date and layout changes apply to this size only. Other sizes keep the shared value.</string>
+    <string name="clocky_studio_tabs_description" tools:ignore="MissingTranslation">Clock parts</string>
+    <string name="clocky_studio_tab_background" tools:ignore="MissingTranslation">Background</string>
+    <string name="clocky_studio_tab_layout" tools:ignore="MissingTranslation">Layout</string>
+    <string name="clocky_studio_tab_behavior" tools:ignore="MissingTranslation">Behavior</string>
+    <string name="clocky_studio_tab_changed" tools:ignore="MissingTranslation">%1$s, changed</string>
+    <string name="clocky_studio_discard_title" tools:ignore="MissingTranslation">Discard changes?</string>
+    <string name="clocky_studio_discard_message" tools:ignore="MissingTranslation">Your edits have not been saved. The widget keeps its current look.</string>
+    <string name="clocky_studio_discard" tools:ignore="MissingTranslation">Discard</string>
+    <string name="clocky_studio_keep_editing" tools:ignore="MissingTranslation">Keep editing</string>
+    <string name="clocky_studio_undone" tools:ignore="MissingTranslation">Undone</string>
+    <string name="clocky_studio_redone" tools:ignore="MissingTranslation">Redone</string>
+    <string name="clocky_studio_checks_title" tools:ignore="MissingTranslation">Checks</string>
+    <string name="clocky_studio_contrast_known" tools:ignore="MissingTranslation">%1$s has low contrast on this card (%2$s:1, needs %3$s:1).</string>
+    <string name="clocky_studio_contrast_likely" tools:ignore="MissingTranslation">%1$s may be hard to read on your wallpaper (about %2$s:1, needs %3$s:1).</string>
+    <string name="clocky_studio_contrast_unknown" tools:ignore="MissingTranslation">Clocky cannot read your wallpaper, so contrast on it is not checked. Add a background to be sure the text stays readable.</string>
+    <string name="clocky_studio_contrast_fix" tools:ignore="MissingTranslation">Fix %1$s</string>
+    <string name="clocky_studio_value_a11y" tools:ignore="MissingTranslation">%1$s, %2$s. Double tap to type a value.</string>
+    <string name="clocky_studio_range_hint" tools:ignore="MissingTranslation">From %1$s to %2$s</string>
+    <string name="clocky_studio_not_a_number" tools:ignore="MissingTranslation">Enter a number</string>
+    <string name="clocky_studio_selected_a11y" tools:ignore="MissingTranslation">%1$s, selected</string>
+    <string name="clocky_studio_color" tools:ignore="MissingTranslation">Color</string>
+    <string name="clocky_studio_color_custom" tools:ignore="MissingTranslation">Custom color</string>
+    <string name="clocky_studio_hex_hint" tools:ignore="MissingTranslation">Hex color, e.g. #FFB74D</string>
+    <string name="clocky_studio_hex_invalid" tools:ignore="MissingTranslation">Use the form #RRGGBB</string>
+    <string name="clocky_studio_role_primary" tools:ignore="MissingTranslation">Primary</string>
+    <string name="clocky_studio_role_secondary" tools:ignore="MissingTranslation">Secondary</string>
+    <string name="clocky_studio_role_accent" tools:ignore="MissingTranslation">Accent</string>
+    <string name="clocky_studio_role_surface" tools:ignore="MissingTranslation">Surface</string>
+    <string name="clocky_studio_advanced" tools:ignore="MissingTranslation">Advanced</string>
+    <string name="clocky_studio_font" tools:ignore="MissingTranslation">Font</string>
+    <string name="clocky_studio_weight" tools:ignore="MissingTranslation">Weight</string>
+    <string name="clocky_studio_weight_shows" tools:ignore="MissingTranslation">Weight %1$d shows as %2$d in %3$s.</string>
+    <string name="clocky_studio_size" tools:ignore="MissingTranslation">Size</string>
+    <string name="clocky_studio_letter_spacing" tools:ignore="MissingTranslation">Letter spacing</string>
+    <string name="clocky_studio_opacity" tools:ignore="MissingTranslation">Opacity</string>
+    <string name="clocky_studio_reset_preset" tools:ignore="MissingTranslation">Reset %1$s to the design</string>
+    <string name="clocky_studio_reset_saved" tools:ignore="MissingTranslation">Reset %1$s to last saved</string>
+    <string name="clocky_studio_override_badge" tools:ignore="MissingTranslation">◆ %1$s only</string>
+    <string name="clocky_studio_override_revert" tools:ignore="MissingTranslation">Use the shared value for %1$s</string>
+    <string name="clocky_studio_date_show" tools:ignore="MissingTranslation">Show date</string>
+    <string name="clocky_studio_date_format" tools:ignore="MissingTranslation">Format</string>
+    <string name="clocky_studio_date_auto" tools:ignore="MissingTranslation">Automatic</string>
+    <string name="clocky_studio_date_custom_chip" tools:ignore="MissingTranslation">Custom</string>
+    <string name="clocky_studio_date_case" tools:ignore="MissingTranslation">Letter case</string>
+    <string name="clocky_studio_case_upper" tools:ignore="MissingTranslation">UPPER CASE</string>
+    <string name="clocky_studio_case_as_is" tools:ignore="MissingTranslation">As written</string>
+    <string name="clocky_studio_date_pattern" tools:ignore="MissingTranslation">Custom pattern</string>
+    <string name="clocky_studio_date_pattern_help" tools:ignore="MissingTranslation">Example: %1$s. Leave empty for automatic.</string>
+    <string name="clocky_studio_date_pattern_invalid" tools:ignore="MissingTranslation">This pattern is not valid</string>
+    <string name="clocky_studio_cjk_fallback" tools:ignore="MissingTranslation">The Japanese part of the date is shown in the system font.</string>
+    <string name="clocky_studio_info_source" tools:ignore="MissingTranslation">Info line</string>
+    <string name="clocky_studio_info_none" tools:ignore="MissingTranslation">None</string>
+    <string name="clocky_studio_info_alarm" tools:ignore="MissingTranslation">Next alarm</string>
+    <string name="clocky_studio_info_timezone" tools:ignore="MissingTranslation">Second time zone</string>
+    <string name="clocky_studio_info_none_hint" tools:ignore="MissingTranslation">One extra line under the clock. Pick the next alarm or a second time zone.</string>
+    <string name="clocky_studio_info_alarm_hint" tools:ignore="MissingTranslation">Shows your next alarm. It refreshes when the alarm changes, and is hidden when none is set.</string>
+    <string name="clocky_studio_info_alarm_sample" tools:ignore="MissingTranslation">No alarm is set, so the preview shows a sample.</string>
+    <string name="clocky_studio_info_zone" tools:ignore="MissingTranslation">City</string>
+    <string name="clocky_studio_info_zone_custom" tools:ignore="MissingTranslation">Time zone ID</string>
+    <string name="clocky_studio_info_zone_help" tools:ignore="MissingTranslation">For example Asia/Seoul</string>
+    <string name="clocky_studio_info_zone_invalid" tools:ignore="MissingTranslation">Unknown time zone</string>
+    <string name="clocky_studio_info_label" tools:ignore="MissingTranslation">Label</string>
+    <string name="clocky_studio_info_label_help" tools:ignore="MissingTranslation">Shown before the second time. Up to 24 characters.</string>
+    <string name="clocky_studio_bg_type" tools:ignore="MissingTranslation">Background</string>
+    <string name="clocky_studio_bg_none" tools:ignore="MissingTranslation">None</string>
+    <string name="clocky_studio_bg_solid" tools:ignore="MissingTranslation">Solid</string>
+    <string name="clocky_studio_bg_gradient" tools:ignore="MissingTranslation">Gradient</string>
+    <string name="clocky_studio_bg_outline" tools:ignore="MissingTranslation">Outline</string>
+    <string name="clocky_studio_bg_none_hint" tools:ignore="MissingTranslation">The clock sits directly on your wallpaper.</string>
+    <string name="clocky_studio_bg_start_color" tools:ignore="MissingTranslation">Start color</string>
+    <string name="clocky_studio_bg_end_color" tools:ignore="MissingTranslation">End color</string>
+    <string name="clocky_studio_bg_outline_color" tools:ignore="MissingTranslation">Outline color</string>
+    <string name="clocky_studio_bg_angle" tools:ignore="MissingTranslation">Gradient angle</string>
+    <string name="clocky_studio_bg_corners" tools:ignore="MissingTranslation">Corners</string>
+    <string name="clocky_studio_bg_corners_system" tools:ignore="MissingTranslation">Match system</string>
+    <string name="clocky_studio_bg_corners_custom" tools:ignore="MissingTranslation">Custom</string>
+    <string name="clocky_studio_bg_radius" tools:ignore="MissingTranslation">Corner radius</string>
+    <string name="clocky_studio_bg_padding" tools:ignore="MissingTranslation">Inner padding</string>
+    <string name="clocky_studio_bg_border" tools:ignore="MissingTranslation">Outline width</string>
+    <string name="clocky_studio_shadow" tools:ignore="MissingTranslation">Legibility shadow</string>
+    <string name="clocky_studio_shadow_default" tools:ignore="MissingTranslation">Default</string>
+    <string name="clocky_studio_shadow_off" tools:ignore="MissingTranslation">Off</string>
+    <string name="clocky_studio_shadow_soft" tools:ignore="MissingTranslation">Soft</string>
+    <string name="clocky_studio_shadow_strong" tools:ignore="MissingTranslation">Strong</string>
+    <string name="clocky_studio_shadow_hint" tools:ignore="MissingTranslation">A black shadow behind light text, a white one behind dark text. It helps on busy wallpapers.</string>
+    <string name="clocky_studio_layout_template" tools:ignore="MissingTranslation">Arrangement</string>
+    <string name="clocky_studio_layout_split_note" tools:ignore="MissingTranslation">Split places the date top-left and the time bottom-right; alignment is set by the arrangement.</string>
+    <string name="clocky_studio_layout_align_time" tools:ignore="MissingTranslation">Time alignment</string>
+    <string name="clocky_studio_layout_align_date" tools:ignore="MissingTranslation">Date alignment</string>
+    <string name="clocky_studio_layout_align_info" tools:ignore="MissingTranslation">Info alignment</string>
+    <string name="clocky_studio_align_start" tools:ignore="MissingTranslation">Start</string>
+    <string name="clocky_studio_align_center" tools:ignore="MissingTranslation">Center</string>
+    <string name="clocky_studio_align_end" tools:ignore="MissingTranslation">End</string>
+    <string name="clocky_studio_layout_position" tools:ignore="MissingTranslation">Position</string>
+    <string name="clocky_studio_layout_position_hint" tools:ignore="MissingTranslation">Offsets from where the arrangement places each part. Horizontal offsets follow the reading direction.</string>
+    <string name="clocky_studio_layout_offset_x" tools:ignore="MissingTranslation">%1$s horizontal</string>
+    <string name="clocky_studio_layout_offset_y" tools:ignore="MissingTranslation">%1$s vertical</string>
+    <string name="clocky_studio_layout_overrides" tools:ignore="MissingTranslation">%1$s overrides</string>
+    <string name="clocky_studio_layout_overrides_hint" tools:ignore="MissingTranslation">These values apply to this size only.</string>
+    <string name="clocky_studio_layout_revert" tools:ignore="MissingTranslation">Use shared values for %1$s</string>
+    <string name="clocky_studio_hour_mode" tools:ignore="MissingTranslation">Hour format</string>
+    <string name="clocky_studio_hour_system" tools:ignore="MissingTranslation">System</string>
+    <string name="clocky_studio_hour_12" tools:ignore="MissingTranslation">12-hour</string>
+    <string name="clocky_studio_hour_24" tools:ignore="MissingTranslation">24-hour</string>
+    <string name="clocky_studio_ampm" tools:ignore="MissingTranslation">AM / PM</string>
+    <string name="clocky_studio_ampm_hidden" tools:ignore="MissingTranslation">Hidden</string>
+    <string name="clocky_studio_ampm_suffix" tools:ignore="MissingTranslation">Small suffix</string>
+    <string name="clocky_studio_ampm_size" tools:ignore="MissingTranslation">AM / PM size</string>
+    <string name="clocky_studio_ampm_24_note" tools:ignore="MissingTranslation">AM / PM applies to the 12-hour format only. Your choice is kept.</string>
+    <string name="clocky_studio_ampm_follow_note" tools:ignore="MissingTranslation">Shown only while the system uses the 12-hour format.</string>
+    <string name="clocky_studio_theme" tools:ignore="MissingTranslation">Theme</string>
+    <string name="clocky_studio_theme_fixed" tools:ignore="MissingTranslation">Fixed</string>
+    <string name="clocky_studio_theme_follow" tools:ignore="MissingTranslation">Follow system</string>
+    <string name="clocky_studio_theme_dynamic" tools:ignore="MissingTranslation">Material You</string>
+    <string name="clocky_studio_tap_title" tools:ignore="MissingTranslation">Tap actions</string>
+    <string name="clocky_studio_tap_hint" tools:ignore="MissingTranslation">What a tap on each part of the widget opens.</string>
+    <string name="clocky_studio_leading_zero" tools:ignore="MissingTranslation">Leading zero</string>
+    <string name="clocky_studio_leading_zero_hint" tools:ignore="MissingTranslation">Shows 07:05 instead of 7:05 in the 12-hour format. The 24-hour format always has it.</string>
+    <string name="clocky_studio_seconds" tools:ignore="MissingTranslation">Show seconds</string>
+    <string name="clocky_studio_seconds_hint" tools:ignore="MissingTranslation">The launcher redraws the clock every second, which uses more battery.</string>
+    <string name="clocky_font_poppins" tools:ignore="MissingTranslation">Poppins</string>
+    <string name="clocky_font_varela_round" tools:ignore="MissingTranslation">Varela Round</string>
+    <string name="clocky_font_dm_serif_display" tools:ignore="MissingTranslation">DM Serif Display</string>
+    <string name="clocky_font_barlow_condensed" tools:ignore="MissingTranslation">Barlow Condensed</string>
+    <string name="clocky_font_plex_mono" tools:ignore="MissingTranslation">IBM Plex Mono</string>
+    <string name="clocky_font_bebas_neue" tools:ignore="MissingTranslation">Bebas Neue</string>
+    <string name="clocky_tap_open_clocky" tools:ignore="MissingTranslation">Open Clocky</string>
+    <string name="clocky_tap_alarms" tools:ignore="MissingTranslation">Alarms</string>
+    <string name="clocky_tap_timer" tools:ignore="MissingTranslation">Timer</string>
+    <string name="clocky_tap_stopwatch" tools:ignore="MissingTranslation">Stopwatch</string>
+    <string name="clocky_tap_calendar" tools:ignore="MissingTranslation">Calendar</string>
+    <string name="clocky_tap_edit" tools:ignore="MissingTranslation">Edit this widget</string>
+    <string name="clocky_tap_none" tools:ignore="MissingTranslation">Do nothing</string>
+</resources>

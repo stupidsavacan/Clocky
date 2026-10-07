@@ -166,6 +166,25 @@ class DesignResolverPhase2Test {
         assertFalse(DesignResolver.resolve(DigitalDesign(background = BackgroundElement(type = BackgroundType.SOLID)), card, api34).background.isRendered)
     }
 
+    @Test
+    fun renderedBackgroundWithThemeBoundColorsIsDisclosedAsStatic() {
+        val builtin = com.stupidsavacan.clocky.design.library.BuiltinDesigns.default.instantiate()
+        val follow = builtin.copy(
+            style = builtin.style!!.copy(themeMode = com.stupidsavacan.clocky.design.model.ThemeMode.FOLLOW_SYSTEM),
+            background = BackgroundElement(
+                type = BackgroundType.GRADIENT,
+                color = ColorRef.Token(com.stupidsavacan.clocky.design.model.ColorRole.SURFACE),
+                gradientEnd = ColorRef.Token(com.stupidsavacan.clocky.design.model.ColorRole.ACCENT),
+            ),
+        )
+        val spec = DesignResolver.resolve(follow, card, api34)
+        assertTrue(Degradation.RenderedBackgroundStatic in spec.degradations)
+        assertNull("a bitmap never carries a live theme binding", spec.background.binding)
+
+        val fixed = follow.copy(background = follow.background.copy(color = ColorRef.Fixed(0x101010), gradientEnd = ColorRef.Fixed(0x303030)))
+        assertTrue(Degradation.RenderedBackgroundStatic !in DesignResolver.resolve(fixed, card, api34).degradations)
+    }
+
     // ---- Date case ----
 
     @Test

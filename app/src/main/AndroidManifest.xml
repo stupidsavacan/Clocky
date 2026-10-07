@@ -32,9 +32,9 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
-        <!-- Detailed editor, opened from Quick Tune (Phase 1B). Not a launcher entry point. -->
+        <!-- Studio (Phase 2), opened from Quick Tune or when reconfiguring a Phase 1A design. Not a launcher entry point. -->
         <activity
-            android:name="com.stupidsavacan.clocky.widget.DigitalWidgetAdvancedActivity"
+            android:name="com.stupidsavacan.clocky.widget.studio.StudioActivity"
             android:exported="false"
             android:label="@string/clocky_widget_config_label"
             android:theme="@style/Theme.Clocky.WidgetConfig" />
