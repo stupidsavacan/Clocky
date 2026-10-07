@@ -492,6 +492,11 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
     private fun weightDisclosure(target: TextTarget, requested: Int) {
         val fontId = DesignEdits.fontIdOf(d, target)
         val family = FontCatalog.family(fontId) ?: return
+        // Host fallback is disclosed by its own notice; a weight note for the stand-in face would repeat it.
+        if (host.spec?.degradations?.any {
+                it is com.stupidsavacan.clocky.design.resolve.Degradation.FontFallback &&
+                    it.reason == FontCatalog.REASON_HOST_BUNDLED_UNSUPPORTED && it.requestedFontId == fontId
+            } == true) return
         val face = FontCatalog.resolve(fontId, requested, android.os.Build.VERSION.SDK_INT)
         val shown = if (face.fontFallbackReason != null) face.effectiveWeight else face.face.weight
         if (shown != requested) {

@@ -6,7 +6,7 @@ import org.junit.Test
 
 class AmPmMarkerResolverTest {
     private val size = SizeContext(363, 132, 667, 260)
-    private fun resolve(d: DigitalDesign, sdk: Int, supported: Boolean = false) = DesignResolver.resolve(d, size, RenderEnvironment(sdk, false, "EEE", supportsLatinAmPmMarker = supported))
+    private fun resolve(d: DigitalDesign, sdk: Int, supported: Boolean = false) = DesignResolver.resolve(d, size, RenderEnvironment(sdk, false, "EEE", supportsBundledFonts = true, supportsLatinAmPmMarker = supported))
 
     @Test fun sdkAndHostCapabilityChooseTheMarkerWithoutChangingTheStoredRequest() {
         val d = DigitalDesign(behavior = Behavior(hourMode = HourMode.FORCE_12_HOUR, amPm = AmPmStyle(AmPmMode.SUFFIX, 0.5f), showSeconds = true))

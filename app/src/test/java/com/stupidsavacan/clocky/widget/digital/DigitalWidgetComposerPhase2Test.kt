@@ -51,7 +51,7 @@ class DigitalWidgetComposerPhase2Test {
     private val strip = SizeContext(363, 58, 667, 122)
 
     private fun spec(design: DigitalDesign, size: SizeContext = card, alarm: String? = "Mon 7:30 AM"): ResolvedDigitalSpec =
-        DesignResolver.resolve(design, size, DigitalWidgetUpdater.environment(context).copy(nextAlarmText = alarm, supportsLatinAmPmMarker = true))
+        DesignResolver.resolve(design, size, DigitalWidgetUpdater.environment(context).copy(nextAlarmText = alarm, supportsBundledFonts = true, supportsLatinAmPmMarker = true))
 
     private fun applied(
         s: ResolvedDigitalSpec,

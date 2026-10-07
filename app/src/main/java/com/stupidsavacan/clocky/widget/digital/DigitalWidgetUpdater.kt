@@ -125,6 +125,8 @@ object DigitalWidgetUpdater {
             @Suppress("DEPRECATION")
             configuration.locale
         }
+        // One probe for provider and Preview: both see the placed widget's host, never the Preview's own Context.
+        val host = HostFontCapability.probe(context)
         return RenderEnvironment(
             sdkInt = Build.VERSION.SDK_INT,
             isRtl = configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL,
@@ -136,7 +138,8 @@ object DigitalWidgetUpdater {
             ),
             nextAlarmText = nextAlarmText(context),
             sampleAlarmText = if (forEditor) sampleAlarmText(context, locale) else null,
-            supportsLatinAmPmMarker = AmPmHostCapability.supportsLatin(context),
+            supportsBundledFonts = host.bundledFonts,
+            supportsLatinAmPmMarker = host.latinAmPmMarker,
         )
     }
 
