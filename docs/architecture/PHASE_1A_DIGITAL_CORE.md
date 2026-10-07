@@ -166,6 +166,8 @@ widget and the preview differ only in input size, so they cannot drift structura
 
 1. Per-size-class **weight** overrides: keep them (v1 compatibility, as implemented), or treat
    weight as typeface and remove them, as End-State §9's literal reading suggests?
+   *Ruled 2026-10-07 (`PHASE_3_RESPONSIVE_CANVAS.md` R3, End-State §9): kept for Strip/Card; Square/Large get no
+   weight overrides.*
 2. End-State §5.2 says the date-format presets "go through the locale skeleton", while contract §6
    and the legacy importer treat patterns as literal. Read as skeletons, two of the six presets
    (`EEE, MMM d` and `EEE d MMM`) collapse into the same output. Phase 1A renders a non-null
