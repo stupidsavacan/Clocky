@@ -147,7 +147,37 @@ Exit gate: an advanced user can finely customize a Digital clock without direct 
   - API 25 emulator: Studio opens on a Phase 1B design via `launch config`, preview renders, controls usable.
 - Found and fixed during implementation: Info slot missing from the API 31+ layout variant; Reset button state went stale during slider drags; the "sample alarm" note needed a post-render rebuild; dialog OK wiring only exists after the show listener runs (test timing, not a bug).
 - Not verified (honest list): API 26-29 and 31-33 emulators, launchers other than Pixel Launcher and Motorola Launcher3, Material You / night with a gradient (disclosed static by design), Calendar / Edit-widget / Do-nothing tap zones on a device (Alarms and Timer verified; intents unit-tested), RTL and 200% font scale on a device (Robolectric only), TalkBack, bundled-font rendering on API 26-27.
+- [ ] Follow-up (owner decision 2026-10-07, End-State §5.1): the AM/PM suffix shows `午前`/`午後` on ja-JP because `TextClock`'s `a` uses the host locale. The marker must be Latin `AM`/`PM` in every locale, still ticking in the host (marker-font approach, spike first; locale marker as disclosed fallback on API 23–25). The ja Studio labels change from 午前・午後 to AM/PM. Plan: `PHASE_3_RESPONSIVE_CANVAS.md` section 1a; ships as its own PR before 3A.
 - Deliberate deferrals: see `PHASE_2_STUDIO.md` section 7 (Info icon / within-24h, Date lower-case, per-property reset dots, 3-stop / radial gradient, 24-family fonts, undo across process death, Date -> Calendar default).
+
+## Phase 3 — Responsive Canvas & Library (`CLOCKY_END_STATE.md` §7–§9, §13) — not started (design ruled)
+
+Exit gate: designs can be saved, duplicated and shared, and they work naturally at several sizes. Design record: `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md`. The open semantics were ruled on 2026-10-07 (record section 8) and END_STATE was amended accordingly (record section 9). Size-class thresholds stay provisional until 3A-0 measures them. 3A and 3B never share a PR.
+
+- 3A-0 Measurement
+  - [ ] Debug-only size diagnostic build (`ClockySizeDiag`: options, `OPTION_APPWIDGET_SIZES`, candidate classes; debug-only lowered `minResize`).
+  - [ ] Host-size table for Pixel Launcher (API 30 / 35 emulators) and Motorola Launcher3 (moto g13); One UI / Nova / Lawnchair only if the owner provides a host.
+  - [ ] `Map<SizeF, RemoteViews>` spike (keying A vs B, compose time, bitmap bytes, parcel size) on the API 35 emulator and the moto g13.
+  - [ ] Thresholds (100dp / 200dp / 1.4 are provisional) fixed from the data; END_STATE §9 amended if they change.
+- 3A Responsive core
+  - [ ] `SizeClass` Square / Large and `SizeClassRule` (named constants, measured sizes pinned in tests).
+  - [ ] General Patch: Layout-only paths, inheritance chain per owner answer, unknown classes / paths / templates preserved on round trip.
+  - [ ] API 31+ size map and API 23–30 options-changed pair, one fit per entry; preview = widget for every class.
+  - [ ] Metadata: `minResize` toward 2×1 only after the templates fit those sizes.
+- 3B Canvas
+  - [ ] Selection, drag, snap (center / edges / baselines, haptics, second finger disables snap), 1dp nudge; one gesture = one undo step.
+  - [ ] Pinch to resize text; pseudo-resize handle 2×1–5×4 using measured cell sizes.
+- 3C Library & Stacked
+  - [ ] `DesignRepository` + My Designs (save, duplicate, rename, delete, favorites).
+  - [ ] Import / Export (`.clocky`, `CLOCKY2:` text code), share sheet.
+  - [ ] Apply to other widgets.
+  - [ ] Stacked family: new provider (component name frozen on first release), `STACKED` template.
+- 3D Platform integration
+  - [ ] Backup enabled for Clocky presentation data (`fullBackupContent` + `dataExtractionRules`); `onRestored` two-phase id remap.
+  - [ ] `requestPinAppWidget` from Library / Quick Tune.
+  - [ ] Picker previews: generated (API 35+), `previewLayout` (31–34), Clocky-rendered PNG (below 31).
+  - [ ] cdev guard: refuse `bmgr restore` / `wipe` / `clear` (tooling PR).
+- Known not device-verifiable within cdev rules (see the record's section 7): `onRestored` after a real launcher restore, pinch / two-finger gestures, haptics, TalkBack, font scale 200%, launchers other than Pixel and Motorola.
 
 ## F0 — repository / upstream foundation — complete
 
