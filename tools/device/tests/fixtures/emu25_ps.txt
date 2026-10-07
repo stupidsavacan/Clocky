@@ -1,0 +1,4 @@
+USER      PID   PPID  VSIZE  RSS   WCHAN            PC  NAME
+root      1     0     2184   664   SyS_epoll_ 0000000000 S /init
+u0_a58    5499  1255  1423624 62000 SyS_epoll_ 0000000000 S com.stupidsavacan.clocky
+u0_a58    5520  1255  1423624 62000 SyS_epoll_ 0000000000 S com.stupidsavacan.clocky:remote

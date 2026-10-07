@@ -186,3 +186,28 @@ def human_lines(serial, transport, st):
         "x".join(str(x) for x in st.get("size") or []), st.get("density"), st.get("locale"),
         s.get("font_scale"), st.get("night")))
     return lines
+
+
+def parse_pidof(text, rc):
+    """pidof output -> list of pids; [] when the process is absent (rc 1); None when pidof itself is unusable."""
+    t = (text or "").strip()
+    if rc == 127 or "not found" in t.lower() or "inaccessible" in t.lower():
+        return None
+    return [int(x) for x in t.split() if x.isdigit()]
+
+
+def parse_ps(text, package):
+    """`ps` / `ps -A` output -> pids whose NAME column equals `package` exactly."""
+    lines = [l for l in (text or "").splitlines() if l.strip()]
+    if not lines:
+        return []
+    header = lines[0].split()
+    if "PID" not in header:
+        return []
+    ip = header.index("PID")
+    out = []
+    for l in lines[1:]:
+        f = l.split()
+        if len(f) > ip and f[-1] == package and f[ip].isdigit():
+            out.append(int(f[ip]))
+    return out

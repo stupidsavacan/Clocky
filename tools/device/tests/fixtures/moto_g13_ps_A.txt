@@ -1,0 +1,6 @@
+USER           PID  PPID        VSZ    RSS WCHAN            ADDR S NAME
+root             1     0   10994852   3744 0                   0 S init
+root             2     0          0      0 0                   0 S [kthreadd]
+root           827     1   15020844  30848 0                   0 S zygote64
+u0_a232       8474   827   17394292 119760 0                   0 S com.stupidsavacan.clocky
+u0_a232       8499   827   17394292 119760 0                   0 S com.stupidsavacan.clocky.other

@@ -8,8 +8,8 @@ from . import devstate, logs as L
 from .adb import check_raw
 from .cli import Out, command
 from .cmd_session import device_epoch
-from .errors import CdevError, adb_err, usage
-from .session import load_state, next_step_dir
+from .errors import CdevError, adb_err, refused, usage
+from .session import load_state, next_step_dir, save_state
 
 LOG_BUFFERS = ("main", "system", "events", "crash")
 
@@ -174,3 +174,89 @@ def cmd_adb(ctx, args):
     lines = [l for l in (r.text + r.err_text).splitlines()]
     return Out({"rc": r.rc, "stdout": r.text, "stderr": r.err_text}, lines, dev.warnings,
                exit_code=0 if r.rc == 0 else C.EXIT_ADB)
+
+
+# --------------------------------------------------------------------- proc
+
+def clocky_pids(adb):
+    """-> (pids, source). pidof first; `ps -A` / `ps` when pidof is unavailable."""
+    r = adb.shell("pidof " + C.PACKAGE, timeout=10)
+    pids = devstate.parse_pidof(r.text + r.err_text, r.rc)
+    if pids is not None:
+        return pids, "pidof"
+    for cmd in ("ps -A", "ps"):
+        r = adb.shell(cmd, timeout=20)
+        if r.rc == 0 and "PID" in r.text.split("\n", 1)[0]:
+            return devstate.parse_ps(r.text, C.PACKAGE), "ps"
+    raise adb_err("PROC_LIST_FAILED", "could not list processes (pidof and ps both unusable)")
+
+
+def clocky_foreground(adb):
+    focus = devstate.parse_window(adb.shell("dumpsys window", timeout=30).text).get("focus") or ""
+    return (C.PACKAGE + "/") in focus
+
+
+def wait_pids_gone(adb, timeout, interval=0.5):
+    """Poll until no Clocky pid remains. -> (gone, remaining pids, elapsed)."""
+    t0 = time.monotonic()
+    while True:
+        pids, _src = clocky_pids(adb)
+        el = time.monotonic() - t0
+        if not pids:
+            return True, [], el
+        if el >= timeout:
+            return False, pids, el
+        time.sleep(interval)
+
+
+def _proc_setup(p):
+    p.add_argument("action", nargs="?", choices=["status", "kill"], default="status")
+    p.add_argument("--hard", action="store_true", help="kill: also `run-as kill -9` when am kill is ineffective (debuggable only)")
+    p.add_argument("--timeout", type=float, default=5.0, help="kill: seconds to wait for the process to disappear")
+
+
+@command("proc", _proc_setup)
+def cmd_proc(ctx, args):
+    """Clocky process: status (pid list) or kill (am kill; --hard adds run-as kill -9). Never force-stop."""
+    dev = ctx.device()
+    adb = dev.adb
+    pids, source = clocky_pids(adb)
+    fg = clocky_foreground(adb)
+    if args.action == "status":
+        line = "clocky process: running pid %s" % " ".join(map(str, pids)) if pids else "clocky process: absent"
+        return Out({"running": bool(pids), "pids": pids, "source": source, "foreground": fg},
+                   [line + (" (foreground)" if fg else "")], dev.warnings)
+    if not pids:
+        return Out({"killed": False, "before": [], "after": [], "method": None},
+                   ["clocky process: already absent"], dev.warnings)
+    if fg:
+        raise usage("CLOCKY_FOREGROUND", "Clocky is in the foreground; killing it would discard unsaved edits",
+                    "Run `cdev key home` first.")
+    state = load_state(ctx.build_dir)
+    epoch = device_epoch(adb)
+    adb.shell("am kill " + C.PACKAGE, timeout=15)
+    gone, left, el = wait_pids_gone(adb, args.timeout)
+    method = "am-kill"
+    if gone:
+        lines = ["am kill: pid %s gone after %.1fs" % (" ".join(map(str, pids)), el)]
+    else:
+        if not args.hard:
+            raise adb_err("KILL_INEFFECTIVE", "am kill did not remove pid %s within %.0fs" % (" ".join(map(str, left)), args.timeout),
+                          "Re-run with --hard (debuggable builds only: run-as kill -9). `am force-stop` is deliberately not used.")
+        pk = devstate.parse_package(adb.shell("dumpsys package " + C.PACKAGE, timeout=30).text) or {}
+        if not pk.get("debuggable"):
+            raise refused("HARD_KILL_REFUSED", "Clocky is not a debuggable build; run-as is unavailable",
+                          "Wait for the process to die by itself or ask the user.")
+        for pid in left:
+            adb.shell("run-as %s kill -9 %d" % (C.PACKAGE, int(pid)), timeout=15)
+        gone, left2, el2 = wait_pids_gone(adb, args.timeout)
+        if not gone:
+            raise adb_err("KILL_INEFFECTIVE", "run-as kill -9 did not remove pid %s" % " ".join(map(str, left2)))
+        method = "run-as-kill-9"
+        lines = ["am kill ineffective; run-as kill -9 %s: gone after %.1fs" % (" ".join(map(str, left)), el + el2)]
+        el += el2
+    state.setdefault("marks", {})[C.PROC_KILL_MARK] = epoch
+    save_state(ctx.build_dir, state)
+    lines.append("mark %s recorded (cdev logs --since mark:%s)" % (C.PROC_KILL_MARK, C.PROC_KILL_MARK))
+    return Out({"killed": True, "before": pids, "method": method, "after": [], "elapsed": round(el, 2),
+                "mark": C.PROC_KILL_MARK}, lines, dev.warnings)
