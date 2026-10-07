@@ -163,3 +163,56 @@ class TestProc(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTickingLoop(unittest.TestCase):
+    def run_loop(self, texts, pids, timeout=75.0, no_process=False):
+        from clockydev import cmd_widget as CW
+        it_t, it_p = iter(texts), iter(pids)
+        last = {"t": None}
+        now = {"v": 0.0}
+
+        def read():
+            last["t"] = next(it_t, last["t"])
+            return "<xml/>", {"text": last["t"]}
+
+        def sleep(s):
+            now["v"] += s
+        res, _a, _b = CW.run_ticking(read, lambda: next(it_p, []), timeout, no_process, sleep=sleep, clock=lambda: now["v"])
+        return res
+
+    def test_pass_when_text_changes(self):
+        r = self.run_loop(["7:19", "7:19", "7:20"], [[], [], []], no_process=True)
+        self.assertTrue(r["passed"])
+        self.assertEqual((r["before"], r["after"], r["elapsed"]), ("7:19", "7:20", 10.0))
+        self.assertTrue(r["process_absent_throughout"])
+
+    def test_timeout_fails(self):
+        r = self.run_loop(["7:19"] * 100, [[]] * 100, timeout=12.0)
+        self.assertFalse(r["passed"])
+        self.assertEqual(r["before"], r["after"])
+        self.assertEqual(len(r["samples"]), 4)
+
+    def test_no_process_violation_fails(self):
+        r = self.run_loop(["7:19", "7:20"], [[], [4242]], no_process=True)
+        self.assertFalse(r["passed"])
+        self.assertFalse(r["process_absent_throughout"])
+        self.assertEqual(r["samples"][1]["pids"], [4242])
+
+    def test_process_allowed_without_flag(self):
+        r = self.run_loop(["7:19", "7:20"], [[1], [1]])
+        self.assertTrue(r["passed"])
+
+    def test_pick_entry_rules(self):
+        from clockydev import cmd_widget as CW
+        with self.assertRaises(CdevError) as c:
+            CW.pick_entry([], None)
+        self.assertEqual(c.exception.code, "NO_HOST_ON_SCREEN")
+        two = [{"host": mock.Mock(bounds=(0, 0, 1, 1)), "time": 1, "text": "1:00"}] * 2
+        with self.assertRaises(CdevError) as c:
+            CW.pick_entry(two, None)
+        self.assertEqual((c.exception.exit_code, c.exception.code), (2, "MULTIPLE_HOSTS"))
+        self.assertEqual(CW.pick_entry(two, 1)["text"], "1:00")
+        with self.assertRaises(CdevError) as c:
+            CW.pick_entry([{"host": mock.Mock(bounds=(0, 0, 1, 1)), "time": None, "text": None}], None)
+        self.assertEqual((c.exception.exit_code, c.exception.code), (4, "NO_TIME_TEXT"))
