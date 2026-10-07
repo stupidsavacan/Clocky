@@ -12,7 +12,8 @@ import com.stupidsavacan.clocky.design.model.FontIds
  * the five retained MVP aliases) and six are bundled, redistributable OFL families (licenses under
  * third_party/fonts). Bundled families are static files, so each declares the weights it really
  * has; any other request resolves to the nearest face and is disclosed as an approximation. They
- * need `res/font` support in RemoteViews (API 26+); below that the platform sans stands in.
+ * need `res/font` support in RemoteViews: API 26+ and a host that really applies it (HostFontCapability);
+ * otherwise the platform sans is the effective face and the requested id is kept.
  *
  * Phase 1A font set (kept): the system sans family (requested weight 100..900, resolved per SDK) plus the
  * retained MVP's five platform families, which are exact only at weight 400 (PR #27 behavior).
@@ -71,7 +72,12 @@ object FontCatalog {
         val fontFallbackReason: String?,
     )
 
-    fun resolve(fontId: String, requestedWeight: Int, sdkInt: Int): FaceResolution {
+    /**
+     * Requested font → effective face. [hostBundledFonts] is whether the real RemoteViews host can render
+     * bundled res/font faces (HostFontCapability); the default keeps callers that only need the family's own
+     * weight behavior (not the host) unchanged. The requested [fontId] is never rewritten by this function.
+     */
+    fun resolve(fontId: String, requestedWeight: Int, sdkInt: Int, hostBundledFonts: Boolean = true): FaceResolution {
         val weight = RemoteViewsFontWeightPolicy.resolve(requestedWeight, sdkInt)
         val sans = ResolvedFace(FontIds.SYSTEM_SANS, weight.effective)
         return when {
@@ -90,7 +96,7 @@ object FontCatalog {
                     FaceResolution(sans, weight.requested, weight.effective, REASON_WEIGHT_UNAVAILABLE)
                 }
             }
-            fontId in bundledIds -> resolveBundled(byId.getValue(fontId), requestedWeight, sdkInt, sans, weight.effective)
+            fontId in bundledIds -> resolveBundled(byId.getValue(fontId), requestedWeight, sdkInt, hostBundledFonts, sans, weight.effective)
             else -> FaceResolution(sans, weight.requested, weight.effective, REASON_UNKNOWN_FONT)
         }
     }
@@ -99,12 +105,16 @@ object FontCatalog {
         family: Family,
         requestedWeight: Int,
         sdkInt: Int,
+        hostBundledFonts: Boolean,
         sansFallback: ResolvedFace,
         sansWeight: Int,
     ): FaceResolution {
         val requested = requestedWeight.coerceIn(100, 900)
         if (sdkInt < MIN_BUNDLED_FONT_SDK) {
             return FaceResolution(sansFallback, requested, sansWeight, REASON_NEEDS_API_26)
+        }
+        if (!hostBundledFonts) {
+            return FaceResolution(sansFallback, requested, sansWeight, REASON_HOST_BUNDLED_UNSUPPORTED)
         }
         val face = FontWeightResolver.resolve(requested, FontCapabilities(staticWeights = family.weights))
         return FaceResolution(ResolvedFace(family.id, face.effective), requested, face.effective, null)
@@ -113,4 +123,6 @@ object FontCatalog {
     const val REASON_WEIGHT_UNAVAILABLE = "family-has-no-face-at-weight"
     const val REASON_UNKNOWN_FONT = "unknown-font"
     const val REASON_NEEDS_API_26 = "bundled-font-needs-api-26"
+    /** API 26+, but this RemoteViews host does not apply the APK's font resources. */
+    const val REASON_HOST_BUNDLED_UNSUPPORTED = "bundled-font-unsupported-by-host"
 }

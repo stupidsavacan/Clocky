@@ -276,7 +276,7 @@ object DesignResolver {
         themeNotes: MutableSet<Degradation>?,
         shadowLevel: ShadowLevel = ShadowLevel.CLASSIC,
     ): ResolvedText {
-        val font = FontCatalog.resolve(style.fontId, style.weight, env.sdkInt)
+        val font = FontCatalog.resolve(style.fontId, style.weight, env.sdkInt, env.supportsBundledFonts)
         if (font.requestedWeight != font.effectiveWeight) {
             val fontId = style.fontId.takeIf { FontCatalog.family(it)?.source == FontCatalog.Source.BUNDLED && font.fontFallbackReason == null }
             degradations?.add(Degradation.WeightApproximated(kind, font.requestedWeight, font.effectiveWeight, fontId))

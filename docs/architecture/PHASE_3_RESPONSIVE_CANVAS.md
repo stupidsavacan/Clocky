@@ -237,6 +237,63 @@ that the real widget cannot render.
 The follow-up may additionally inventory platform/system families on API 34 hosts, but it must not block on reaching
 the long-term 24-family count. The immediate gate is truthful requested→effective resolution and Preview/fit parity.
 
+### 1b.1 Implementation record (2026-10-07, Phase 2 follow-up 1b PR)
+
+**Model.** `RequestedFont + RenderEnvironment -> FontCatalog.resolve -> EffectiveFace + Degradation?` is a pure
+transformation. `RenderEnvironment.supportsBundledFonts` (default `false` = unknown host) comes from
+`HostFontCapability.probe(context)` (widget/digital), the generalization of PR #44's `AmPmHostCapability`: it resolves the
+HOME launcher package (never `android`, never Clocky), creates that package's resource Context and applies a real bundled
+fragment (`clocky_face_poppins_off`) with it, accepting only if the shaped width matches the bundled face **and** differs
+from the platform default. The AM/PM marker probe now lives in the same object and is gated on it (the marker is itself a
+bundled font). Nothing is persisted; the result is recomputed at every resolve, so a launcher change is never judged by a
+stale answer (no runtime cache: the probe is one resolve + one inflate).
+
+**Granularity: one flag, not per face.** All bundled faces share one mechanism (a `res/font` reference on a TextView inside
+a RemoteViews tree applied with the host Context). The PR #44 audit showed all six families failing together, and no
+per-face difference was seen (the 1b probe itself only tests Poppins 400; the six families were then each selected in Studio on the moto and all rendered as system sans in Preview and placed widget). A per-face probe would add cost with no evidence of face-level variation.
+If a future host is found that renders only some faces, the flag can be widened to a per-resource set behind the same
+`RenderEnvironment` seam.
+
+**Requested vs effective.** `FontFallback(element, requestedFontId, REASON_HOST_BUNDLED_UNSUPPORTED)` is added per element
+(Time / Date / Info all go through `resolveText`); `REASON_NEEDS_API_26` keeps its own wording ("needs Android 8") so the
+user can tell "this Android is too old" from "this launcher cannot use bundled fonts". The stored `fontId` is never
+rewritten (unit test + codec round trip; schema stays 2). The notice is one line per requested font, not per element, and
+the weight note ("900 shows as 700") is suppressed for a fallback font (Studio rebuilds the panel after the first render
+tells it the host fell back; a Robolectric test covers reopening a saved Poppins design).
+
+**Parity by construction.** Provider (`environment(context)`) and Preview (`environment(app, forEditor = true)`) both read
+the one probe. The resolved spec carries only the effective face, so the composer, `DigitalWidgetFit` (which composes from
+that spec) and the placed widget see the same font; no code path measures the requested bundled face. Unit test
+`HostFontParityTest` fits Bebas Neue (narrower than system sans) on a fallback host and requires the result to equal the fit
+of an explicit system-sans design, while the capable host keeps the requested size.
+
+**moto g13 / API 34 / Motorola Launcher3 (debug APK of this branch, widget id 23, Card).** For each of the six requested
+families (requested font set in Studio, saved, widget read on the launcher; Studio Preview vs placed widget):
+
+| Requested | Effective (Preview) | Effective (placed) | Preview time ink w/h | Placed time ink w/h | Studio notice |
+|---|---|---|---:|---:|---|
+| Poppins | system sans (face view w900) | system sans (w900) | 519x151 = 3.437 | 527x153 = 3.444 | "Poppins -> system font ..." once |
+| Varela Round | system sans (w900) | system sans (w900) | 493x150 = 3.287 | 500x152 = 3.289 | once |
+| DM Serif Display | system sans (w900) | system sans (w900) | 520x150 = 3.467 | 528x152 = 3.474 | once |
+| Barlow Condensed | system sans (w900) | system sans (w900) | 520x151 = 3.444 | 528x153 = 3.451 | once |
+| IBM Plex Mono | system sans (w900) | system sans (w900) | 522x151 = 3.457 | 527x152 = 3.467 | once |
+| Bebas Neue | system sans (w900) | system sans (w900) | 519x151 = 3.437 | 527x153 = 3.444 | once |
+
+The remaining 1-2% size difference is Preview scale, and ink aspect varies with the minute digits shown at capture time.
+Poppins would have resolved to its own w700 face view (its heaviest) had it been effective, so face id w900 in both is itself
+evidence. Clipping was checked by eye on the Poppins Preview and placed screenshots only (no clipping); the other five were compared by face id and ink size. After each save the stored request was read
+back from `clocky_widget_settings.xml` (`clocky-bebas-neue`, `clocky-plex-mono`: the requested id was kept, not rewritten to
+system sans). The widget was returned to its original look afterwards (system sans 900 via the design's token font; the
+time colour role came back as PRIMARY instead of ACCENT, which are the same #141414 in this palette).
+
+**Not exercised.** Pixel API 35 / API 30 emulators (none attached), One UI / Nova / Lawnchair, weights other than 400
+fragment probe and 900 in Studio, fit at a size where Bebas->system actually changes (covered by the Robolectric fixture,
+not by a launcher run), a launcher on which the probe returns `true` (so the "supported" path on a real host is covered only
+by same-package/Robolectric inflation plus the unit contract; such a host would show the requested face).
+
+**Deferred.** The platform system-family inventory (section 5 of the brief) was not run: it is optional, and parity was the
+gate. System-font variety stays at the Phase 1B/2 set.
+
 ## 2. 3A — Responsive core
 
 ### 2.1 Purpose

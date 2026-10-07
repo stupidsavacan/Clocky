@@ -6,6 +6,7 @@
     <string name="clocky_element_info" tools:ignore="MissingTranslation">Info</string>
     <string name="clocky_degraded_weight_font" tools:ignore="MissingTranslation">%1$s: this font has no weight %2$d, so %3$d is shown.</string>
     <string name="clocky_degraded_font_needs_api" tools:ignore="MissingTranslation">%1$s: this bundled font needs Android 8 or later, so the system font is shown.</string>
+    <string name="clocky_degraded_font_host" tools:ignore="MissingTranslation">%1$s → system font. The launcher hosting this widget cannot use bundled fonts, so the system font is shown. Your selected %1$s is kept and will be used on a launcher that supports it.</string>
     <string name="clocky_degraded_info_strip" tools:ignore="MissingTranslation">The Info line is not shown at the one-row Strip size. It is kept for larger sizes.</string>
     <string name="clocky_degraded_info_minimal" tools:ignore="MissingTranslation">The Minimal layout shows the time only, so the Info line is kept but not shown.</string>
     <string name="clocky_degraded_rendered_background" tools:ignore="MissingTranslation">Gradient and outline backgrounds are drawn as an image: their colors do not switch with day/night or Material You until the widget refreshes.</string>

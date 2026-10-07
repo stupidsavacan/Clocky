@@ -29,7 +29,7 @@ import org.junit.Test
 class DesignResolverPhase2Test {
     private val strip = SizeContext(363, 58, 667, 122)
     private val card = SizeContext(363, 132, 667, 260)
-    private val api34 = RenderEnvironment(sdkInt = 34, isRtl = false, localeAutoDatePattern = "EEE, MMM d", supportsLatinAmPmMarker = true)
+    private val api34 = RenderEnvironment(sdkInt = 34, isRtl = false, localeAutoDatePattern = "EEE, MMM d", supportsBundledFonts = true, supportsLatinAmPmMarker = true)
     private val api25 = api34.copy(sdkInt = 25)
 
     // ---- Phase 1A/1B designs are untouched ----

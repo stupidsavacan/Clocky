@@ -28,6 +28,11 @@ data class RenderEnvironment(
     val nextAlarmText: String? = null,
     /** Editor-only stand-in shown for the next-alarm Info line when no alarm is set. Never set by the provider. */
     val sampleAlarmText: String? = null,
+    /**
+     * Whether the real RemoteViews host renders this APK's bundled `res/font` faces. Unknown hosts are false:
+     * a bundled family is then resolved to the platform-safe system face (requested id is kept).
+     */
+    val supportsBundledFonts: Boolean = false,
     /** Cross-package RemoteViews marker font/shaping capability; unknown hosts use localized a. */
     val supportsLatinAmPmMarker: Boolean = false,
 )

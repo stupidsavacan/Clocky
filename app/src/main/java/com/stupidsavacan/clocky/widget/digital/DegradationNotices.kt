@@ -6,6 +6,7 @@ import com.stupidsavacan.clocky.design.resolve.Degradation
 import com.stupidsavacan.clocky.design.resolve.FontCatalog
 import com.stupidsavacan.clocky.design.resolve.InfoHiddenReason
 import com.stupidsavacan.clocky.design.resolve.TextElementKind
+import com.stupidsavacan.clocky.widget.easy.DesignLabels
 import kotlin.math.roundToInt
 
 /** Editor copy for requested ≠ effective differences (End-State principle 5). */
@@ -18,7 +19,12 @@ object DegradationNotices {
                     if (d.fontId != null) R.string.clocky_degraded_weight_font else R.string.clocky_degraded_weight,
                     element(context, d.element), d.requested, d.effective,
                 )
-                is Degradation.FontFallback -> context.getString(
+                is Degradation.FontFallback ->
+                    if (d.reason == FontCatalog.REASON_HOST_BUNDLED_UNSUPPORTED) {
+                        // One line per font, not per element: Time/Date/Info share the same host limit.
+                        val name = context.getString(DesignLabels.font(d.requestedFontId))
+                        context.getString(R.string.clocky_degraded_font_host, name)
+                    } else context.getString(
                     when (d.reason) {
                         FontCatalog.REASON_UNKNOWN_FONT -> R.string.clocky_degraded_font_unknown
                         FontCatalog.REASON_NEEDS_API_26 -> R.string.clocky_degraded_font_needs_api
@@ -42,7 +48,7 @@ object DegradationNotices {
                 Degradation.ThemeSwitchUnavailable -> context.getString(R.string.clocky_degraded_theme_switch)
                 Degradation.DynamicColorUnavailable -> context.getString(R.string.clocky_degraded_dynamic_color)
             }
-        }
+        }.distinct()
 
     private fun element(context: Context, kind: TextElementKind): String = context.getString(
         when (kind) {

@@ -31,11 +31,14 @@ import com.stupidsavacan.clocky.design.storage.DigitalDesignCodec
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
 import com.stupidsavacan.clocky.studio.Slot
 import com.stupidsavacan.clocky.widget.digital.DigitalWidgetFit
+import com.stupidsavacan.clocky.widget.digital.HostFontCapability
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -54,6 +57,15 @@ import org.robolectric.annotation.Config
 class StudioActivityTest {
     private val app = RuntimeEnvironment.getApplication()
     private val store = SharedPreferencesDesignStore(app)
+
+    /** Robolectric has no launcher; model a host that renders bundled fonts unless a test says otherwise. */
+    @Before fun capableHost() {
+        HostFontCapability.probeOverride = { HostFontCapability.Support(bundledFonts = true, latinAmPmMarker = true) }
+    }
+
+    @After fun resetHost() {
+        HostFontCapability.probeOverride = null
+    }
 
     private fun widget(): Int = shadowOf(AppWidgetManager.getInstance(app))
         .createWidget(DigitalAppWidgetProvider::class.java, R.layout.clocky_digital_widget)
@@ -403,6 +415,40 @@ class StudioActivityTest {
             activity.type("Weight", "900")
             val text = activity.findViewById<ViewGroup>(R.id.clocky_studio_checks).texts() + activity.panel().texts()
             assertTrue("Poppins has no 900 face: ${text}", text.any { it.contains("900") && it.contains("700") })
+        }
+    }
+
+    @Test
+    fun unsupportedHostShowsTheSystemFontKeepsTheRequestAndDisclosesItOnce() {
+        HostFontCapability.probeOverride = { HostFontCapability.Support.NONE }
+        open(widget()).use { controller ->
+            val activity = controller.get()
+            activity.click("Poppins")
+            activity.selectTab(Slot.DATE)
+            activity.click("Poppins")
+            val notes = activity.findViewById<ViewGroup>(R.id.clocky_studio_checks).texts()
+            val host = notes.filter { it.contains("Poppins") && it.contains("system font") }
+            assertEquals("one line for Time and Date together: $notes", 1, host.size)
+            assertEquals("clocky-poppins", activity.design.time.style.fontId)
+            assertEquals("clocky-poppins", activity.design.date.style.fontId)
+            assertFalse("not the API-level message: $notes", notes.any { it.contains("Android 8") })
+            // The stand-in face gets no second, misleading weight note ("900 shows as 700" is about Poppins).
+            activity.selectTab(Slot.TIME)
+            activity.type("Weight", "900")
+            val all = activity.findViewById<ViewGroup>(R.id.clocky_studio_checks).texts() + activity.panel().texts()
+            assertFalse("no Poppins weight note on a fallback host: $all", all.any { it.contains("900") && it.contains("700") })
+        }
+    }
+
+    @Test
+    fun reopeningADesignThatRequestsAFallbackFontShowsNoStaleWeightNote() {
+        HostFontCapability.probeOverride = { HostFontCapability.Support.NONE }
+        val design = DigitalDesign(time = TimeElement(TextStyle(fontId = "clocky-poppins", weight = 900, sizeSp = 64f)))
+        open(widget(), design).use { controller ->
+            val activity = controller.get()
+            val all = activity.findViewById<ViewGroup>(R.id.clocky_studio_checks).texts() + activity.panel().texts()
+            assertTrue("fallback notice shown: $all", all.any { it.contains("Poppins") && it.contains("system font") })
+            assertFalse("no weight note about the unused Poppins face: $all", all.any { it.contains("900") && it.contains("700") })
         }
     }
 
