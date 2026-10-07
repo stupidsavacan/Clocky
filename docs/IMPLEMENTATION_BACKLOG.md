@@ -116,7 +116,7 @@ Exit gate: a first-time user can create an attractive Digital clock in a few tap
 - [x] Gallery: live production-RemoteViews cards, kit filter, Clocky Default preselected, direct "Add this clock" (1 tap), "Customize" into Quick Tune.
 - [x] Quick Tune: palette (kit palettes + Material You + Follow system), typography (6 categories), layout (per size class), text size S/M/L (labelled "Text size"), date visibility, Surprise me (kit combination table only), "Detailed edit" into the Phase 1A editor.
 - [x] Clocky Default is Center Stack on Card and Inline on Strip.
-- [x] Fonts: system families only; nothing bundled or redistributed (bundled OFL library stays Phase 2).
+- [x] Fonts: system families only; nothing bundled or redistributed (the bundled OFL library arrived in Phase 2).
 - [x] Robolectric: config host (fresh add, direct add, per-card add, cancel, tune, Surprise me, Material You, reconfigure, Phase 1A fallback, recreation), plus pure tests for kits, Quick Tune, resolver theme modes and codec (SDK 23/28/34). `lintDebug`: 0 errors.
 - Device evidence (2026-10-07, `cdev`, debug build of this branch):
   - API 35 emulator (Pixel Launcher): launcher drag opens the Gallery (Clocky Default selected); "Add this clock" creates a widget in one tap; Gallery -> Customize -> Mint + Serif + Split -> Done: the widget matches the Quick Tune preview; the launcher reconfigure pencil reopens Quick Tune on the saved design; Material You renders wallpaper-derived colors and flips to light tones with `cmd uimode night yes` **without an app update**; Back from the Gallery leaves no new widget; `am kill` of the Clocky process while a widget is placed: TextClock keeps ticking (11:33 -> 11:34); Strip resize shows Inline.
@@ -125,6 +125,25 @@ Exit gate: a first-time user can create an attractive Digital clock in a few tap
   - Physical moto g13 (API 34, Motorola Launcher3, ja-JP, 720x1600; 2026-10-07, `cdev` + scrcpy for unlocking by the owner): launcher drag opens the Gallery with live Japanese dates; Bold Poster -> Customize -> Ocean + Serif -> Done placed widget id 23 and it matches the preview; resize to one row shows the Inline strip; the launcher pencil reopens Quick Tune on the saved design (Strip, Ocean, Serif); Surprise me then Back cancels and the stored design is unchanged (`palette ocean`, `source bold-poster`); no crash or ANR in the log. Not exercised on the moto: Material You / night switch (covered on the API 35 emulator), landscape.
 - Found and fixed during implementation: Surprise me dropped Material You (caught by the new tests); Quick Tune preview was taller than the viewport on 2400px screens (preview now scales down uniformly); S/M truncated to "..." (button padding).
 - Not verified: launcher matrix beyond Pixel Launcher, API 26-29, font scale 200%, RTL, Quick Tune landscape on a device, Follow system on API 30 across a real day/night switch.
+
+## Phase 2 — Studio Fundamentals (`CLOCKY_END_STATE.md` §7, §13) — implemented; wider launcher matrix pending
+
+Exit gate: an advanced user can finely customize a Digital clock without direct canvas manipulation. Design record: `docs/architecture/PHASE_2_STUDIO.md`.
+
+- [x] Studio v1 (`StudioActivity`, replaces the Phase 1A editor): slots Time | Date | Info | Background | Layout | Behavior, Basic / Advanced, numeric entry on every slider, per-size "only this size" scope with revert, slot and global reset, Undo / Redo (50 steps, drag = one step), draft / Save / Cancel with discard confirmation, recreation-safe.
+- [x] Requested -> effective disclosure in the editor (weight approximation per font, bundled font below API 26, offsets, radius, theme, Info not shown, rendered background static).
+- [x] Fonts: 12 families (6 bundled OFL, licenses in `third_party/fonts`), real per-family weights, CJK note.
+- [x] Time/Behavior: AM/PM suffix, leading zero, seconds, hour mode; tap zones (Time / Date / Info).
+- [x] Info line: next alarm (refreshed on alarm change, no periodic update), second timezone with label.
+- [x] Rendered backgrounds (gradient, outline) and legibility shadow (Off / Soft / Strong, pre-built layouts).
+- [x] Contrast warnings: known / likely / unknown, text opacity aware, wallpaper hint on API 27+, one-tap fix.
+- Tests: pure (session, edits, resolver, codec, contrast) and Robolectric (composer incl. every font fragment x caps x shadow, Studio views, 48dp targets, undo/redo, draft/cancel/save, recreation, process-death restore, SDK 23/28/34). `lintDebug`: 0 errors. `assembleDebug` builds.
+- Device evidence (2026-10-07, `cdev`, debug build of this branch):
+  - API 35 emulator (Pixel Launcher): two widgets placed by the Phase 1B build kept rendering after installing this build; launcher reconfigure -> Quick Tune -> Detailed edit opens Studio on the saved design; Info -> Next alarm shows a sample in the preview (no alarm set) while the widget shows no Info row; Background -> Advanced -> Gradient previews and, after Save, the placed widget shows the same gradient; after creating an alarm in Clocky the widget showed "Wed 7:30 AM" without any app-side polling; tapping the Info row opened Clocky.
+  - API 25 emulator: Studio opens on a Phase 1B design via `launch config`, preview renders, controls usable.
+- Found and fixed during implementation: Info slot missing from the API 31+ layout variant; Reset button state went stale during slider drags; the "sample alarm" note needed a post-render rebuild; dialog OK wiring only exists after the show listener runs (test timing, not a bug).
+- Not verified (honest list): physical moto g13 (not exercised for Phase 2), API 26-34 emulators, launchers other than Pixel Launcher, Material You / night with a gradient (disclosed static by design), tap-zone targets other than Info -> Alarms on a device (intent extras are unit-tested), Calendar / Edit-widget zones on a device, RTL, font scale 200%, landscape Studio on a device, TalkBack, Studio on a 360x640 phone-class screen beyond API 25, Strip with Info (hidden by design), AM/PM and seconds on a launcher, bundled-font rendering on API 26-27.
+- Deliberate deferrals: see `PHASE_2_STUDIO.md` section 7 (Info icon / within-24h, Date lower-case, per-property reset dots, 3-stop / radial gradient, 24-family fonts, undo across process death, Date -> Calendar default).
 
 ## F0 — repository / upstream foundation — complete
 
