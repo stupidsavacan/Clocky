@@ -63,8 +63,8 @@ both touch `DesignEdits`, 3B lands first.
 **Problem.** The Phase 2 AM/PM suffix is a `TextClock` with the pattern `a` (`DesignResolver.resolveAmPm`,
 `ResolvedAmPm.format12Hour`). `TextClock` formats with the **host's** locale, so on a ja-JP launcher the widget shows
 `午前` / `午後`. The Japanese Studio labels say 午前・午後 as well (`values-ja/clocky_studio_ui_strings.xml`:
-`clocky_studio_ampm*`). Owner decision (2026-10-07, END_STATE §5.1 amended): the marker is always Latin `AM` / `PM`,
-in every locale.
+`clocky_studio_ampm*`). Owner decision (2026-10-07, END_STATE §5.1 amended): Latin `AM` / `PM` remains preferred.
+The later owner ruling below permits a disclosed localized fallback when a real host cannot apply the dedicated font, including API 26+.
 
 **Constraint.** `TextClock` has no locale setter, and the pattern letter `a` is always localized. Switching the text
 from the app at 00:00 and 12:00 would be an app-driven clock update: an alarm can be deferred by Doze, so the marker
@@ -79,18 +79,37 @@ time view already speaks the time), and the font is used only for this view.
 Spike checks: ligatures apply in RemoteViews `TextClock` on API 26 / 28 / 31 / 34 / 35 (`res/font` needs API 26);
 the switch at 11:59 → 12:00 and 23:59 → 00:00 with Clocky killed; fit still measures the marker correctly.
 
-**Fallback.** On API 23–25 (no `res/font` in RemoteViews), or if the spike fails on a host, the widget keeps the
-locale marker (`a`) and the editor discloses it as a degradation (`AmPmLocalized`). No app-driven switching.
+**Owner ruling / fallback (2026-10-07, before further production implementation).** API 23–25 and any API 26+
+launcher / RemoteViews host where the dedicated font cannot be applied use the localized host-ticking pattern `a`.
+The resolver handles host font capability explicitly; it must not equate API 26+ with support. The requested
+`behavior.amPm` is preserved and Studio always discloses `AmPmLocalized` as Requested → Effective. Preview and
+placed widget use the same effective path and host capability: a Latin preview with a raw-hour widget is forbidden.
+Hosts where the font path is established may use Latin `AM` / `PM`. A future stable Latin approach can be
+reconsidered, but this ruling does not authorize app-driven noon/midnight changes, AlarmManager / WorkManager
+marker updates, bitmap markers, resident/foreground Services, or a preview-only renderer.
+
+**Shipping criteria after this ruling.** Latin on supported hosts; localized `a` plus disclosed degradation on
+unsupported hosts; Preview = placed widget; host-side ticking; requested values retained. Universal Latin is no
+longer a shipping gate.
+
+**Observed blocker (2026-10-07).** moto g13 / API 34 / Motorola Launcher3 / ja-JP: Preview rendered `PM`,
+but the placed widget rendered raw `18`. A debug-only cross-package RemoteViews probe showed Preview
+`restricted=false`, marker Typeface applied; launcher resource Context `restricted=true`, marker Typeface absent.
+Android 14 RemoteViews creates a restricted resource Context for another package, and TextView skips font resource
+loading there. This is font non-application, not a GSUB failure. Same-package Robolectric apply tests did not cover
+this boundary. This evidence led to the owner ruling above; a raw-hour marker must never ship. The probe was
+removed, the original widget preferences were restored, and the cdev sessions were finished.
 
 **Studio strings.** The ja labels change from 午前・午後 to `AM/PM` (for example `AM/PMのサイズ`), so the editor
 uses the same word as the widget. This is a string change only.
 
-**Compatibility.** No model change: `behavior.amPm` keeps its keys. Designs that had the suffix on show `AM` / `PM`
-after the update; that is the intended change.
+**Compatibility.** No model change: `behavior.amPm` keeps its keys. Designs that had the suffix on show Latin markers on capable hosts and localized markers on incapable hosts.
+This is a presentation decision at resolve time, with no migration or schema change.
 
 **Tests.** Pure: resolver chooses the marker face vs the localized fallback per SDK and records the degradation.
 Robolectric: the marker fragment carries `HH` and the marker font; ja strings. Device (cdev): moto g13 in ja-JP with a
-12-hour widget shows `AM`/`PM`; API 25 emulator shows the disclosed fallback. The noon/midnight flip is observed
+12-hour widget shows the same effective marker as Preview (the observed API 34 host uses disclosed fallback);
+API 25 emulator shows the disclosed fallback. The noon/midnight flip is observed
 only if a session spans it (the device clock is not changed: that needs settings outside cdev's allowlist).
 
 ---

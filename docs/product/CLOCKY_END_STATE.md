@@ -131,7 +131,7 @@ Design
 | Size | B | Fit モードでは「領域に対する割合 40〜100%」、Fixed モードでは sp |
 | 12h/24h | B | System / 12h / 24h（既存） |
 | 先頭ゼロ | A | 12h で `h` と `hh` を切り替える。24h は常に `HH`。旧MVPには保存値がないので、既定は off（`h`） |
-| AM/PM | B（12h のときだけ表示） | Hidden / Small suffix（時刻の 25〜60%）/ Inline / Above（Stacked のとき）。**表記はロケールによらず常に Latin の `AM` / `PM`**（ja でも「午前/午後」にしない。2026-10-07 改訂）。ホスト側で自走する TextClock だけで実現する（`a` パターンはホストのロケールで「午前/午後」になるため、そのままでは使えない。方式は `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md` §1a）。自走を保ったまま実現できない端末では、ロケールの表記に縮退してエディタで開示する。アプリ駆動の更新で切り替えることはしない |
+| AM/PM | B（12h のときだけ表示） | Hidden / Small suffix（時刻の 25〜60%）/ Inline / Above（Stacked のとき）。**Latin `AM` / `PM` を優先する**。専用font方式が実際の launcher / RemoteViews host 上で成立する場合は Latin 表示し、成立しない場合は API 23–25 に限らず API 26+ でも localized `a` に縮退する（2026-10-07 owner ruling）。requested `behavior.amPm` は保持し、エディタで Requested → Effective を開示する。Preview と実widget は同じ host capability と effective path を使う。ホスト側で自走する TextClock だけで実現し、app-drivenな正午/深夜更新、AlarmManager / WorkManagerによる切替、bitmap marker、resident / foreground Service、Preview専用rendererは使わない。方式・実測は `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md` §1a。将来 host 上で安定した Latin 表示方式が見つかった場合は再検討できる |
 | 区切り文字 | A | `:` / `.` / ` ` / なし / `·`。点滅させない |
 | 秒 | A | Off（既定）/ On。TextClock の `ss` で出すので、ランチャー側で毎秒再描画される。電池への注意を表示する |
 | 時と分を個別にスタイル | A | 色と weight を時と分で分ける（例: 時は Bold、分は Light。分だけ Accent 色）。`HH` と `mm` を2つの TextClock に分けて実現する |
