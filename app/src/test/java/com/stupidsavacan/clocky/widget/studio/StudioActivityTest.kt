@@ -419,6 +419,43 @@ class StudioActivityTest {
         }
     }
 
+    // ---- accessibility / locale ----
+
+    @Test
+    @Config(sdk = [34], qualifiers = "ar-ldrtl")
+    fun rtlInflatesEverySlotWithRtlLayoutAndStillSavesRequestedValues() {
+        val id = widget()
+        open(id).use { controller ->
+            val activity = controller.get()
+            assertEquals(View.LAYOUT_DIRECTION_RTL, activity.resources.configuration.layoutDirection)
+            for (slot in Slot.entries) activity.selectTab(slot)
+            activity.selectTab(Slot.TIME)
+            activity.type("Size", "70")
+            activity.save()
+            assertEquals(70f, store.load(id).design.time.style.sizeSp, 0f)
+        }
+    }
+
+    @Test
+    @Config(sdk = [34])
+    fun twoHundredPercentFontScaleKeepsControlsAtLeast48dpAndReachable() {
+        RuntimeEnvironment.setFontScale(2.0f)
+        val density = app.resources.displayMetrics.density
+        val min = (48 * density).toInt() - 1
+        open(widget()).use { controller ->
+            val activity = controller.get()
+            activity.advanced()
+            for (slot in Slot.entries) {
+                activity.selectTab(slot)
+                val small = activity.panel().findAll(View::class.java).filter { v ->
+                    (v is Chip || v is Button || v is Slider) && v.isShown && v.height in 1 until min
+                }
+                assertTrue("$slot at 200% font scale has small targets", small.isEmpty())
+                assertTrue("$slot panel still has its reset action", activity.panel().findAll(Button::class.java).isNotEmpty())
+            }
+        }
+    }
+
     // ---- recreation ----
 
     @Test
