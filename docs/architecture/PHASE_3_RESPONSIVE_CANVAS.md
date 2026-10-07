@@ -2,7 +2,7 @@
 
 > Status: **Phase 3 is design only; PR #44 completes the independent Phase 2 marker follow-up and records a separate bundled-font host defect.** The owner delegated the open semantics to this record on
 > 2026-10-07; the rulings are in section 8 and are reflected in `CLOCKY_END_STATE.md` (section 9 lists the edits).
-> Universal Latin AM/PM is temporarily paused and is not a Phase 3 gate. Before 3A-0, the Phase 2 font-host parity follow-up (1b below) must make Preview/fit use the same effective font as the placed widget. Values marked *provisional* still wait for measurement.
+> Universal Latin AM/PM is temporarily paused and is not a Phase 3 gate. Before 3A-0, the Phase 2 font-host parity follow-up (1b below) must make Preview/fit use the same effective font as the placed widget. 3A-0 results and remaining production gates are recorded in §2.10 (2026-10-08).
 > Authority: `docs/product/CLOCKY_END_STATE.md` (§3, §5.8, §7, §8, §9, §10, §12, §13, §14). This record splits the
 > End-State Phase 3 into four sub-phases. It builds on the Phase 1A and Phase 2 records
 > (`PHASE_1A_DIGITAL_CORE.md`, `PHASE_2_STUDIO.md`).
@@ -172,9 +172,9 @@ non-HOME widget hosts; device RTL/large font scale; launcher landscape/resize du
 Native shaping and same-package probe success are not described as real-launcher Latin verification.
 The current capability represents the resolved HOME launcher; other host implementations need separate evidence.
 
-**Shipping result.** The amended marker gate is satisfied on the two exercised hosts, with the limitations
-above explicit. This is implementation/verification completion, not a main merge. Phase 3A's prerequisite
-still requires the owner to merge this independent follow-up PR. Phase 3A/3A-0 has not started.
+**Historical shipping result (2026-10-07).** The amended marker gate was satisfied on the two
+exercised hosts with the limitations above. The independent follow-ups are now merged (#43–#45);
+3A-0 completed on 2026-10-08 (§2.10). Phase 3A production implementation has not started.
 
 **Additional Phase 2 bundled-font audit (2026-10-07, owner requested; unresolved).** The same remote-font
 restriction also affects ordinary Time/Date bundled fonts. A temporary debug-only Activity published seven
@@ -327,14 +327,16 @@ introduce a second override mechanism.
 **(a) Size classes.** `SizeClass` gains `SQUARE` and `LARGE` (additive; JSON keys `square`, `large`). The resolver
 gets a `SizeClassRule` object with the thresholds as named constants:
 
-| Constant | End-State §9 value | Status |
+| Constant | Measured value (3A-0) | Status |
 |---|---|---|
-| `STRIP_MAX_H` | 100 dp | **provisional until 3A-0 measurement** |
-| `LARGE_MIN_H` | 200 dp | **provisional** |
-| `SQUARE_RATIO` (w < ratio × h) | 1.4 | **provisional, and already in doubt** (see 2.4) |
+| `STRIP_MAX_H` | 100 dp | fixed for the measured host matrix |
+| `LARGE_MIN_H` | 160 dp | fixed for the measured host matrix |
+| `SQUARE_RATIO` (w < ratio × h) | 2.5625 | fixed for the measured host matrix; minimum ratio margin 0.100379 |
 
-Ruling R1: one class per widget, used for both orientations. Which width and height feed the rule is fixed from the
-3A-0 data. Until then the code keeps the Phase 1A input (`minHeightDp`) for Strip and does not enable Square/Large.
+Ruling R1: one class per widget, used for both orientations. Measured input is
+`MAX_WIDTH` / `MIN_HEIGHT` in dp (landscape-like options pair), not the current entry bounds.
+Check Strip first, then Square, then Large, otherwise Card. Production still keeps the Phase 1A
+Strip/Card resolver until 3A-1; the spike does not enable Square/Large. See §2.10 for measured coverage.
 
 **(b) General Patch.** Specification proposal (End-State §9):
 
@@ -371,11 +373,11 @@ Ruling R1: one class per widget, used for both orientations. Which width and hei
 
 **(c) Render path.**
 
-- **API 31+:** `RemoteViews(Map<SizeF, RemoteViews>)`. Keying is decided by the 3A-0 spike between
-  **A** "the sizes the host reports in `OPTION_APPWIDGET_SIZES`" (each entry fitted to its real size; entry count
-  usually 2) and **B** "A plus one anchor entry per other class" (so a live resize can cross a class boundary before
-  the app is called). Recommendation before the spike: A, because B cannot express a ratio-based Square region with
-  "largest entry that fits" selection and multiplies bitmap memory (2.5).
+- **API 31+:** `RemoteViews(Map<SizeF, RemoteViews>)`, **Keying A**: only the sizes reported in
+  `OPTION_APPWIDGET_SIZES`, each fitted to its real key. The measured hosts report 2 (moto) or 3 (API35) entries.
+  All reported entries resolve the same R1 widget class. B's extra anchors exceed API35 bitmap memory at 4×4,
+  increase generation cost, and do not guarantee ratio-based Square switching (§2.10).
+  Hosts may call the app during a held drag; do not assume callbacks occur only after drop.
 - **API 23–30:** unchanged mechanism: `onAppWidgetOptionsChanged` → `RemoteViews(landscape, portrait)`, each half
   fitted to its own size, the class taken from the R1 rule.
 - The fit (`DigitalWidgetFit`) and composer are reused per entry. Nothing ticks: every entry carries TextClocks.
@@ -383,11 +385,15 @@ Ruling R1: one class per widget, used for both orientations. Which width and hei
 **(d) Metadata** (`res/xml/digital_appwidget.xml` and `xml-v28`): `targetCellWidth/Height` 4×2 (already in v28),
 `minResizeWidth/Height` lowered toward 2×1 per End-State §9, `widgetFeatures="reconfigurable"` (already), no
 `configuration_optional`. Lowering `minResizeWidth` from 250dp is gated on 3A-0: it exposes sizes (2×1, 3×1, 2×2)
-that the current templates have never been fitted to. `minWidth` stays 250dp (the default placement).
+that require template verification. 3A-0 found SPLIT→Strip cannot inflate its plain View spacer:
+**keep production minResizeWidth/Height at 250/40dp until fixed and retested in 3A-2**.
+`minWidth` stays 250dp (the default placement).
 
-### 2.4 Threshold measurement plan (3A-0)
+### 2.4 Threshold measurement method and decision (3A-0)
 
-The thresholds are **provisional** until this plan is completed. Known data already puts the ratio in doubt:
+**Completed 2026-10-08:** input `MAX_WIDTH` / `MIN_HEIGHT`; constants 100dp / 160dp / 2.5625.
+All 30 distinct measured host/cells match intended classes (42 orientation observations).
+The following historical provisional-rule conflict motivated the measurement:
 
 | Host | Size | Ratio w/h | End-State class | Intended |
 |---|---|---|---|---|
@@ -396,9 +402,10 @@ The thresholds are **provisional** until this plan is completed. Known data alre
 | Issue #31 device, fresh add | 268×191 dp | 1.403 | Card by 0.003 | Card |
 
 So with portrait sizes the default 4×2 on the reference device would become Square; with landscape sizes a 2×2 will
-likely look wide. The rule cannot be fixed before measuring.
+look wide. Physical portrait aspect ratio is therefore not the selected rule input; measured
+landscape-like options and a calibrated ratio separate the intended cells (full data in §2.10).
 
-Procedure (Issue #31 style diagnostic build):
+Completed procedure (Issue #31 style diagnostic build):
 
 1. A **debug-only** source set logs, on every `onAppWidgetOptionsChanged` and `onUpdate`, one line per widget:
    `appWidgetId`, `MIN/MAX_WIDTH/HEIGHT`, `OPTION_APPWIDGET_SIZES` (API 31+), density, launcher package, and the
@@ -420,7 +427,7 @@ Procedure (Issue #31 style diagnostic build):
 
 ### 2.5 `Map<SizeF, RemoteViews>` estimate and spike
 
-Framework limits to re-confirm in the spike (documented API behavior, not measured here):
+Framework limits considered in the spike (measured application/rejection results in §2.10):
 
 - A size map has at most **16** entries; all entries must come from the same package.
 - Total bitmap memory of one update ≤ **screen width × height × 4 bytes × 1.5**
@@ -428,7 +435,8 @@ Framework limits to re-confirm in the spike (documented API behavior, not measur
 - Binder transaction buffer ≈ 1 MiB per process, shared; large bitmaps travel as ashmem, the rest of the parcel
   does not.
 
-Estimate for the worst current design (gradient or outline background, which is the only bitmap; text is TextClock):
+Historical **pre-spike estimate**, superseded by the measured table in §2.10
+(gradient or outline background is the only bitmap; text is TextClock):
 
 | Entry | Size on moto g13 (px, density 1.75) | Bitmap ARGB_8888 |
 |---|---|---|
@@ -446,21 +454,26 @@ Estimate for the worst current design (gradient or outline background, which is 
   the binder limit, to be measured.
 - Generation cost: per entry one resolve (pure, cheap), one fit (inflates and measures the production RemoteViews,
   binary search), one compose, and possibly one bitmap draw. Today there are 2 entries; A keeps 2, B makes 5.
-  Proposed budget (to be confirmed or replaced by the spike): p95 ≤ 100 ms per entry and ≤ 400 ms per update on the
-  moto g13; above that, the provider moves the work to `goAsync()` (the broadcast ANR limit is far above this, but the
-  main thread is shared with the editor).
+  Generation budget includes **fit + compose**, not just compose. Keep p95 ≤ 100 ms per entry as an
+  optimization target and ≤ 400 ms per update as the production target; 3A-0 A entry p95 exceeded 100 ms
+  (moto 180.178 / API35 122.223 ms), while updates were close to 400 ms. **goAsync is required** in 3A-2,
+  with production-equivalent first-update and end-to-end timing including send/IPC before shipping.
 
-Spike procedure (branch `spike/3a-size-map`, never merged):
+Completed spike procedure (branch `spike/3a-size-map`, never merged):
 
 1. Build the map with A and B behind a debug flag. Log per entry: key size, class, compose time (`nanoTime`),
    bitmap bytes, and parcel size (`writeToParcel` into a `Parcel`, `dataSize()`).
 2. Worst-case design: gradient background, Info line, seconds, AM/PM, shadow.
-3. Hosts: API 35 emulator, moto g13 (API 34). API 31–33: create an emulator for it (local AVD, no device risk); today none exists.
-4. Checks: (i) during a resize drag the launcher switches entries without an app callback (no
-   `onAppWidgetOptionsChanged` until the drop, visible change on screen); (ii) rotation picks the right entry;
+3. Hosts: API35 emulator and moto g13 (API34). Optional API31–33 was not exercised: no installed image.
+4. Checks: (i) separate callback timing from host entry selection: callbacks can arrive during a held drag.
+   Suppress debug map regeneration to observe selection of existing entries independently of app rendering.
+   This replaces the after-drop callback premise with owner approval (2026-10-08).
+   (ii) rotation picks the right entry (API31+ rotation not exercised on the available homes);
    (iii) no `TransactionTooLargeException` / bitmap-memory `IllegalArgumentException` in `cdev logs`; (iv) after
-   `am kill` of Clocky the TextClocks keep ticking; (v) preview = widget for each class.
-5. Exit criterion: A or B chosen, measured numbers recorded in section 2.10, budgets met. If neither works on a host,
+   `cdev proc kill` of Clocky the TextClocks keep ticking; (v) preview = widget for each class.
+5. Measurement exit: A chosen and measured numbers recorded in §2.10. Production shipping remains gated
+   on asynchronous generation/budget verification and the SPLIT→Strip fix; diagnostic compose timings alone
+   do not certify shipping budgets. If neither works on a host,
    that host keeps the API 23–30 path (options-changed) and the editor discloses it.
 
 ### 2.6 Not changed
@@ -500,7 +513,36 @@ be created); 5-column cells on the moto's 4-column grid; font scale 200 % on a d
 
 ### 2.10 Measurement results
 
-*Empty until 3A-0 runs. Nothing in sections 2.3–2.5 that depends on these numbers is final.*
+Completed 2026-10-08 against main `dddd16c7dbfdf79129cf0f763812e33ecd575fc8` (PRs #42–#46 merged).
+
+**Full raw cell table, candidate inputs, boundaries, timings, live-resize logs/screens, template failures,
+regression and device evidence:** [3A-0 measurement record](../measurements/phase3a0/RESULTS.md).
+Companion safe derived data: [222 raw input rows](../measurements/phase3a0/raw-inputs.csv),
+[performance samples summary](../measurements/phase3a0/performance.json),
+[300 local template audit cases](../measurements/phase3a0/template-audit.csv),
+[306 per-entry samples](../measurements/phase3a0/per-entry.csv),
+[91 per-update samples](../measurements/phase3a0/per-update.csv),
+[72 reachability/orientation rows](../measurements/phase3a0/reachability.csv).
+
+| Decision | Result |
+|---|---|
+| R1 input | `MAX_WIDTH` / `MIN_HEIGHT` dp; one class per widget across orientations |
+| Constants | Strip 100dp; Large 160dp; Square ratio 2.5625; Square precedes Large |
+| Coverage | moto API34 9 portrait; Pixel API35 9 portrait; Pixel API30 12 portrait + 12 landscape |
+| Intended 4×4 | Square (owner shape-priority clarification) |
+| A / B | **A**; B 4×4 API35 bitmap rejected: 18,534,224 > 15,552,000 bytes |
+| A bitmap / parcel, 4×4 | moto 4,689,984 / 5,148 bytes; API35 14,203,708 / 7,460 bytes |
+| A p95 entry / update fit+compose | moto 180.178 / 388.834 ms; API35 122.223 / 386.078 ms (30 updates each) |
+| Production minResize | **NO** until SPLIT Strip's forbidden View spacer is fixed/verified in 3A-2 |
+| goAsync | **YES**; first update/end-to-end production budget still needs verification |
+| Live resize premise | callbacks during held drag allowed; API35 freeze proves host-only existing-entry selection |
+| Ticking / regression | all 3 hosts process-absent ticking; byte-identical settings restore proofs; IDs retained |
+| Not exercised | API31+ home rotation, API31–33, unavailable launchers; 5-column cells unreachable on both 4-column hosts |
+
+The rule fits the measured matrix with ≥23dp height and ≥0.100379 ratio boundary margins. It is not a
+universal launcher claim. Current-template geometry passed 280 local cases; 20 SPLIT Strip cases failed
+RemoteViews inflation, so the metadata shipping gate is still closed. Final four-class layouts/parity
+are 3A work. **3A implementation can start** with those documented 3A-2 gates; no production work is in this PR.
 
 ### 2.11 Shipping gate
 
@@ -516,7 +558,9 @@ be created); 5-column cells on the moto's 4-column grid; font scale 200 % on a d
 | No threshold rule fits all launchers | Keep Strip/Card only, ship Square/Large later; propose an End-State §9 change with the table |
 | Size map misbehaves on a launcher (blank, wrong entry) | Use the options-changed path on that host; disclose |
 | Bitmap memory or parcel limits hit | Keying A only; stretch gradients; cap Large bitmap |
-| Lowering `minResize` exposes sizes the templates cannot fit | Keep 250dp min width until those templates are fitted; Strip/Square at 2×N waits |
+| Lowering `minResize` exposes sizes the templates cannot apply/fit | Keep 250/40dp release minResize; fix SPLIT Strip forbidden View spacer and verify templates in 3A-2 |
+| Fit/generation stalls main thread | goAsync in 3A-2; verify first update and end-to-end 400ms target, not only compose |
+| Callback arrives during held drag | Supported measured behavior; separate callback-driven updates from host-only entry selection |
 
 ---
 
@@ -823,7 +867,7 @@ behavior; where data is still missing (R1's input dimensions) the ruling says so
 
 | # | Question | Options considered | Ruling |
 |---|---|---|---|
-| R1 | What input decides the size class? | (a) one class per widget from one orientation, as Phase 1A; (b) per orientation / per `SizeF` entry (End-State §9 literal; portrait and landscape can differ) | (a) for predictable overrides. The input dimensions and all three thresholds stay provisional until 3A-0, because known data already misclassifies 4×2 portrait on the moto |
+| R1 | What input decides the size class? | (a) one class per widget from one orientation, as Phase 1A; (b) per orientation / per `SizeF` entry (End-State §9 literal; portrait and landscape can differ) | (a) for predictable overrides. 3A-0 measured MAX_WIDTH / MIN_HEIGHT with 100dp / 160dp / 2.5625 (§2.10); 4×4 is Square by owner clarification |
 | R2 | What do Square and Large inherit from when they have no own value? | (a) base only; (b) `card` patch, then base; (c) one-time copy of `card` into `square`/`large` | (b): no placed widget changes look, no migration, explicit overrides still possible |
 | R3 | Per-class weight overrides (Phase 1A §7 Q1) | keep as exception / remove (End-State §9: typeface is not overridable) | Keep for Strip/Card (no lossless removal exists); Square/Large offer no weight override |
 | R4 | Canvas drag on API 23–30, where offsets render as 0 dp | (a) drag disabled with a disclosure; (b) drag edits the value, preview shows nothing; (c) overlay ghost (not the real RemoteViews) | (a): keeps principle 7 (preview = widget) and principle 5 disclosure |
@@ -845,7 +889,9 @@ behavior; where data is still missing (R1's input dimensions) the ruling says so
 - §9: one class per widget, thresholds provisional until measured (R1); inheritance chain (R2); weight exception and
   preserved unknowns (R3); size-map keying decided by the spike.
 
-Still to amend after 3A-0: the measured thresholds and input dimensions in §9.
+2026-10-08 3A-0 amendment: §9 now specifies measured input MAX_WIDTH / MIN_HEIGHT and constants
+100dp / 160dp / 2.5625, 4×4 Square, keying A, callbacks during drag, and the minResize template gate.
+The historical 2026-10-07 bullets above record their original provisional status.
 
 ## 10. Inconsistencies found while reading (reported, not fixed here)
 

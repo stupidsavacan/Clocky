@@ -1,0 +1,73 @@
+﻿API,cell,orientation,status,reason,evidence
+34,2x1,portrait,Measured,,s-20261007-234013-ZY22GSDPFW/0022-collect-moto-2x1
+34,2x1,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+34,3x1,portrait,Measured,,s-20261007-234013-ZY22GSDPFW/0025-collect-moto-3x1
+34,3x1,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+34,4x1,portrait,Measured,,s-20261007-234013-ZY22GSDPFW/0028-collect-moto-4x1
+34,4x1,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+34,5x1,portrait,Not reachable on this host,4-column grid,
+34,5x1,landscape,Not reachable on this host,4-column grid,
+34,2x2,portrait,Measured,,s-20261007-234013-ZY22GSDPFW/0017-collect-moto-2x2
+34,2x2,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+34,3x2,portrait,Measured,,s-20261008-004632-ZY22GSDPFW/0021-collect-moto-3x2
+34,3x2,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+34,4x2,portrait,Measured,,s-20261007-234013-ZY22GSDPFW/0010-collect-restored
+34,4x2,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+34,5x2,portrait,Not reachable on this host,4-column grid,
+34,5x2,landscape,Not reachable on this host,4-column grid,
+34,3x3,portrait,Measured,,s-20261007-234013-ZY22GSDPFW/0040-collect-moto-3x3
+34,3x3,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+34,4x3,portrait,Measured,,s-20261007-234013-ZY22GSDPFW/0037-collect-moto-4x3-confirmed
+34,4x3,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+34,5x3,portrait,Not reachable on this host,4-column grid,
+34,5x3,landscape,Not reachable on this host,4-column grid,
+34,4x4,portrait,Measured,,s-20261008-004632-ZY22GSDPFW/0009-collect-moto-4x4
+34,4x4,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+35,2x1,portrait,Measured,,s-20261007-235716-emulator-5560/0022-collect-pixel35-2x1
+35,2x1,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+35,3x1,portrait,Measured,,s-20261007-235716-emulator-5560/0025-collect-pixel35-3x1
+35,3x1,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+35,4x1,portrait,Measured,,s-20261007-235716-emulator-5560/0028-collect-pixel35-4x1
+35,4x1,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+35,5x1,portrait,Not reachable on this host,4-column grid,
+35,5x1,landscape,Not reachable on this host,4-column grid,
+35,2x2,portrait,Measured,,s-20261007-235716-emulator-5560/0018-collect-pixel35-2x2
+35,2x2,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+35,3x2,portrait,Measured,,s-20261007-235716-emulator-5560/0034-collect-pixel35-3x2
+35,3x2,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+35,4x2,portrait,Measured,,s-20261007-235716-emulator-5560/0031-collect-pixel35-4x2
+35,4x2,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+35,5x2,portrait,Not reachable on this host,4-column grid,
+35,5x2,landscape,Not reachable on this host,4-column grid,
+35,3x3,portrait,Measured,,s-20261007-235716-emulator-5560/0037-collect-pixel35-3x3
+35,3x3,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+35,4x3,portrait,Measured,,s-20261007-235716-emulator-5560/0040-collect-pixel35-4x3
+35,4x3,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+35,5x3,portrait,Not reachable on this host,4-column grid,
+35,5x3,landscape,Not reachable on this host,4-column grid,
+35,4x4,portrait,Measured,,s-20261007-235716-emulator-5560/0052-collect-pixel35-4x4
+35,4x4,landscape,Not exercised,home did not rotate; launcher rotation preferences unchanged,
+30,2x1,portrait,Measured,,s-20261008-001636-emulator-5562/0013-collect-pixel30-2x1
+30,2x1,landscape,Measured,,s-20261008-001636-emulator-5562/0068-collect-pixel30-landscape-2x1
+30,3x1,portrait,Measured,,s-20261008-001636-emulator-5562/0017-collect-pixel30-3x1
+30,3x1,landscape,Measured,,s-20261008-001636-emulator-5562/0071-collect-pixel30-landscape-3x1
+30,4x1,portrait,Measured,,s-20261008-001636-emulator-5562/0020-collect-pixel30-4x1
+30,4x1,landscape,Measured,,s-20261008-001636-emulator-5562/0074-collect-pixel30-landscape-4x1
+30,5x1,portrait,Measured,,s-20261008-001636-emulator-5562/0022-collect-pixel30-5x1
+30,5x1,landscape,Measured,,s-20261008-001636-emulator-5562/0077-collect-pixel30-landscape-5x1
+30,2x2,portrait,Measured,,s-20261008-001636-emulator-5562/0011-collect-pixel30-2x2
+30,2x2,landscape,Measured,,s-20261008-001636-emulator-5562/0065-collect-pixel30-landscape-2x2
+30,3x2,portrait,Measured,,s-20261008-001636-emulator-5562/0030-collect-pixel30-3x2
+30,3x2,landscape,Measured,,s-20261008-001636-emulator-5562/0062-collect-pixel30-landscape-3x2
+30,4x2,portrait,Measured,,s-20261008-001636-emulator-5562/0028-collect-pixel30-4x2
+30,4x2,landscape,Measured,,s-20261008-001636-emulator-5562/0059-collect-pixel30-landscape-4x2
+30,5x2,portrait,Measured,,s-20261008-001636-emulator-5562/0025-collect-pixel30-5x2
+30,5x2,landscape,Measured,,s-20261008-001636-emulator-5562/0056-collect-pixel30-landscape-5x2
+30,3x3,portrait,Measured,,s-20261008-001636-emulator-5562/0032-collect-pixel30-3x3
+30,3x3,landscape,Measured,,s-20261008-001636-emulator-5562/0050-collect-pixel30-landscape-3x3
+30,4x3,portrait,Measured,,s-20261008-001636-emulator-5562/0035-collect-pixel30-4x3
+30,4x3,landscape,Measured,,s-20261008-001636-emulator-5562/0047-collect-pixel30-landscape-4x3
+30,5x3,portrait,Measured,,s-20261008-001636-emulator-5562/0037-collect-pixel30-5x3
+30,5x3,landscape,Measured,,s-20261008-001636-emulator-5562/0053-collect-pixel30-landscape-5x3
+30,4x4,portrait,Measured,,s-20261008-001636-emulator-5562/0040-collect-pixel30-4x4
+30,4x4,landscape,Measured,,s-20261008-001636-emulator-5562/0044-collect-pixel30-landscape-4x4

@@ -148,25 +148,32 @@ Exit gate: an advanced user can finely customize a Digital clock without direct 
 - Found and fixed during implementation: Info slot missing from the API 31+ layout variant; Reset button state went stale during slider drags; the "sample alarm" note needed a post-render rebuild; dialog OK wiring only exists after the show listener runs (test timing, not a bug).
 - Not verified (honest list): API 26-29 and 31-33 emulators, launchers other than Pixel Launcher and Motorola Launcher3, Material You / night with a gradient (disclosed static by design), Calendar / Edit-widget / Do-nothing tap zones on a device (Alarms and Timer verified; intents unit-tested), RTL and 200% font scale on a device (Robolectric only), TalkBack, bundled-font rendering on API 26-27.
 - [x] Follow-up / PR #44 (owner ruling 2026-10-07): host-aware AM/PM path, localized `a` fallback with `AmPmLocalized` disclosure, requested-value preservation, Preview/widget parity and host ticking. Universal Latin AM/PM is temporarily paused and is **not** a Phase 3 gate; the experimental Latin marker path remains available only for a host that proves it can apply it. Motorola Launcher3/API 34 uses the localized path. Plan/results: `PHASE_3_RESPONSIVE_CANVAS.md` §1a.
-- [x] **Phase 2 follow-up 1b — bundled-font host parity (blocks 3A-0; PR open, awaiting owner merge):** generalize host capability beyond the AM/PM marker; resolve/disclose ordinary Time/Date/Info remote-font non-support and make Preview/fit use the same effective face as the placed widget. All six bundled weight-400 faces fall back silently on moto g13 / API 34 / Motorola Launcher3; equal sample widths and byte-identical glyph crops confirm it. Unsupported/unknown hosts must use a platform-safe system face with explicit degradation while preserving the requested font id. Other hosts/weights are not yet audited; see `PHASE_3_RESPONSIVE_CANVAS.md` §1b. Done: `HostFontCapability` (one bundled-font flag + AM/PM marker), `RenderEnvironment.supportsBundledFonts`, `REASON_HOST_BUNDLED_UNSUPPORTED` disclosure (one line per font), requested id preserved, Preview/fit/widget share the effective face; moto g13 / Launcher3 verified for all six families (record: `PHASE_3_RESPONSIVE_CANVAS.md` §1b.1). Not exercised: other hosts/APIs; system-font inventory deferred.
+- [x] **Phase 2 follow-up 1b — bundled-font host parity (merged as PR #45; 3A-0 prerequisite satisfied):** generalize host capability beyond the AM/PM marker; resolve/disclose ordinary Time/Date/Info remote-font non-support and make Preview/fit use the same effective face as the placed widget. All six bundled weight-400 faces fall back silently on moto g13 / API 34 / Motorola Launcher3; equal sample widths and byte-identical glyph crops confirm it. Unsupported/unknown hosts must use a platform-safe system face with explicit degradation while preserving the requested font id. Other hosts/weights are not yet audited; see `PHASE_3_RESPONSIVE_CANVAS.md` §1b. Done: `HostFontCapability` (one bundled-font flag + AM/PM marker), `RenderEnvironment.supportsBundledFonts`, `REASON_HOST_BUNDLED_UNSUPPORTED` disclosure (one line per font), requested id preserved, Preview/fit/widget share the effective face; moto g13 / Launcher3 verified for all six families (record: `PHASE_3_RESPONSIVE_CANVAS.md` §1b.1). Not exercised: other hosts/APIs; system-font inventory deferred.
 - Deliberate deferrals: see `PHASE_2_STUDIO.md` section 7 (Info icon / within-24h, Date lower-case, per-property reset dots, 3-stop / radial gradient, 24-family fonts, undo across process death, Date -> Calendar default).
 
-## Phase 3 — Responsive Canvas & Library (`CLOCKY_END_STATE.md` §7–§9, §13) — not started (design ruled)
+## Phase 3 — Responsive Canvas & Library (`CLOCKY_END_STATE.md` §7–§9, §13) — 3A-0 measured; production not started (design ruled)
 
-Exit gate: designs can be saved, duplicated and shared, and they work naturally at several sizes. Design record: `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md`. The open semantics were ruled on 2026-10-07 (record section 8) and END_STATE was amended accordingly (record section 9). Size-class thresholds stay provisional until 3A-0 measures them. 3A and 3B never share a PR.
+Exit gate: designs can be saved, duplicated and shared, and they work naturally at several sizes. Design record: `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md`. The open semantics were ruled on 2026-10-07 (record section 8) and END_STATE was amended accordingly (record section 9). 3A-0 fixed maxW/minH and 100dp / 160dp / 2.5625 for the measured host matrix (record §2.10); production implementation remains separate. 3A and 3B never share a PR.
 
 - Prerequisite
-  - [ ] Phase 2 follow-up 1b (bundled-font host parity) merged (PR open); Preview/fit/placed widget resolve the same effective face.
-- 3A-0 Measurement
-  - [ ] Debug-only size diagnostic build (`ClockySizeDiag`: options, `OPTION_APPWIDGET_SIZES`, candidate classes; debug-only lowered `minResize`).
-  - [ ] Host-size table for Pixel Launcher (API 30 / 35 emulators) and Motorola Launcher3 (moto g13); One UI / Nova / Lawnchair only if the owner provides a host.
-  - [ ] `Map<SizeF, RemoteViews>` spike (keying A vs B, compose time, bitmap bytes, parcel size) on the API 35 emulator and the moto g13.
-  - [ ] Thresholds (100dp / 200dp / 1.4 are provisional) fixed from the data; END_STATE §9 amended if they change.
+  - [x] Phase 2 follow-up 1b (bundled-font host parity) merged as PR #45; Preview/fit/placed widget resolve the same effective face.
+- 3A-0 Measurement — complete 2026-10-08; diagnostic branch never merged
+  - [x] Debug-only diagnostic (`ClockySizeDiag` options/candidates; debug-only lowered minResize), formatter/classifier/map instrumentation tests.
+  - [x] moto API34 9 portrait, Pixel API35 9 portrait, Pixel API30 12 portrait + 12 landscape observations; raw table and 222 candidate rows in `docs/measurements/phase3a0/`.
+  - [x] Threshold/input decision: maxW/minH; Strip 100dp, Large 160dp, Square ratio 2.5625. All 30 host/cells match intended classes; 4×4 Square by owner clarification; END_STATE §9 amended.
+  - [x] API31+ A/B spike: choose A. 30-update final A samples on moto/API35; B exceeds API35 bitmap limit at 4×4 and is slower on moto. Memory, Parcel and compose/fit timings recorded.
+  - [x] Live resize: owner-approved premise correction (callbacks during held drag); freeze isolates API35 host-only existing-entry switching. API31+ home rotation not exercised; optional API31–33/unavailable launchers not exercised.
+  - [x] Process-absent TextClock ticking on all three hosts; in-place Phase 2 regression and cdev byte-identical settings restore proofs; IDs retained, sessions finished.
+  - [x] Current-template local audit: 280 successful geometry cases, 20 SPLIT Strip inflation failures; production minResize remains **NO** until 3A-2 fixes/verifies that template. Preview uses same entry/fit/effective-font path; final four-class layout parity is 3A-2.
+  - [x] goAsync decision **YES**; fit+compose entry p95 exceeds 100ms, A update p95 near 400ms. First-update/end-to-end production budget verification remains 3A-2.
 - 3A Responsive core
   - [ ] `SizeClass` Square / Large and `SizeClassRule` (named constants, measured sizes pinned in tests).
   - [ ] General Patch: Layout-only paths, inheritance chain per owner answer, unknown classes / paths / templates preserved on round trip.
   - [ ] API 31+ size map and API 23–30 options-changed pair, one fit per entry; preview = widget for every class.
-  - [ ] Metadata: `minResize` toward 2×1 only after the templates fit those sizes.
+  - [ ] Fix SPLIT Strip RemoteViews inflation: plain View spacer in `clocky_digital_widget_split_row.xml` is forbidden. Verify all current/new templates at reachable cells before metadata widening.
+  - [ ] goAsync generation and production-equivalent latency (fit+compose, first update, send/IPC); retain 400ms/update target.
+  - [ ] Metadata: retain 250/40dp minResize until the above template gate passes; default minWidth 250dp / 4×2 unchanged.
+  - [ ] Verify API31+ map rotation on an enabled host and final four-class Preview/widget parity; neither is certified by the spike.
 - 3B Canvas
   - [ ] Selection, drag, snap (center / edges / baselines, haptics, second finger disables snap), 1dp nudge; one gesture = one undo step.
   - [ ] Pinch to resize text; pseudo-resize handle 2×1–5×4 using measured cell sizes.
