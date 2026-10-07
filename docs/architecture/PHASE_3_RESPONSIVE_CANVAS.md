@@ -1,8 +1,8 @@
 # Phase 3 — Responsive Canvas & Library: design record
 
-> Status: **Phase 3 is design only; the independent Phase 2 marker follow-up has implementation results in §1a.** The owner delegated the open semantics to this record on
+> Status: **Phase 3 is design only; PR #44 completes the independent Phase 2 marker follow-up and records a separate bundled-font host defect.** The owner delegated the open semantics to this record on
 > 2026-10-07; the rulings are in section 8 and are reflected in `CLOCKY_END_STATE.md` (section 9 lists the edits).
-> Implementation can start with 3A-0. Values marked *provisional* still wait for measurement.
+> Universal Latin AM/PM is temporarily paused and is not a Phase 3 gate. Before 3A-0, the Phase 2 font-host parity follow-up (1b below) must make Preview/fit use the same effective font as the placed widget. Values marked *provisional* still wait for measurement.
 > Authority: `docs/product/CLOCKY_END_STATE.md` (§3, §5.8, §7, §8, §9, §10, §12, §13, §14). This record splits the
 > End-State Phase 3 into four sub-phases. It builds on the Phase 1A and Phase 2 records
 > (`PHASE_1A_DIGITAL_CORE.md`, `PHASE_2_STUDIO.md`).
@@ -38,7 +38,8 @@ These come from End-State §3, §12 and the project rules. Every sub-phase PR re
 ## 1. Sub-phases, order and PR boundaries
 
 ```
-1a AM/PM marker fix (Phase 2 follow-up, small PR; independent)
+1a AM/PM host-aware marker/fallback (Phase 2 follow-up; PR #44)
+1b Bundled-font host parity (Phase 2 follow-up; separate PR)
 3A-0 measurement (diagnostic build, no product change)
   └─ 3A Responsive core ──┬─ 3B Canvas (UI only; separate PRs)
                           └─ 3C Library & Stacked ── 3D Platform integration
@@ -46,8 +47,9 @@ These come from End-State §3, §12 and the project rules. Every sub-phase PR re
 
 | Sub-phase | What | Depends on | PRs (each one ships alone) |
 |---|---|---|---|
-| **1a** | Phase 2 follow-up: prefer Latin `AM`/`PM`; disclosed localized fallback on incapable hosts (section 1a) | marker-font spike / host capability | one PR, before 3A |
-| **3A-0** | Diagnostic build to measure host sizes on several launchers; spike of `Map<SizeF, RemoteViews>` | — | spike branch, not merged; results recorded in this file |
+| **1a** | Phase 2 follow-up: host-aware AM/PM path; localized `a` is accepted on incapable hosts and universal Latin is temporarily paused (section 1a) | marker-font spike / host capability | PR #44, before 1b |
+| **1b** | Phase 2 follow-up: ordinary bundled-font host capability, explicit degradation, Preview/fit/placed-widget parity | PR #44 font audit / owner ruling | one product PR, before 3A-0 |
+| **3A-0** | Diagnostic build to measure host sizes on several launchers; spike of `Map<SizeF, RemoteViews>` | 1b merged | spike branch, not merged; results recorded in this file |
 | **3A** | Square / Large size classes, general nullable Patch, API 31+ size map and API 23–30 options path, metadata | 3A-0 results, R1–R3 | 3A-1 model + resolver (pure); 3A-2 render path + metadata |
 | **3B** | Canvas: select, drag, snap, pinch, 1dp nudge, pseudo-resize | 3A merged and gated | 3B-1 selection + drag + snap; 3B-2 pinch + pseudo-resize |
 | **3C** | My Designs, duplicate, favorites, Import/Export (`.clocky`, `CLOCKY2:`), share, apply to other widgets, Stacked family | 3A (Square class) | 3C-1 Library store + My Designs; 3C-2 Import/Export/share; 3C-3 apply-to-others; 3C-4 Stacked provider |
@@ -88,9 +90,14 @@ Hosts where the font path is established may use Latin `AM` / `PM`. A future sta
 reconsidered, but this ruling does not authorize app-driven noon/midnight changes, AlarmManager / WorkManager
 marker updates, bitmap markers, resident/foreground Services, or a preview-only renderer.
 
-**Shipping criteria after this ruling.** Latin on supported hosts; localized `a` plus disclosed degradation on
-unsupported hosts; Preview = placed widget; host-side ticking; requested values retained. Universal Latin is no
-longer a shipping gate.
+**Owner pause ruling (2026-10-07, after the real-host audit).** Universal Latin AM/PM is temporarily not pursued.
+PR #44 keeps the host-capability probe, safe localized fallback, accessibility work and the experimental Latin path
+because they are useful infrastructure and preserve a future option, but Phase 3 does not wait for a launcher that
+can apply the marker font. On ordinary unsupported hosts, localized `a` is the expected effective result.
+
+**Shipping criteria after this ruling.** Localized `a` is acceptable on unsupported hosts; a proven-capable host may
+use the retained Latin path. Preview = placed widget, host-side ticking and requested-value preservation remain
+mandatory. Universal Latin is not a shipping gate.
 
 **Observed blocker (2026-10-07).** moto g13 / API 34 / Motorola Launcher3 / ja-JP: Preview rendered `PM`,
 but the placed widget rendered raw `18`. A debug-only cross-package RemoteViews probe showed Preview
@@ -100,8 +107,9 @@ loading there. This is font non-application, not a GSUB failure. Same-package Ro
 this boundary. This evidence led to the owner ruling above; a raw-hour marker must never ship. The probe was
 removed, the original widget preferences were restored, and the cdev sessions were finished.
 
-**Studio strings.** The ja labels change from 午前・午後 to `AM/PM` (for example `AM/PMのサイズ`), so the editor
-uses the same word as the widget. This is a string change only.
+**Studio strings.** PR #44 keeps the neutral `AM/PM` control wording while the degradation notice explicitly tells
+ja-JP users that the effective host marker is the locale form（午前/午後）. This avoids changing the stored semantics
+again while universal Latin is paused.
 
 **Compatibility.** No model change: `behavior.amPm` keeps its keys. Designs that had the suffix on show Latin markers on capable hosts and localized markers on incapable hosts.
 This is a presentation decision at resolve time, with no migration or schema change.
@@ -113,7 +121,7 @@ API 25 emulator shows the disclosed fallback. The noon/midnight flip is observed
 only if a session spans it (the device clock is not changed: that needs settings outside cdev's allowlist).
 
 
-**Implementation result (2026-10-07, independent follow-up PR; merge pending).**
+**Implementation result (2026-10-07, independent follow-up PR #44; ready for owner merge).**
 - `RenderEnvironment.supportsLatinAmPmMarker` is an explicit runtime-only fact. API < 26, unknown HOME,
   system resolver, probe failure, or an unapplied/unshaped marker face resolves to localized `a` and
   `AmPmLocalized`. No requested values or capability flags are written to the design.
@@ -210,6 +218,24 @@ bundled designs across size/fit boundaries. The ordinary-font issue needs separa
 general Preview/widget font parity.
 
 ---
+
+## 1b. Phase 2 follow-up: bundled-font host parity (required before 3A-0)
+
+PR #44's real-launcher audit found that the six Phase 2 bundled weight-400 faces (Poppins, Bebas Neue,
+DM Serif Display, Barlow Condensed, IBM Plex Mono and Varela Round) all render as the same system-sans glyphs
+on moto g13 / API 34 / Motorola Launcher3, while same-package Preview renders the requested faces. Width and
+pixel-glyph comparisons confirmed the placed fallback; this supersedes the earlier visual-only Poppins claim.
+
+**Owner ruling (2026-10-07).** Keep the requested font ids and the long-term typography library, but never assume
+that an APK-bundled font is usable in cross-package RemoteViews merely because the SDK is API 26+. Generalize the
+host-capability approach proven in PR #44: resolve bundled-font support at render time, fall back to a platform-safe
+system face on unsupported/unknown hosts, disclose the degradation, and make Preview and fit consume that same
+effective face. Silent placed-widget fallback is forbidden. This follow-up is a Phase 2 correctness repair, not a
+Phase 3 feature, and must merge before 3A-0 measurements so size/fit data is not collected against a Preview font
+that the real widget cannot render.
+
+The follow-up may additionally inventory platform/system families on API 34 hosts, but it must not block on reaching
+the long-term 24-family count. The immediate gate is truthful requested→effective resolution and Preview/fit parity.
 
 ## 2. 3A — Responsive core
 
