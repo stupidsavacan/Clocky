@@ -458,9 +458,11 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
     // ---- shared text controls ----
 
     private fun textBasics(target: TextTarget, weightField: OverrideField?, sizeField: OverrideField?, withWeight: Boolean = true) {
+        // Existing Info UI is global until the four-class scope integration in 3A-2.
+        val elementScope = if (target == TextTarget.INFO) EditScope.ALL else scope
         fontChips(target)
-        if (withWeight) {
-            val weight = DesignEdits.weightOf(d, target, scope)
+        if (withWeight && elementScope.sizeClass?.allowsWeightOverride != false) {
+            val weight = DesignEdits.weightOf(d, target, elementScope)
             val badge = weightField?.let { badgeFor(it) }
             rows.slider(
                 str(R.string.clocky_studio_weight), weight.toFloat(), 100f..900f, 10f,
@@ -468,20 +470,20 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
                 parse = { it.trim().toIntOrNull()?.toFloat() },
                 badge = badge?.first, onBadge = badge?.second,
                 onChange = { v -> host.edit("weight.${target.name}", "weight.${target.name}", rebuild = false) {
-                    DesignEdits.setWeight(it, target, v.roundToInt(), scope)
+                    DesignEdits.setWeight(it, target, v.roundToInt(), elementScope)
                 } },
                 onGestureEnd = host::endGesture,
             )
             weightDisclosure(target, weight)
         }
-        val size = DesignEdits.sizeOf(d, target, scope)
+        val size = DesignEdits.sizeOf(d, target, elementScope)
         val badge = sizeField?.let { badgeFor(it) }
         rows.slider(
             str(R.string.clocky_studio_size), size, DesignEdits.sizeRange(target), 1f,
             format = { "${it.roundToInt()} sp" },
             badge = badge?.first, onBadge = badge?.second,
             onChange = { v -> host.edit("size.${target.name}", "size.${target.name}", rebuild = false) {
-                DesignEdits.setSize(it, target, v, scope)
+                DesignEdits.setSize(it, target, v, elementScope)
             } },
             onGestureEnd = host::endGesture,
         )

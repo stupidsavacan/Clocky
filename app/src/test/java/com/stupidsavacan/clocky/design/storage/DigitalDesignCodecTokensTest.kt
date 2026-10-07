@@ -89,7 +89,7 @@ class DigitalDesignCodecTokensTest {
     }
 
     @Test
-    fun unknownTemplateNamesInOverridesDecodeToNullInsteadOfThrowing() {
+    fun unknownTemplateNamesRemainRequestedWhileTypedTemplateUsesNull() {
         val json = DigitalDesignCodec.encode(DigitalDesign(layout = DesignLayout(overrides = mapOf(
             SizeClass.STRIP to LayoutPatch(template = Template.INLINE, timeSizeSp = 40f),
             SizeClass.CARD to LayoutPatch(template = Template.SPLIT),
@@ -100,10 +100,15 @@ class DigitalDesignCodecTokensTest {
 
         val d = DigitalDesignCodec.decode(JSONObject(json.toString()))
         assertNull(d.layout.patchFor(SizeClass.STRIP).template)
-        // The rest of the patch survives; a patch that only held the bad template is dropped.
+        // Typed rendering stays safe, but both requested names survive instead of being dropped.
         assertEquals(40f, d.layout.patchFor(SizeClass.STRIP).timeSizeSp)
-        assertTrue(d.layout.patchFor(SizeClass.CARD).isEmpty)
-        assertFalse(SizeClass.CARD in d.layout.overrides)
+        assertEquals("HOLOGRAM", d.layout.patchFor(SizeClass.STRIP).requestedTemplate)
+        assertEquals("HOLOGRAM", d.layout.patchFor(SizeClass.CARD).requestedTemplate)
+        assertFalse(d.layout.patchFor(SizeClass.CARD).isEmpty)
+        assertTrue(SizeClass.CARD in d.layout.overrides)
+        val encoded = DigitalDesignCodec.encode(d).getJSONObject("layout").getJSONObject("overrides")
+        assertEquals("HOLOGRAM", encoded.getJSONObject("strip").getString("layout.template"))
+        assertEquals("HOLOGRAM", encoded.getJSONObject("card").getString("layout.template"))
     }
 
     @Test

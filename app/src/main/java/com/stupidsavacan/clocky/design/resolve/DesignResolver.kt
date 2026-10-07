@@ -17,7 +17,7 @@ import com.stupidsavacan.clocky.design.model.CornerRadius
 import com.stupidsavacan.clocky.design.model.DigitalDesign
 import com.stupidsavacan.clocky.design.model.HourMode
 import com.stupidsavacan.clocky.design.model.SizeClass
-import com.stupidsavacan.clocky.design.model.SizeClassResolver
+import com.stupidsavacan.clocky.design.model.SizeClassRule
 import com.stupidsavacan.clocky.design.model.TextStyle
 import com.stupidsavacan.clocky.design.model.normalized
 import kotlin.math.abs
@@ -49,14 +49,30 @@ object DesignResolver {
         design: DigitalDesign,
         size: SizeContext,
         env: RenderEnvironment,
+        /** Callers decide the widget class once; legacy rendering explicitly supplies Strip/Card until 3A-2. */
+        sizeClass: SizeClass = sizeClassOf(size),
     ): ResolvedDigitalSpec {
-        val d = design.normalized()
-        val sizeClass = SizeClassResolver.resolve(size.minHeightDp)
-        val patch = d.layout.patchFor(sizeClass)
+        val requested = design.normalized()
+        val patch = requested.layout.inheritedPatchFor(sizeClass)
+        val d = requested.copy(
+            date = requested.date.copy(gapDp = patch.dateGapDp ?: requested.date.gapDp),
+            info = requested.info.copy(
+                visible = patch.infoVisible ?: requested.info.visible,
+                style = requested.info.style.copy(
+                    sizeSp = patch.infoSizeSp ?: requested.info.style.sizeSp,
+                    xDp = patch.infoXDp ?: requested.info.style.xDp,
+                    yDp = patch.infoYDp ?: requested.info.style.yDp,
+                    alignment = patch.infoAlignment ?: requested.info.style.alignment,
+                ),
+            ),
+            background = requested.background.copy(paddingDp = patch.paddingDp ?: requested.background.paddingDp),
+        )
         val degradations = mutableListOf<Degradation>()
 
         val tokens = d.style
-        val template = patch.template ?: d.layout.template
+        val unknownTemplate = patch.requestedTemplate ?: d.layout.requestedTemplate.takeIf { patch.template == null }
+        val template = if (unknownTemplate != null) Template.TIME_FIRST else patch.template ?: d.layout.template
+        unknownTemplate?.let { degradations.add(Degradation.TemplateFallback(it)) }
         val sizeScale = tokens?.textSize?.scale ?: 1f
         val dateVisible = (patch.dateVisible ?: d.date.visible) && template != Template.MINIMAL
 
@@ -64,11 +80,13 @@ object DesignResolver {
             sizeSp = (patch.timeSizeSp ?: d.time.style.sizeSp) * sizeScale,
             xDp = patch.timeXDp ?: d.time.style.xDp,
             yDp = patch.timeYDp ?: d.time.style.yDp,
+            alignment = patch.timeAlignment ?: d.time.style.alignment,
         )
         var dateStyle = d.date.style.withTokenFont(tokens, patch.dateWeight).copy(
             sizeSp = (patch.dateSizeSp ?: d.date.style.sizeSp) * sizeScale,
             xDp = patch.dateXDp ?: d.date.style.xDp,
             yDp = patch.dateYDp ?: d.date.style.yDp,
+            alignment = patch.dateAlignment ?: d.date.style.alignment,
         )
         if (template == Template.SPLIT) {
             // Split is defined by its diagonal: the template, not the element, decides alignment.
@@ -96,7 +114,7 @@ object DesignResolver {
             datePattern = d.date.formatPattern ?: env.localeAutoDatePattern,
             background = resolveBackground(d, env, degradations, tokens, themeNotes),
             paddingDp = d.background.paddingDp,
-            gapDp = if (tokens != null) TEMPLATE_GAP_DP else 0f,
+            gapDp = d.date.gapDp ?: if (tokens != null) TEMPLATE_GAP_DP else 0f,
             degradations = degradations.toList() + themeNotes,
         )
     }
@@ -142,7 +160,7 @@ object DesignResolver {
         sizeScale: Float,
     ): ResolvedInfo? {
         val info = d.info
-        if (info.source == InfoSource.NONE) return null
+        if (!info.visible || info.source == InfoSource.NONE) return null
         if (sizeClass == SizeClass.STRIP) {
             degradations.add(Degradation.InfoNotShown(InfoHiddenReason.STRIP_SIZE))
             return null
@@ -379,5 +397,5 @@ object DesignResolver {
         legacyRadiusVariantsDp.minWith(compareBy<Float> { abs(it - requestedDp) }.thenBy { it })
 
     /** Convenience for callers that only need the class (e.g. editor labels). */
-    fun sizeClassOf(size: SizeContext): SizeClass = SizeClassResolver.resolve(size.minHeightDp)
+    fun sizeClassOf(size: SizeContext): SizeClass = SizeClassRule.resolve(size.maxWidthDp.toFloat(), size.minHeightDp.toFloat())
 }

@@ -151,9 +151,9 @@ Exit gate: an advanced user can finely customize a Digital clock without direct 
 - [x] **Phase 2 follow-up 1b — bundled-font host parity (merged as PR #45; 3A-0 prerequisite satisfied):** generalize host capability beyond the AM/PM marker; resolve/disclose ordinary Time/Date/Info remote-font non-support and make Preview/fit use the same effective face as the placed widget. All six bundled weight-400 faces fall back silently on moto g13 / API 34 / Motorola Launcher3; equal sample widths and byte-identical glyph crops confirm it. Unsupported/unknown hosts must use a platform-safe system face with explicit degradation while preserving the requested font id. Other hosts/weights are not yet audited; see `PHASE_3_RESPONSIVE_CANVAS.md` §1b. Done: `HostFontCapability` (one bundled-font flag + AM/PM marker), `RenderEnvironment.supportsBundledFonts`, `REASON_HOST_BUNDLED_UNSUPPORTED` disclosure (one line per font), requested id preserved, Preview/fit/widget share the effective face; moto g13 / Launcher3 verified for all six families (record: `PHASE_3_RESPONSIVE_CANVAS.md` §1b.1). Not exercised: other hosts/APIs; system-font inventory deferred.
 - Deliberate deferrals: see `PHASE_2_STUDIO.md` section 7 (Info icon / within-24h, Date lower-case, per-property reset dots, 3-stop / radial gradient, 24-family fonts, undo across process death, Date -> Calendar default).
 
-## Phase 3 — Responsive Canvas & Library (`CLOCKY_END_STATE.md` §7–§9, §13) — 3A-0 measured; production not started (design ruled)
+## Phase 3 — Responsive Canvas & Library (`CLOCKY_END_STATE.md` §7–§9, §13) — 3A-1 complete, awaiting owner merge; 3A-2 not started
 
-Exit gate: designs can be saved, duplicated and shared, and they work naturally at several sizes. Design record: `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md`. The open semantics were ruled on 2026-10-07 (record section 8) and END_STATE was amended accordingly (record section 9). 3A-0 fixed maxW/minH and 100dp / 160dp / 2.5625 for the measured host matrix (record §2.10); production implementation remains separate. 3A and 3B never share a PR.
+Exit gate: designs can be saved, duplicated and shared, and they work naturally at several sizes. Design record: `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md`. The open semantics were ruled on 2026-10-07 (record section 8) and END_STATE was amended accordingly (record section 9). 3A-0 fixed maxW/minH and 100dp / 160dp / 2.5625 for the measured host matrix (record §2.10); 3A-1 implements the pure model; render/platform activation remains 3A-2. 3A and 3B never share a PR.
 
 - Prerequisite
   - [x] Phase 2 follow-up 1b (bundled-font host parity) merged as PR #45; Preview/fit/placed widget resolve the same effective face.
@@ -166,9 +166,14 @@ Exit gate: designs can be saved, duplicated and shared, and they work naturally 
   - [x] Process-absent TextClock ticking on all three hosts; in-place Phase 2 regression and cdev byte-identical settings restore proofs; IDs retained, sessions finished.
   - [x] Current-template local audit: 280 successful geometry cases, 20 SPLIT Strip inflation failures; production minResize remains **NO** until 3A-2 fixes/verifies that template. Preview uses same entry/fit/effective-font path; final four-class layout parity is 3A-2.
   - [x] goAsync decision **YES**; fit+compose entry p95 exceeds 100ms, A update p95 near 400ms. First-update/end-to-end production budget verification remains 3A-2.
-- 3A Responsive core
-  - [ ] `SizeClass` Square / Large and `SizeClassRule` (named constants, measured sizes pinned in tests).
-  - [ ] General Patch: Layout-only paths, inheritance chain per owner answer, unknown classes / paths / templates preserved on round trip.
+- 3A-1 Responsive model / codec / resolver / edit semantics — complete, awaiting owner merge
+  - [x] `SizeClass` Square / Large and measured `SizeClassRule`: MAX_WIDTH/MIN_HEIGHT, 100dp / 160dp / 2.5625, 30 distinct measured cases and boundary/invalid-input tests.
+  - [x] General typed LayoutPatch: permitted Time/Date/Info layout paths, padding and additive nullable Date gap; R2 field-by-field Square/Large→Card→base inheritance; own-only badges and revert.
+  - [x] Strip/Card legacy weight kept; Square/Large own weight creation rejected. Imported forbidden/future paths are inert and preserved; schema remains 2 with no migration/built-in version change.
+  - [x] Unknown class/path JSON values and unknown base/patch template requests preserved through round-trip and known edits; safe template fallback is disclosed. Quick Tune / Studio preparation and known-layout reset retain future data.
+  - [x] Four-class model/edit APIs complete. Provider/Preview explicitly retain Phase 2 Strip/Card render policy; four-class selector UI and final Preview integration deferred to 3A-2.
+  - [x] 416 unit/Robolectric tests (including SDK23/28/34), lint and debug assembly green. moto g13/API34 in-place upgrade preserves widget ID 23, byte-identical settings and appearance; no crash/ANR; session finished. PR-safe evidence: `docs/measurements/phase3a1/moto-upgrade-summary.md`.
+- 3A-2 Render / platform — not started; starts only after owner merges 3A-1
   - [ ] API 31+ size map and API 23–30 options-changed pair, one fit per entry; preview = widget for every class.
   - [ ] Fix SPLIT Strip RemoteViews inflation: plain View spacer in `clocky_digital_widget_split_row.xml` is forbidden. Verify all current/new templates at reachable cells before metadata widening.
   - [ ] goAsync generation and production-equivalent latency (fit+compose, first update, send/IPC); retain 400ms/update target.

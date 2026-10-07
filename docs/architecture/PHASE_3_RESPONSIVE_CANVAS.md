@@ -1,6 +1,6 @@
 # Phase 3 — Responsive Canvas & Library: design record
 
-> Status: **Phase 3 is design only; PR #44 completes the independent Phase 2 marker follow-up and records a separate bundled-font host defect.** The owner delegated the open semantics to this record on
+> Status: **3A-0 complete (#47 merged); 3A-1 model/codec/resolver/edit semantics implemented, awaiting owner merge; 3A-2 not started.** The independent Phase 2 follow-ups (#44–#46) are merged. The owner delegated the open semantics to this record on
 > 2026-10-07; the rulings are in section 8 and are reflected in `CLOCKY_END_STATE.md` (section 9 lists the edits).
 > Universal Latin AM/PM is temporarily paused and is not a Phase 3 gate. Before 3A-0, the Phase 2 font-host parity follow-up (1b below) must make Preview/fit use the same effective font as the placed widget. 3A-0 results and remaining production gates are recorded in §2.10 (2026-10-08).
 > Authority: `docs/product/CLOCKY_END_STATE.md` (§3, §5.8, §7, §8, §9, §10, §12, §13, §14). This record splits the
@@ -299,11 +299,14 @@ gate. System-font variety stays at the Phase 1B/2 set.
 ### 2.1 Purpose
 
 Replace the two-class (Strip / Card) system with the four End-State classes, make per-class overrides general,
-and let API 31+ launchers switch layouts during resize without calling the app.
+and let API 31+ launchers select existing entries during resize independently of app regeneration.
+Callbacks may also arrive during a held drag (3A-0 owner-approved premise correction).
 
-### 2.2 What exists today (checked in the code, 2026-10-07)
+### 2.2 Baseline before 3A-1 (checked in the code, 2026-10-07)
 
-Phase 2 removed the `SizeClassPatches` helper and the Phase 1A editor classes. What remains of the override system:
+Phase 2 removed the `SizeClassPatches` helper and the Phase 1A editor classes. The following historical baseline
+is superseded for model/codec/resolver/edit semantics by the 3A-1 record below. Provider/Preview keep its
+two-class render selection explicitly until 3A-2.
 
 | Piece | Where | State |
 |---|---|---|
@@ -338,7 +341,7 @@ Ruling R1: one class per widget, used for both orientations. Measured input is
 Check Strip first, then Square, then Large, otherwise Card. Production still keeps the Phase 1A
 Strip/Card resolver until 3A-1; the spike does not enable Square/Large. See §2.10 for measured coverage.
 
-**(b) General Patch.** Specification proposal (End-State §9):
+**(b) General Patch.** Model/codec/resolver/edit API implemented in 3A-1; four-class UI integration deferred (End-State §9):
 
 ```json
 "layout": {
@@ -354,7 +357,8 @@ Strip/Card resolver until 3A-1; the spike does not enable Square/Large. See §2.
 - Key = size class (lowercase name). Value = map from property path to value. `null` or absent = inherit.
 - **Overridable (Layout only):** `layout.template`; `time|date|info.sizeSp`; `time|date|info.xDp`, `.yDp`;
   `date.visible`; `info.visible` (new, Card-only today); `time|date|info.alignment`; `background.paddingDp`;
-  `date.gapDp` (End-State §5.2 "Time との間隔"; only if the model gains the base property in the same PR).
+  `date.gapDp` (End-State §5.2 "Time との間隔"; nullable base value added in 3A-1, preserving the historical
+  4dp-with-tokens / 0dp-without-tokens default when absent).
 - **Not overridable:** font (`fontId`), colors and opacity, letter spacing, background type/colors/radius/border,
   shadow, behavior. A size change must not change the look's identity (End-State §9).
 - **Weight (R3):** `time.weight` / `date.weight` stay readable and writable as Strip/Card overrides. They are the
@@ -388,6 +392,53 @@ Strip/Card resolver until 3A-1; the spike does not enable Square/Large. See §2.
 that require template verification. 3A-0 found SPLIT→Strip cannot inflate its plain View spacer:
 **keep production minResizeWidth/Height at 250/40dp until fixed and retested in 3A-2**.
 `minWidth` stays 250dp (the default placement).
+
+#### 3A-1 implementation record (2026-10-08)
+
+Starting main: `15da85ae67c82ddf82f1f0b51d6fedd1b6703582` (#47 merged; #44–#46 also verified merged).
+This PR is **model / codec / resolver / edit semantics only**. No diagnostic source was cherry-picked.
+
+- `SizeClass` adds Square/Large after Strip/Card (no SizeClass ordinal persistence was found).
+  `SizeClassRule` uses MAX_WIDTH / MIN_HEIGHT and the measured constants above; invalid, missing,
+  NaN/infinite/nonpositive inputs fall back to Card. The 30 distinct measured host/cells are a checked-in
+  test fixture derived from §2.10's raw table, with height and ratio boundary tests.
+- `DesignLayout.inheritedPatchFor` merges fields through Square/Large→Card→base. `patchFor` remains **own
+  patch only**, so badges/revert distinguish ownership from inherited values. `DesignResolver` accepts
+  an explicit widget class, with the measured rule as its pure default; an entry's fit bounds do not decide it.
+- Typed LayoutPatch adds Time/Date/Info alignment, Info size/offset/visibility, padding and Date gap.
+  Schema stays 2; no migration step, built-in version or built-in snapshot changed. `DateElement.gapDp`
+  is nullable and omitted when unset; `InfoElement.visible` defaults true and is omitted at that default.
+- Strip/Card Time/Date weight remains readable/writable. Square/Large own weight creation is rejected
+  by model/edit APIs. Imported Square/Large weight paths are preserved as inert raw JSON; they do not
+  replace inherited Card weight. Identity fields (font/color/opacity/spacing/background/effects/behavior)
+  have no active typed override and foreign paths are retained without applying them.
+- Unknown class payloads (`preservedOverrides`) and patch paths (`preserved`) retain canonical JSON values,
+  including objects, arrays, null and scalar types. Whitespace is not a schema property. Unknown base and
+  patch template names stay `requestedTemplate`, with TIME_FIRST effective fallback and a disclosed
+  `TemplateFallback`. A deliberate known-template edit replaces that scope's request; editing unrelated
+  fields does not. Revert restores inheritance rather than copying parent fields into the child.
+- DesignEdits reads inherited values and writes only the chosen scope. Info/alignment/padding/gap APIs
+  support all classes. Finite requested offsets are kept; the effective resolver retains SDK/RTL and
+  conservative half-min-width/half-min-height clamping, without changing saved values. Classification's
+  MAX_WIDTH / MIN_HEIGHT pair is not substituted for current layout bounds. Entry-fit integration is 3A-2.
+- Quick Tune and Studio preparation scale Info patch sizes as well as Time/Date sizes; they preserve
+  future payloads. Resetting known Layout fields retains unrelated future paths/classes. Explicit whole
+  design reset still replaces the document with the selected reference.
+- **Compatibility staging:** provider and Preview explicitly pass the existing height-only Strip/Card
+  render class. Their paired RemoteViews / fit / composition path remains unchanged. Studio keeps the
+  two-class selector and global Info UI; new four-class edit semantics are tested at the API boundary.
+  Square/Large weight controls are suppressed for scoped edits; global weight remains editable.
+  Four-class selector/Preview integration and new layouts remain 3A-2.
+
+Validation: `testDebugUnitTest` (416 tests, zero failures/errors), `lintDebug` and `assembleDebug` passed.
+Existing SDK23/28/34 render tests and new legacy-render-policy regressions guard this staging boundary.
+moto g13/API34 in-place Phase 2 upgrade: widget ID 23 retained, settings byte-identical, no Clocky
+crash/ANR; stable before/after screens retain the same background, faces and geometry (time advances).
+[PR-safe cdev summary](../measurements/phase3a1/moto-upgrade-summary.md); session finished.
+Raw screenshots/settings stay local; no API31 rotation or final four-class render parity was exercised.
+**3A-1 complete; 3A-2 can start after owner merge.** 3A-2 must implement keying A, goAsync/worker generation,
+first-update/end-to-end latency checks, SPLIT Strip spacer fix, metadata gating, enabled-host API31+
+rotation and final four-class Preview/widget parity. None of those is implemented here.
 
 ### 2.4 Threshold measurement method and decision (3A-0)
 

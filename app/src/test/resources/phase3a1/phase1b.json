@@ -1,0 +1,45 @@
+{
+  "schema": 2,
+  "origin": "clocky-default",
+  "layout": {
+    "template": "CENTER_STACK",
+    "overrides": {
+      "strip": {
+        "layout.template": "INLINE"
+      }
+    }
+  },
+  "style": {
+    "palette": {
+      "id": "fixture",
+      "fixedVariant": "DARK",
+      "light": {
+        "primary": "#111111",
+        "secondary": "#333333",
+        "accent": "#222222",
+        "surface": "#FFFFFF"
+      },
+      "dark": {
+        "primary": "#FFFFFF",
+        "secondary": "#CCCCCC",
+        "accent": "#AAAAAA",
+        "surface": "#111111"
+      }
+    },
+    "fontPrimary": {
+      "font": "system-sans",
+      "weight": 400
+    },
+    "fontSecondary": {
+      "font": "system-sans",
+      "weight": 400
+    },
+    "textSize": "MEDIUM",
+    "themeMode": "FIXED"
+  },
+  "source": {
+    "builtinId": "clocky-default",
+    "version": 1,
+    "kitId": "google"
+  }
+}

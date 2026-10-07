@@ -149,6 +149,7 @@ enum class TextElementKind { TIME, DATE, INFO }
 enum class InfoHiddenReason { STRIP_SIZE, MINIMAL_TEMPLATE }
 
 sealed interface Degradation {
+    data class TemplateFallback(val requested: String) : Degradation
     /** The host cannot apply the dedicated Latin marker font (including API 23–25). */
     data object AmPmLocalized : Degradation
     data class WeightApproximated(

@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "origin": "phase1a-fixture",
+  "time": {
+    "font": "system-sans",
+    "sizeSp": 64,
+    "weight": 400
+  },
+  "date": {
+    "visible": true,
+    "sizeSp": 14
+  },
+  "layout": {
+    "template": "TIME_FIRST",
+    "overrides": {
+      "strip": {
+        "time.weight": 300,
+        "date.visible": false
+      },
+      "card": {
+        "date.weight": 700
+      }
+    }
+  }
+}
