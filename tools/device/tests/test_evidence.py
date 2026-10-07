@@ -79,3 +79,17 @@ class Evidence(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCompareMd(unittest.TestCase):
+    def test_paths_only_no_values(self):
+        res = {"same": {"settings": False, "widgets": True}}
+        md = E.build_compare_md("base", res, ["widget.4.behavior.amPm", "widget.4.date.uppercase"])
+        self.assertIn("## Compared to base", md)
+        self.assertIn("settings: 2 path(s) differ: widget.4.behavior.amPm, widget.4.date.uppercase", md)
+        self.assertIn("widgets: SAME", md)
+
+    def test_same(self):
+        md = E.build_compare_md("b", {"same": {"settings": True, "widgets": None}}, [])
+        self.assertIn("settings: SAME", md)
+        self.assertIn("widgets: unavailable", md)

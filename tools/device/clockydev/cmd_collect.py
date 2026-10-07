@@ -4,12 +4,13 @@ import os
 import subprocess
 
 from . import constants as C
+from . import compare as CMP
 from . import devstate, evidence, ui
 from .cli import Out, command
 from .cmd_misc import LOG_BUFFERS, gather_logs, write_log_files
 from .cmd_session import device_epoch
 from .cmd_widget import collect_widget_state
-from .errors import CdevError
+from .errors import CdevError, check_failed, usage
 from .session import load_state, next_step_dir
 
 
@@ -28,11 +29,17 @@ def _setup(p):
     p.add_argument("label")
     p.add_argument("--no-launcher-dump", action="store_true")
     p.add_argument("--since", default="prepare")
+    p.add_argument("--compare-to", dest="compare_to", metavar="LABEL",
+                   help="compare the new bundle against an earlier one (label, step dir, path)")
+    p.add_argument("--expect-same", choices=["settings", "all"], dest="expect_same",
+                   help="with --compare-to: exit 7 (after saving the bundle) unless identical")
 
 
 @command("collect", _setup)
 def cmd_collect(ctx, args):
     """Save screenshot, UI dump, widget state, dumpsys, logs, meta.json and summary.md."""
+    if args.expect_same and not args.compare_to:
+        raise usage("EXPECT_NEEDS_COMPARE", "--expect-same requires --compare-to")
     dev = ctx.device()
     adb = dev.adb
     state = load_state(ctx.build_dir)
@@ -115,11 +122,62 @@ def cmd_collect(ctx, args):
     meta = evidence.build_meta(args.label, status, state, (state.get("session") or {}).get("id"), epoch,
                                git_info(ctx.root), launcher, errors, dev.identity)
     put("meta.json", json.dumps(meta, indent=2, ensure_ascii=True))
-    put("summary.md", evidence.build_summary_md(meta, wstate, log_lines, sorted(set(written + ["meta.json", "summary.md"]))))
+    cmp_res = None
+    if args.compare_to:
+        def compare_part():
+            nonlocal cmp_res
+            sessions = os.path.join(ctx.build_dir, "sessions")
+            sid = (load_state(ctx.build_dir).get("session") or {}).get("id")
+            cmp_res = CMP.compare_bundles(CMP.resolve_bundle(args.compare_to, sessions, sid), d)
+            put("compare.json", json.dumps(cmp_res, indent=2, ensure_ascii=True))
+        part("compare", compare_part)
+    summary = evidence.build_summary_md(meta, wstate, log_lines, sorted(set(written + ["meta.json", "summary.md"])))
+    if cmp_res:
+        summary += evidence.build_compare_md(args.compare_to, cmp_res, CMP.diff_paths(cmp_res))
+    put("summary.md", summary)
     files = [ctx.rel(os.path.join(d, n)) for n in sorted(set(written))]
     lines = ["collected %d file(s) into %s" % (len(files), ctx.rel(d))]
     if errors:
         lines += ["partial: %s - %s" % (e["part"], e["error"]) for e in errors]
+    if cmp_res:
+        lines += CMP.render_lines(cmp_res)[1:]
     lines.append("PR-safe summary: %s (attach ONLY this file; others may contain personal data)" % ctx.rel(os.path.join(d, "summary.md")))
-    return Out({"dir": ctx.rel(d), "errors": errors, "files": files}, lines,
+    result = {"dir": ctx.rel(d), "errors": errors, "files": files}
+    if cmp_res:
+        result["compare"] = cmp_res
+    if args.expect_same:
+        bad = CMP.failed_expectations(cmp_res, args.expect_same) if cmp_res else ["compare"]
+        if bad:
+            raise check_failed("NOT_SAME", "%s not identical to %s (bundle saved in %s)" % (", ".join(bad), args.compare_to, ctx.rel(d)),
+                               "Run `cdev compare %s %s` for the full diff." % (args.compare_to, os.path.basename(d)),
+                               CMP.diff_paths(cmp_res) if cmp_res else [])
+    return Out(result, lines,
                dev.warnings + (["%d part(s) failed; see meta.json errors[]" % len(errors)] if errors else []), files)
+
+
+def _compare_setup(p):
+    p.add_argument("a", help="bundle A: collect label, step dir name, <session-id>/<label>, or path")
+    p.add_argument("b", help="bundle B (same forms)")
+    p.add_argument("--only", choices=["settings", "widgets", "meta", "logs"])
+    p.add_argument("--expect-same", choices=["settings", "all"], dest="expect_same",
+                   help="exit 7 unless settings (all: settings and widgets) are identical")
+
+
+def resolve_pair(ctx, a, b):
+    sessions = os.path.join(ctx.build_dir, "sessions")
+    sid = (load_state(ctx.build_dir).get("session") or {}).get("id")
+    return CMP.resolve_bundle(a, sessions, sid), CMP.resolve_bundle(b, sessions, sid)
+
+
+@command("compare", _compare_setup)
+def cmd_compare(ctx, args):
+    """Compare two evidence bundles (settings, widgets, meta, crash/ANR). Device not needed."""
+    da, db = resolve_pair(ctx, args.a, args.b)
+    res = CMP.compare_bundles(da, db, args.only)
+    lines = CMP.render_lines(res)
+    if args.expect_same:
+        bad = CMP.failed_expectations(res, args.expect_same)
+        if bad:
+            raise check_failed("NOT_SAME", "%s differ between %s and %s" % (", ".join(bad), res["a"], res["b"]),
+                               "Run `cdev compare A B` (without --expect-same) for the full diff.", CMP.diff_paths(res))
+    return Out(res, lines, res["warnings"])

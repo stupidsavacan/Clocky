@@ -1,0 +1,121 @@
+{
+  "providers": [
+    {
+      "package": "com.stupidsavacan.clocky",
+      "class": "com.android.alarmclock.AnalogAppWidgetProvider",
+      "min_dp": [
+        110.0,
+        110.0
+      ],
+      "min_resize_dp": [
+        55.0,
+        55.0
+      ],
+      "resizeMode": 3,
+      "widgetCategory": 1,
+      "zombie": false,
+      "kind": "analog"
+    },
+    {
+      "package": "com.stupidsavacan.clocky",
+      "class": "com.android.alarmclock.DigitalAppWidgetProvider",
+      "min_dp": [
+        250.0,
+        70.0
+      ],
+      "min_resize_dp": [
+        250.0,
+        40.0
+      ],
+      "resizeMode": 3,
+      "widgetCategory": 3,
+      "zombie": false,
+      "kind": "digital"
+    }
+  ],
+  "widgets": [
+    {
+      "id": 4,
+      "kind": "digital",
+      "host": "com.google.android.apps.nexuslauncher",
+      "options": {
+        "unavailable": "dumpsys appwidget has no options line"
+      },
+      "size_class": "Card",
+      "size_source": "estimated from launcher host-view bounds (299x196 dp)",
+      "size_rule": "tool replica of SizeClassResolver (0<minH<100)",
+      "settings": {
+        "schema": 2,
+        "origin": "bold-poster",
+        "time": {
+          "font": "token:fontPrimary",
+          "weight": 400,
+          "sizeSp": 120,
+          "color": {
+            "type": "token",
+            "role": "PRIMARY"
+          },
+          "opacity": 1,
+          "alignment": "CENTER"
+        },
+        "date": {
+          "visible": true,
+          "formatPattern": null,
+          "font": "token:fontSecondary",
+          "weight": 400,
+          "sizeSp": 16
+        },
+        "background": {
+          "type": "NONE",
+          "color": {
+            "type": "fixed",
+            "rgb": "#111111"
+          },
+          "opacity": 0.8999999761581421,
+          "cornerRadius": {
+            "type": "system"
+          }
+        },
+        "behavior": {
+          "hourMode": "FOLLOW_SYSTEM"
+        },
+        "layout": {
+          "template": "TIME_FIRST",
+          "overrides": {
+            "strip": [
+              "layout.template"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "hosts_on_screen": [
+    {
+      "label": "Digital clock",
+      "bounds": [
+        230,
+        651,
+        1057,
+        1207
+      ],
+      "center": [
+        643,
+        929
+      ],
+      "size_dp": [
+        315.0,
+        211.8
+      ],
+      "inner_size_dp": [
+        299.4,
+        195.8
+      ],
+      "has_clocky_widget_root": true
+    }
+  ],
+  "host_note": null,
+  "prefs_status": "ok",
+  "orphan_settings": [],
+  "checks": []
+}

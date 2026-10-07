@@ -31,7 +31,7 @@ cdev finish             # restore device settings, close session, clean temp fil
 | `status` | one-screen state: launcher, rotation, keyguard, IME, Clocky version, log-buffer age, `PENDING RESTORE` |
 | `prepare [--stay-awake] [--home]` | wake the screen, pin the device, start a session, record the `prepare` log mark |
 | `mark NAME` | named time boundary for `logs --since mark:NAME` |
-| `inspect [--all] [--no-screenshot] [--wait-for LABEL]` | uiautomator dump + screenshot (`screen.png`, `screen_small.png`) |
+| `inspect [--all] [--no-screenshot] [--wait-for LABEL] [--diff]` | uiautomator dump + screenshot (`screen.png`, `screen_small.png`); `--diff` prints only what changed since the previous inspect |
 | `tap [LABEL] [--text/--desc/--id/--class/--package] [--contains] [--index N] [--scroll] [--wait S] [--xy X Y]` | tap by selector |
 | `long-press` | same selectors, `--ms 1500` |
 | `drag` | press-hold-move-release: `--to LABEL` / `--to-id ID` / `--to-xy X Y`, `--hold-ms`, `--steps`, `--move-ms` (API 30+) |
@@ -39,12 +39,16 @@ cdev finish             # restore device settings, close session, clean temp fil
 | `key back\|home\|recents\|wakeup\|enter\|KEYCODE_*` | key events (power/sleep keys refused) |
 | `wait [SELECTOR] [--gone] [--activity SUBSTR] [--timeout S]` | wait for a node / focus change |
 | `widget [--id N] [--locate] [--raw]` | Clocky widget state |
+| `widget --ticking [--timeout S] [--index N] [--no-process]` | prove the on-screen widget clock advances (exit 7 if not); `--no-process` also requires that no Clocky process exists |
+| `proc [status]` / `proc kill [--hard] [--timeout S]` | Clocky pid list / `am kill` (refuses while Clocky is in the foreground; `--hard` = `run-as kill -9` on debuggable builds); records mark `proc-kill` |
 | `logs [--since prepare\|mark:NAME\|30s\|all-buffer] [--raw]` | Clocky log summary (never `logcat -c`) |
 | `rotate portrait\|landscape\|reverse-*\|auto` | fixes rotation; original values saved once |
 | `restore` | write back the saved settings (verified with `settings get`) |
 | `install [APK]` | `adb install -r` (never uninstalls); records sha256 + versionCode |
-| `launch app` / `launch config --widget-id N` | start Clocky / the config Activity of an existing widget |
-| `collect LABEL [--no-launcher-dump]` | evidence bundle, tolerant of partial failure |
+| `launch app` / `launch config --widget-id N` | start Clocky / the config Activity of an existing widget (waits up to `--wait 5` s for focus) |
+| `launch activity .pkg.Class [--ei K V] [--es K V] [--ez K true\|false]` | start any Activity class inside the Clocky APK (debug probes); other packages exit 6 |
+| `collect LABEL [--no-launcher-dump] [--compare-to LABEL2 [--expect-same settings\|all]]` | evidence bundle, tolerant of partial failure; optionally compared with an earlier bundle |
+| `compare A B [--only settings\|widgets\|meta\|logs] [--expect-same settings\|all]` | diff two bundles (label, step dir, `<session>/<label>` or path); no device needed |
 | `adb -- <args>` | raw adb with serial + safety guard |
 | `cleanup` / `finish` | remove leftover temp files / restore + close session |
 
@@ -58,6 +62,7 @@ cdev finish             # restore device settings, close session, clean temp fil
 | 4 | UI target not found / dump failure | `inspect`; use `--scroll`, `--wait`, `--contains`, or `--xy` from the screenshot |
 | 5 | adb or command failure | read the message; do not retry blindly |
 | 6 | refused by a safety boundary | ask the human to do it |
+| 7 | **check failed**: the observation worked but an explicitly requested condition is false (`--expect-same`, `widget --ticking`) | the evidence is saved; read it, do not retry blindly |
 
 `--json` prints exactly one object: `{"ok":true,"command":..,"device":{..},"result":{..},"warnings":[..],"artifacts":[..]}` or
 `{"ok":false,"command":..,"error":{"code","message","hint","candidates"}}`. ASCII-escaped, so it is safe in any console.
@@ -78,6 +83,10 @@ Never implemented / refused (exit 6): uninstall, `pm clear`, `logcat -c/-G`, `se
 {`system/accelerometer_rotation`, `system/user_rotation`, `global/stay_on_while_plugged_in`}, reboot, root, remount,
 `rm` outside `clocky-dev-*`, `install -d`, unlocking the device. The raw `adb --` denylist is a developer safety guard,
 not a security sandbox.
+
+`am force-stop` is **not** used by cdev and should not be used raw either: it puts Clocky in the stopped state, which
+cancels AlarmManager alarms and blocks broadcasts, invalidating widget-ticking and alarm checks. `proc kill` uses `am kill`;
+`--hard` uses `run-as com.stupidsavacan.clocky kill -9 <pid>` only for debuggable builds and only for pids it just read.
 The tool never unlocks the device: with a keyguard showing `prepare` stops (exit 2) and asks you to unlock manually.
 
 ## Evidence & privacy
@@ -106,6 +115,20 @@ cdev logs --since mark:add1
 cdev long-press --id/--xy <widget>                 # shows the resize frame
 cdev drag --id widget_resize_bottom_handle --to-xy 360 1100 --hold-ms 300
 cdev key home; cdev widget --locate
+
+# Studio: change and save a setting (no coordinates)
+cdev launch config --widget-id N
+cdev tap --id clocky_tune_detail --wait 5
+cdev tap 動作 --contains --scroll          # the tab row scrolls horizontally if needed
+cdev tap 12時間 --scroll
+cdev tap --id clocky_studio_save; cdev key home
+cdev inspect --diff                        # only what changed since the previous inspect
+
+# process-free ticking proof
+cdev key home; cdev proc kill [--hard]; cdev widget --ticking --no-process; cdev collect post-kill
+
+# restore proof (settings byte-identical, or JSON paths that differ)
+cdev collect baseline ...  cdev collect restored --compare-to baseline --expect-same settings
 
 # reconfigure: tap the pencil shown in resize mode
 cdev tap --id widget_reconfigure_button

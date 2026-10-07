@@ -1,6 +1,7 @@
 """Clocky widget inspection: dumpsys appwidget, prefs XML/JSON, size class, host-view location."""
 import json
 import re
+import unicodedata
 import xml.etree.ElementTree as ET
 
 from . import constants as C
@@ -139,6 +140,32 @@ def parse_prefs(xml_text):
     return out
 
 
+def parse_prefs_all(xml_text):
+    """prefs XML -> {key: (type, value)} for every entry; widget.N.settings values are JSON-decoded when possible."""
+    out = {}
+    if not xml_text.strip():
+        return out
+    root = ET.fromstring(xml_text)
+    rx = re.compile(C.PREFS_KEY_RE)
+    for el in root:
+        name = el.get("name")
+        if not name:
+            continue
+        if el.tag == "string":
+            val = el.text or ""
+            if rx.match(name):
+                try:
+                    val = json.loads(val)
+                except ValueError:
+                    pass
+        elif el.tag == "set":
+            val = sorted((c.text or "") for c in el)
+        else:
+            val = el.get("value")
+        out[name] = (el.tag, val)
+    return out
+
+
 def summarize_settings(entry):
     """Schema-tolerant summary; absent keys are omitted."""
     if entry.get("decode_error"):
@@ -154,7 +181,7 @@ def summarize_settings(entry):
         "time": ("fontFamily", "font", "weight", "sizeSp", "argb", "color", "opacity", "alignment", "hourMode"),
         "date": ("enabled", "visible", "formatPattern", "fontFamily", "font", "weight", "sizeSp"),
         "background": ("type", "argb", "color", "opacity", "cornerRadiusDp", "cornerRadius"),
-        "behavior": ("hourMode",),
+        "behavior": ("hourMode", "amPm", "showSeconds"),
     }
     for sect, keys in pick.items():
         v = d.get(sect)
@@ -250,3 +277,48 @@ def build_checks(widgets, prefs, prefs_available):
         if w.get("zombie"):
             checks.append({"check": "zombie", "id": w["id"]})
     return checks
+
+
+# -------------------------------------------------------------- ticking time
+
+_TIME_RE = re.compile(C.TIME_TEXT_RE)
+
+
+def normalize_time_text(text):
+    """Unicode digits -> ASCII, fullwidth colon -> ':'. Returns the normalized string."""
+    out = []
+    for ch in unicodedata.normalize("NFC", (text or "").strip()):
+        if ch in "：﹕∶":
+            out.append(":")
+        elif ch.isdigit():
+            try:
+                out.append(str(unicodedata.digit(ch)))
+            except ValueError:
+                out.append(ch)
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def is_time_text(text):
+    return bool(_TIME_RE.match(normalize_time_text(text)))
+
+
+def find_time_nodes(nodes):
+    """One entry per Clocky host view: {'host': node, 'time': node|None, 'text': str|None}.
+
+    The time node is the Clocky TextView under the host whose label looks like a clock (H:MM[:SS]); when several
+    qualify (e.g. seconds shown) the one with the largest area wins. Hosts are ordered by (top, left).
+    """
+    out = []
+    for h in nodes:
+        if not h.is_host:
+            continue
+        inner = [d for d in nodes if d is not h and d.pkg == C.PACKAGE and _is_descendant(d, h)]
+        if not inner:
+            continue
+        cands = [d for d in inner if (d.cls or "").endswith("TextView") and is_time_text(d.label)]
+        best = max(cands, key=lambda d: d.area) if cands else None
+        out.append({"host": h, "time": best, "text": normalize_time_text(best.label) if best else None})
+    out.sort(key=lambda e: (e["host"].bounds[1], e["host"].bounds[0]))
+    return out

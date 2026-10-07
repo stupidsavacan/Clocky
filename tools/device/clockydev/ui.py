@@ -222,8 +222,12 @@ def pick(nodes, sel, what="target"):
                     "Give a LABEL, --text/--desc/--id/--class, or --xy X Y.")
     ms = find(nodes, sel)
     if not ms:
-        raise ui_err("NOT_FOUND", "no node matches %s" % sel.describe(),
-                     "Run `cdev inspect` to see what is on screen; try --contains, --scroll, --wait N, or --xy.")
+        near = near_misses(nodes, sel)
+        hint = "Run `cdev inspect` to see what is on screen; try --contains, --scroll, --wait N, or --xy."
+        if near:
+            hint = "did you mean %s? (re-run with that exact text or --contains). %s" % (
+                " / ".join(repr(n.label) for n in near[:3]), hint)
+        raise ui_err("NOT_FOUND", "no node matches %s" % sel.describe(), hint, candidates(near))
     if sel.index is not None:
         if not 0 <= sel.index < len(ms):
             raise usage("INDEX_OUT_OF_RANGE", "--index %d but only %d match(es)" % (sel.index, len(ms)),
@@ -271,6 +275,110 @@ def render_text(nodes):
             "  " * (n.depth or 0), ".".join(map(str, n.path)), n.label, n.rid or "-", n.cls, n.pkg,
             n.bounds[0], n.bounds[1], n.bounds[2], n.bounds[3], n.flags()))
     return "\n".join(lines) + "\n"
+
+
+def orientation(node):
+    """'horizontal' for HorizontalScrollView / ViewPager, otherwise 'vertical' (class name only; no guessing)."""
+    c = node.cls or ""
+    return "horizontal" if ("HorizontalScrollView" in c or "ViewPager" in c) else "vertical"
+
+
+def scroll_candidates(nodes):
+    """Visible scrollable containers, vertical first (area desc), then horizontal (area desc)."""
+    cand = [n for n in nodes if n.scrollable and n.area > 0]
+    key = lambda n: -n.area  # noqa: E731
+    return (sorted([n for n in cand if orientation(n) == "vertical"], key=key)
+            + sorted([n for n in cand if orientation(n) == "horizontal"], key=key))
+
+
+def all_clocky_scrollables(nodes):
+    """True when there is at least one scrollable and every visible scrollable belongs to Clocky."""
+    sc = [n for n in nodes if n.scrollable]
+    return bool(sc) and all(n.pkg == C.PACKAGE for n in sc)
+
+
+_MARKS = "•・·●*★ "
+
+
+def _bare(s):
+    return norm(s).strip(_MARKS)
+
+
+def near_misses(nodes, sel, limit=5):
+    """Visible nodes whose label nearly equals the selector text (contains / contained-by / marker-stripped)."""
+    want = norm(sel.label or sel.text or sel.desc or "")
+    if len(want) < 1:
+        return []
+    bw = _bare(want)
+    out = []
+    for n in nodes:
+        for have in (n.text, n.desc):
+            h = norm(have)
+            if not h or h == want:
+                continue
+            bh = _bare(h)
+            if want in h or (len(h) >= 2 and h in want) or (bw and bw == bh):
+                out.append(n)
+                break
+    return out[:limit]
+
+
+def _ancestor_rid(n):
+    p = n.parent
+    while p is not None:
+        if p.rid_short:
+            return p.rid_short
+        p = p.parent
+    return ""
+
+
+def _keyed(nodes):
+    """Stable identity per node: (resource id, class) or (label, class, nearest ancestor id), plus an occurrence index."""
+    seen, out = {}, {}
+    for n in nodes:
+        base = (n.rid_short, n.cls) if n.rid_short else (norm(n.label), n.cls, _ancestor_rid(n))
+        k = seen.get(base, 0)
+        seen[base] = k + 1
+        out[(base, k)] = n
+    return out
+
+
+def diff_nodes(prev, cur):
+    """Compare two visible-node lists -> {added, removed, changed: [(old, new)], bounds_only: int, overlap: float}."""
+    a, b = _keyed(prev), _keyed(cur)
+    added = [b[k] for k in b if k not in a]
+    removed = [a[k] for k in a if k not in b]
+    changed, bounds_only = [], 0
+    for k in a:
+        if k in b:
+            o, n = a[k], b[k]
+            if norm(o.label) != norm(n.label) or o.flags() != n.flags():
+                changed.append((o, n))
+            elif o.bounds != n.bounds:
+                bounds_only += 1
+    both = len(set(a) & set(b))
+    overlap = both / float(max(1, max(len(a), len(b))))
+    return {"added": added, "removed": removed, "changed": changed, "bounds_only": bounds_only, "overlap": overlap}
+
+
+def interesting(n):
+    return bool(n.label or n.is_host or n.scrollable or (n.clickable and n.rid))
+
+
+def render_diff(d):
+    """Human lines for diff_nodes output (only nodes worth showing, like the table)."""
+    def row(sign, n):
+        return "%s %-28s %-38s %s %s" % (sign, short(n.label, 28) or "-", short(n.rid_short, 38) or "-",
+                                         "[%d,%d][%d,%d]" % n.bounds, n.flags())
+    lines = [row("+", n) for n in d["added"] if interesting(n)]
+    lines += [row("-", n) for n in d["removed"] if interesting(n)]
+    for o, n in d["changed"]:
+        if interesting(o) or interesting(n):
+            lines.append("~ %s -> %s  id=%s flags %s -> %s" % (short(o.label, 28) or "-", short(n.label, 28) or "-",
+                                                              short(n.rid_short, 30) or "-", o.flags(), n.flags()))
+    lines.append("(%d added, %d removed, %d changed, %d moved/resized only)" % (
+        len(d["added"]), len(d["removed"]), len(d["changed"]), d["bounds_only"]))
+    return lines
 
 
 def largest_scrollable(nodes, within=None):

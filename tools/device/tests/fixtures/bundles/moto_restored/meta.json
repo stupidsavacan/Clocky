@@ -1,0 +1,51 @@
+{
+  "label": "fallback-restored",
+  "host_time": "2026-10-07T19:23:32+0900",
+  "device_epoch": 1791368610.649,
+  "session": "s-fixture",
+  "marks": {
+    "prepare": 1791367589.036
+  },
+  "device": {
+    "identity": "SERIAL",
+    "model": "moto g13",
+    "sdk": 34,
+    "release": "14",
+    "locale": "ja-JP",
+    "size": [
+      720,
+      1600
+    ],
+    "density": 280,
+    "rotation": 0
+  },
+  "clocky": {
+    "installed": {
+      "versionCode": 2,
+      "versionName": "0.2.0-aosp-port",
+      "lastUpdateTime": "2026-10-07 19:17:44",
+      "uid": 10232,
+      "debuggable": true
+    },
+    "install_record": {
+      "sha256": "d03bb2031cdffb575a45caa1b4d5e84f09c97ff40bdd3917bb5bd9addeb64917",
+      "apk": "app/build/outputs/apk/debug/app-debug.apk",
+      "versionCode": 2,
+      "versionName": "0.2.0-aosp-port",
+      "lastUpdateTime": "2026-10-07 19:17:44",
+      "time": "2026-10-07T19:17:46"
+    }
+  },
+  "git": {
+    "head": "0000000000000000000000000000000000000000",
+    "branch": "fixture",
+    "dirty": false
+  },
+  "launcher": {
+    "package": "com.motorola.launcher3",
+    "versionName": "14.1.155",
+    "versionCode": 34
+  },
+  "tool_version": "1.0.0",
+  "errors": []
+}

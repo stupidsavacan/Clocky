@@ -1,0 +1,124 @@
+{
+  "providers": [
+    {
+      "package": "com.stupidsavacan.clocky",
+      "class": "com.android.alarmclock.AnalogAppWidgetProvider",
+      "min_dp": [
+        110.0,
+        110.0
+      ],
+      "min_resize_dp": [
+        55.0,
+        55.0
+      ],
+      "resizeMode": 3,
+      "widgetCategory": 1,
+      "zombie": false,
+      "kind": "analog"
+    },
+    {
+      "package": "com.stupidsavacan.clocky",
+      "class": "com.android.alarmclock.DigitalAppWidgetProvider",
+      "min_dp": [
+        250.0,
+        70.0
+      ],
+      "min_resize_dp": [
+        250.0,
+        40.0
+      ],
+      "resizeMode": 3,
+      "widgetCategory": 3,
+      "zombie": false,
+      "kind": "digital"
+    }
+  ],
+  "widgets": [
+    {
+      "id": 23,
+      "kind": "digital",
+      "host": "com.motorola.launcher3",
+      "options": {
+        "unavailable": "dumpsys appwidget has no options line"
+      },
+      "size_class": "Card",
+      "size_source": "estimated from launcher host-view bounds (379x261 dp)",
+      "size_rule": "tool replica of SizeClassResolver (0<minH<100)",
+      "settings": {
+        "schema": 2,
+        "origin": "bold-poster",
+        "time": {
+          "font": "token:fontPrimary",
+          "weight": 400,
+          "sizeSp": 144,
+          "color": {
+            "type": "token",
+            "role": "PRIMARY"
+          },
+          "opacity": 1,
+          "alignment": "CENTER"
+        },
+        "date": {
+          "visible": true,
+          "formatPattern": null,
+          "font": "token:fontSecondary",
+          "weight": 400,
+          "sizeSp": 19.200000762939453
+        },
+        "background": {
+          "type": "NONE",
+          "color": {
+            "type": "fixed",
+            "rgb": "#111111"
+          },
+          "opacity": 0.8999999761581421,
+          "cornerRadius": {
+            "type": "system"
+          }
+        },
+        "behavior": {
+          "hourMode": "FOLLOW_SYSTEM"
+        },
+        "layout": {
+          "template": "TIME_FIRST",
+          "overrides": {
+            "strip": [
+              "layout.template"
+            ],
+            "card": [
+              "layout.template"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "hosts_on_screen": [
+    {
+      "label": "\u30c7\u30b8\u30bf\u30eb\u6642\u8a08",
+      "bounds": [
+        14,
+        331,
+        706,
+        815
+      ],
+      "center": [
+        360,
+        573
+      ],
+      "size_dp": [
+        395.4,
+        276.6
+      ],
+      "inner_size_dp": [
+        379.4,
+        260.6
+      ],
+      "has_clocky_widget_root": true
+    }
+  ],
+  "host_note": null,
+  "prefs_status": "ok",
+  "orphan_settings": [],
+  "checks": []
+}

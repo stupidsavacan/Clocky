@@ -125,3 +125,36 @@ class Locate(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTicking(unittest.TestCase):
+    def nodes(self, name):
+        from clockydev import ui
+        ns, screen = ui.parse_hierarchy(fixture(name))
+        return ui.visible(ns, screen)
+
+    def test_find_time_nodes_launcher_dumps(self):
+        a = W.find_time_nodes(self.nodes("moto_g13_launcher_tick_a.xml"))
+        b = W.find_time_nodes(self.nodes("moto_g13_launcher_tick_b.xml"))
+        self.assertEqual([e["text"] for e in a], ["7:19"])
+        self.assertEqual([e["text"] for e in b], ["7:20"])
+        self.assertEqual(a[0]["time"].rid_short, "clocky_face_w900")
+
+    def test_ampm_marker_and_date_are_not_time(self):
+        e = W.find_time_nodes(self.nodes("moto_g13_launcher_tick_a.xml"))[0]
+        self.assertEqual(e["time"].bounds, (98, 442, 471, 661))
+
+    def test_no_host(self):
+        self.assertEqual(W.find_time_nodes(self.nodes("moto_g13_launcher_home.xml")), [])
+
+    def test_normalize(self):
+        self.assertEqual(W.normalize_time_text("٧:١٩"), "7:19")           # Arabic-Indic
+        self.assertEqual(W.normalize_time_text("१२：००"), "12:00")  # Devanagari + fullwidth colon
+        self.assertTrue(W.is_time_text("07:19:05"))
+        self.assertFalse(W.is_time_text("10月7日"))
+        self.assertFalse(W.is_time_text("PM"))
+
+    def test_behavior_summary_has_ampm(self):
+        s = W.summarize_settings({"json": {"schema": 2, "behavior": {"hourMode": "H12", "amPm": {"mode": "x"}, "showSeconds": False, "tap": 1}},
+                                  "raw": "", "decode_error": None})
+        self.assertEqual(s["behavior"], {"hourMode": "H12", "amPm": {"mode": "x"}, "showSeconds": False})

@@ -7,3 +7,4 @@
 - Evidence lives in `build/device/sessions/...` (git-ignored). Only `summary.md` may be pasted into PRs/issues.
 - Never uninstall, `pm clear`, or `logcat -c` (widgets and settings would be lost).
 - Unit tests: `python -m unittest discover -s tools/device/tests -t tools/device`.
+- Process kill / ticking / restore proof: use `cdev proc kill`, `cdev widget --ticking --no-process` and `cdev collect X --compare-to Y --expect-same settings` (no `adb -- shell pidof/am kill`, no hand-written compare scripts). Never `am force-stop`.

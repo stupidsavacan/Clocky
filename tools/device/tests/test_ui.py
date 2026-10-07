@@ -157,3 +157,94 @@ class Dump(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StudioScroll(unittest.TestCase):
+    def setUp(self):
+        self.vis = vis(fixture("moto_g13_studio_landscape.xml"))
+
+    def test_candidate_order_vertical_first_then_horizontal(self):
+        cs = ui.scroll_candidates(self.vis)
+        self.assertEqual([(c.rid_short, ui.orientation(c)) for c in cs],
+                         [("", "vertical"), ("clocky_studio_scroll", "vertical"), ("clocky_studio_tabs_scroll", "horizontal")])
+        # the preview ScrollView is the largest, which is what misled the old single-container logic
+        self.assertEqual(ui.largest_scrollable(self.vis).rid_short, "")
+
+    def test_all_clocky_scrollables(self):
+        self.assertTrue(ui.all_clocky_scrollables(self.vis))
+        self.assertFalse(ui.all_clocky_scrollables(vis(DUP)))          # package "p": not Clocky -> legacy path
+        self.assertFalse(ui.all_clocky_scrollables([]))
+
+    def test_scroller_visits_every_clocky_container_then_stops(self):
+        from clockydev.cmd_ui import Scroller
+        sc = Scroller(self.vis, None)
+        self.assertTrue(sc.multi)
+        seen = []
+        while True:
+            c = sc.next(self.vis)      # unchanged content -> each container is abandoned after one swipe
+            if c is None:
+                break
+            seen.append(c.rid_short)
+        self.assertEqual(seen, ["", "clocky_studio_scroll", "clocky_studio_tabs_scroll"])
+        self.assertEqual([e["dir"] for e in sc.summary()], ["down", "down", "forward"])
+
+    def test_scroller_legacy_for_foreign_package_and_in_sel(self):
+        from clockydev.cmd_ui import Scroller
+        v = vis(DUP)
+        sc = Scroller(v, None)
+        self.assertFalse(sc.multi)
+        self.assertEqual(sc.next(v).rid_short, "list")
+        self.assertIsNone(sc.next(v))                                    # unchanged -> done
+        self.assertFalse(Scroller(self.vis, "clocky_studio_scroll").multi)
+
+    def test_near_miss_marker_label(self):
+        near = ui.near_misses(self.vis, ui.Selector(label="動作"))
+        self.assertEqual([n.label for n in near], ["動作 •"])
+        self.assertEqual(ui.near_misses(self.vis, ui.Selector(label="日付"))[0].label, "日付 •")
+        self.assertEqual(ui.near_misses(self.vis, ui.Selector(label="存在しない")), [])
+
+    def test_not_found_carries_near_miss_hint(self):
+        with self.assertRaises(CdevError) as c:
+            ui.pick(self.vis, ui.Selector(label="動作"))
+        e = c.exception
+        self.assertEqual(e.exit_code, 4)
+        self.assertIn("did you mean '動作 •'", e.hint)
+        self.assertEqual(e.candidates[0]["label"], "動作 •")
+
+    def test_near_misses_never_auto_pick(self):
+        n, _ = ui.pick(self.vis, ui.Selector(label="動作", contains=True))
+        self.assertEqual(n.label, "動作 •")
+
+
+class InspectDiff(unittest.TestCase):
+    def test_studio_before_after_tab_panel_opened(self):
+        a, b = vis(fixture("moto_g13_studio_landscape.xml")), vis(fixture("moto_g13_studio_landscape_after.xml"))
+        d = ui.diff_nodes(a, b)
+        added = {n.label for n in d["added"] if ui.interesting(n)}
+        removed = {n.label for n in d["removed"] if ui.interesting(n)}
+        self.assertIn("12時間", added)
+        self.assertIn("表示しない", added)
+        self.assertIn("表示する項目", removed)
+        # header controls are unchanged and therefore not repeated
+        self.assertFalse({"元に戻す", "やり直す", "保存", "スタジオ"} & (added | removed))
+        self.assertGreater(d["overlap"], 0.5)
+        lines = ui.render_diff(d)
+        self.assertTrue(any(l.startswith("+ 12時間") for l in lines))
+        self.assertLess(len(lines), len(ui.render_table(b)))
+
+    def test_identical_dumps_have_no_changes(self):
+        a = vis(fixture("moto_g13_studio_landscape.xml"))
+        d = ui.diff_nodes(a, a)
+        self.assertEqual((d["added"], d["removed"], d["changed"], d["bounds_only"]), ([], [], [], 0))
+        self.assertEqual(d["overlap"], 1.0)
+
+    def test_label_change_is_changed_when_node_has_id(self):
+        a = vis(fixture("moto_g13_launcher_tick_a.xml"))
+        b = vis(fixture("moto_g13_launcher_tick_b.xml"))
+        d = ui.diff_nodes(a, b)
+        self.assertEqual([(o.label, n.label) for o, n in d["changed"]], [("7:19", "7:20")])
+        self.assertEqual((d["added"], d["removed"]), ([], []))
+
+    def test_different_screens_have_low_overlap(self):
+        d = ui.diff_nodes(vis(fixture("moto_g13_launcher_home.xml")), vis(fixture("moto_g13_studio_landscape.xml")))
+        self.assertLess(d["overlap"], 0.5)

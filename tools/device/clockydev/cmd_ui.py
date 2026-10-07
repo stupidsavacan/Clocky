@@ -1,12 +1,13 @@
 """inspect, tap, long-press, drag, swipe, scroll, key, wait."""
 import os
+import re
 import time
 
 from . import devstate, gestures, ui
 from .cli import Out, command
 from .cmd_session import pending_lines
 from .errors import ui_err, usage
-from .session import get_setting, load_state, next_step_dir
+from .session import get_setting, load_state, next_step_dir, session_dir
 
 
 # ------------------------------------------------------------ selector args
@@ -60,49 +61,133 @@ def save_dump(ctx, label, xml, nodes):
     return d, [ctx.rel(os.path.join(d, "ui.xml")), ctx.rel(os.path.join(d, "ui.txt"))]
 
 
-def acquire(ctx, dev, sel, wait=0, scroll=False, from_top=False, in_sel=None, label="ui"):
-    """Dump (polling/scrolling as asked) until `sel` yields exactly one node. Returns (node, nodes, xml, dir, files)."""
+MAX_SCROLLS_PER_CONTAINER = 10
+MAX_SCROLLS_TOTAL = 25
+
+
+def scroll_container(dev, cont, forward, screen_h):
+    """One swipe on `cont`: vertical containers scroll down/up, horizontal ones forward/back."""
+    if ui.orientation(cont) == "horizontal":
+        a, b = gestures.hscroll_points(cont.bounds, "forward" if forward else "back")
+    else:
+        a, b = gestures.scroll_points(cont.bounds, "down" if forward else "up", screen_h)
+    dev.adb.shell(gestures.swipe_cmd(a[0], a[1], b[0], b[1], 300), timeout=10)
+    time.sleep(0.6)
+
+
+class Scroller:
+    """Chooses what to scroll next.
+
+    --in given, or any non-Clocky scrollable on screen (launcher pages): the single largest container, vertical
+    (legacy behavior, so launcher workspaces are never swiped sideways). Otherwise every Clocky scrollable in
+    scroll_candidates order, each until its content stops changing.
+    """
+
+    def __init__(self, vis, in_sel):
+        self.in_sel = in_sel
+        self.multi = not in_sel and ui.all_clocky_scrollables(vis)
+        self.order = [n.path for n in ui.scroll_candidates(vis)] if self.multi else None
+        self.i, self.per, self.total, self.prev = 0, 0, 0, None
+        self.log = {}
+
+    def containers(self, vis):
+        if self.multi:
+            by = {n.path: n for n in vis if n.scrollable}
+            return [by[p] for p in self.order if p in by]
+        c = _container(vis, self.in_sel)
+        return [c] if c is not None else []
+
+    def next(self, vis):
+        """-> container to scroll forward once, or None when everything is exhausted."""
+        if self.total >= (MAX_SCROLLS_TOTAL if self.multi else MAX_SCROLLS_PER_CONTAINER):
+            return None
+        h = ui.content_hash(vis)
+        if not self.multi:
+            if h == self.prev:
+                return None
+            cont = _container(vis, self.in_sel)
+            if cont is None:
+                return None
+            self.prev, self.total = h, self.total + 1
+            self._note(cont)
+            return cont
+        by = {n.path: n for n in vis if n.scrollable}
+        while self.i < len(self.order):
+            cont = by.get(self.order[self.i])
+            if cont is None or self.per >= MAX_SCROLLS_PER_CONTAINER or (self.prev is not None and h == self.prev):
+                self.i, self.per, self.prev = self.i + 1, 0, None
+                continue
+            self.prev, self.per, self.total = h, self.per + 1, self.total + 1
+            self._note(cont)
+            return cont
+        return None
+
+    def _note(self, cont):
+        key = cont.path
+        e = self.log.setdefault(key, {"container": cont.rid_short or (cont.cls or "").rsplit(".", 1)[-1],
+                                      "dir": "forward" if ui.orientation(cont) == "horizontal" else "down", "times": 0})
+        e["times"] += 1
+
+    def summary(self):
+        return list(self.log.values())
+
+
+def _scroll_to_start(dev, vis, in_sel, screen, observe_fn):
+    """--from-top: bring each scroller back to its start. Returns refreshed (xml, nodes, screen)."""
+    sc = Scroller(vis, in_sel)
+    paths = sc.order if sc.multi else None
+    xml = nodes = None
+    targets = paths if paths is not None else [None]
+    for path in targets:
+        prev = None
+        for _ in range(MAX_SCROLLS_PER_CONTAINER):
+            xml, nodes, screen = observe_fn()
+            v = usable(nodes, screen)
+            h = ui.content_hash(v)
+            if h == prev:
+                break
+            prev = h
+            cont = next((n for n in v if n.path == path and n.scrollable), None) if path is not None else _container(v, in_sel)
+            if cont is None:
+                break
+            scroll_container(dev, cont, False, screen[1])
+    if xml is None:
+        xml, nodes, screen = observe_fn()
+    return xml, nodes, screen
+
+
+def acquire(ctx, dev, sel, wait=0, scroll=False, from_top=False, in_sel=None, label="ui", scrolled=None):
+    """Dump (polling/scrolling as asked) until `sel` yields exactly one node.
+
+    Returns (node, nodes, xml, dir, files). When a list is passed as `scrolled`, what was scrolled is appended to it.
+    """
     if scroll and not wait:
         wait = 3      # screens often are still inflating right after an Activity switch
     deadline = time.time() + wait
     xml, nodes, screen = observe(dev)
-    if scroll and from_top:
-        prev = None
-        for _ in range(10):
-            vis = usable(nodes, screen)
-            h = ui.content_hash(vis)
-            if h == prev:
-                break
-            prev = h
-            cont = _container(vis, in_sel)
-            if not cont:
-                break
-            a, b = gestures.scroll_points(cont.bounds, "up", screen[1])
-            dev.adb.shell(gestures.swipe_cmd(a[0], a[1], b[0], b[1], 300), timeout=10)
-            time.sleep(0.6)
-            xml, nodes, screen = observe(dev)
-    scrolls, prev_hash = 0, None
+    scroller = None
+    if scroll:
+        scroller = Scroller(usable(nodes, screen), in_sel)
+        if from_top:
+            xml, nodes, screen = _scroll_to_start(dev, usable(nodes, screen), in_sel, screen, lambda: observe(dev))
     while True:
         vis = usable(nodes, screen)
         if ui.find(vis, sel):
             node, _ms = ui.pick(vis, sel)
             d, files = save_dump(ctx, label, xml, nodes)
+            if scrolled is not None and scroller is not None:
+                scrolled.extend(scroller.summary())
             return node, nodes, xml, d, files
-        if scroll and scrolls < 10:
-            h = ui.content_hash(vis)
-            if h == prev_hash:
-                scroll = False
-                continue
-            prev_hash = h
-            cont = _container(vis, in_sel)
+        if scroller is not None:
+            cont = scroller.next(vis)
             if cont is None:
-                scroll = False
-                continue
-            a, b = gestures.scroll_points(cont.bounds, "down", screen[1])
-            dev.adb.shell(gestures.swipe_cmd(a[0], a[1], b[0], b[1], 300), timeout=10)
-            scrolls += 1
-            time.sleep(0.6)
-            xml, nodes, screen = observe(dev)
+                done = scroller
+                scroller = None
+                if scrolled is not None:
+                    scrolled.extend(done.summary())
+            else:
+                scroll_container(dev, cont, True, screen[1])
+                xml, nodes, screen = observe(dev)
             continue
         if time.time() < deadline:
             time.sleep(0.5)
@@ -114,6 +199,7 @@ def acquire(ctx, dev, sel, wait=0, scroll=False, from_top=False, in_sel=None, la
         except Exception as e:
             e.hint = ((e.hint or "") + " (dump saved: %s)" % files[0]).strip() if hasattr(e, "hint") else None
             raise
+
 
 
 def _container(vis, in_sel):
@@ -155,7 +241,9 @@ def resolve_point(ctx, dev, args, label, xy=None, sel=None):
         check_xy(dev, xy[0], xy[1])
         return xy[0], xy[1], None, []
     sel = sel or selector_from(args)
-    node, nodes, xml, d, files = acquire(ctx, dev, sel, args.wait, args.scroll, args.from_top, args.in_sel, label)
+    args._scrolled = []
+    node, nodes, xml, d, files = acquire(ctx, dev, sel, args.wait, args.scroll, args.from_top, args.in_sel, label,
+                                         scrolled=args._scrolled)
     x, y = node.center
     brief = node.brief()
     anc = ui.clickable_ancestor(node)
@@ -177,6 +265,49 @@ def _inspect_setup(p):
     p.add_argument("--no-screenshot", action="store_true")
     p.add_argument("--wait-for", metavar="LABEL", help="wait until a node with this text/desc appears")
     p.add_argument("--timeout", type=float, default=10)
+    p.add_argument("--diff", action="store_true", help="show only what changed since the previous inspect in this session")
+
+
+def previous_inspect(ctx):
+    """-> (xml text, focus or None, step dir name) of the newest earlier inspect step in the open session, or None."""
+    sd = session_dir(ctx.build_dir, load_state(ctx.build_dir))
+    if not sd or not os.path.isdir(sd):
+        return None
+    dirs = sorted(n for n in os.listdir(sd) if re.fullmatch(r"\d{4}-inspect", n))
+    for name in reversed(dirs):
+        try:
+            with open(os.path.join(sd, name, "ui.xml"), encoding="utf-8") as f:
+                xml = f.read()
+        except OSError:
+            continue
+        focus = None
+        try:
+            with open(os.path.join(sd, name, "focus.txt"), encoding="utf-8") as f:
+                focus = f.read().strip() or None
+        except OSError:
+            pass
+        return xml, focus, name
+    return None
+
+
+MIN_DIFF_OVERLAP = 0.5
+
+
+def _diff_against(prev, vis, focus):
+    """-> (diff dict | None, reason). Falls back to the full table when the screens are not comparable."""
+    if prev is None:
+        return None, "none earlier in this session"
+    xml, pfocus, name = prev
+    if pfocus is not None and focus is not None and pfocus != focus:
+        return None, "focus changed"
+    try:
+        pnodes, pscreen = ui.parse_hierarchy(xml)
+    except ValueError:
+        return None, "previous dump unreadable"
+    raw = ui.diff_nodes(ui.visible(pnodes, pscreen), vis)
+    if raw["overlap"] < MIN_DIFF_OVERLAP:
+        return None, "different screen"
+    return {"against": name, "raw": raw}, None
 
 
 @command("inspect", _inspect_setup)
@@ -208,6 +339,7 @@ def cmd_inspect(ctx, args):
                 pass
         raise
     vis = usable(nodes, screen)
+    prev = previous_inspect(ctx) if args.diff else None
     d, files = save_dump(ctx, "inspect", xml, nodes)
     if not args.no_screenshot:
         p = os.path.join(d, "screen.png")
@@ -227,11 +359,32 @@ def cmd_inspect(ctx, args):
     lines = [devstate.human_line(dev.serial, dev.transport, st), "focus  %s" % win.get("focus"),
              "saved  " + ", ".join(files)]
     lines += pending_lines(dev.adb, load_state(ctx.build_dir))
-    lines += ui.render_table(vis, only_interesting=not args.all)
-    return Out({"focus": win.get("focus"), "rotation": win.get("rotation"), "ime_shown": ime,
-                "nodes": [n.brief(i) for i, n in enumerate(vis) if args.all or n.label or n.is_host or n.scrollable
-                          or (n.clickable and n.rid)]},
-               lines, warnings, files)
+    try:
+        with open(os.path.join(d, "focus.txt"), "w", encoding="utf-8") as f:
+            f.write(win.get("focus") or "")
+    except OSError:
+        pass
+    diff = None
+    if args.diff:
+        diff, why = _diff_against(prev, vis, win.get("focus"))
+        if diff is None:
+            lines.append("(no comparable previous inspect: %s; full table)" % why)
+    if diff is not None:
+        lines.append("diff against %s" % diff["against"])
+        lines += ui.render_diff(diff["raw"])
+    else:
+        lines += ui.render_table(vis, only_interesting=not args.all)
+    result = {"focus": win.get("focus"), "rotation": win.get("rotation"), "ime_shown": ime,
+              "nodes": [n.brief(i) for i, n in enumerate(vis) if args.all or n.label or n.is_host or n.scrollable
+                        or (n.clickable and n.rid)]}
+    if diff is not None:
+        raw = diff["raw"]
+        result["diff"] = {"against": diff["against"],
+                          "added": [n.brief() for n in raw["added"] if ui.interesting(n)],
+                          "removed": [n.brief() for n in raw["removed"] if ui.interesting(n)],
+                          "changed": [{"from": o.brief(), "to": n.brief()} for o, n in raw["changed"]],
+                          "moved_only": raw["bounds_only"]}
+    return Out(result, lines, warnings, files)
 
 
 # --------------------------------------------------------------------- tap
@@ -251,7 +404,7 @@ def cmd_tap(ctx, args):
     dev.adb.shell(gestures.tap_cmd(x, y), timeout=10, check=True)
     focus = focus_after(dev)
     desc = brief["label"] if brief and brief["label"] else (brief or {}).get("id") or "xy"
-    return Out({"tapped": brief, "xy": [x, y], "focus_after": focus},
+    return Out({"tapped": brief, "xy": [x, y], "focus_after": focus, "scrolled": getattr(args, "_scrolled", [])},
                ["tap %s at (%d,%d)" % (desc, x, y), "focus %s" % focus], dev.warnings, files)
 
 
@@ -270,7 +423,8 @@ def cmd_long_press(ctx, args):
     x, y, brief, files = resolve_point(ctx, dev, args, "long-press")
     dev.adb.shell(gestures.long_press_cmd(x, y, args.ms), timeout=args.ms // 1000 + 15, check=True)
     focus = focus_after(dev, 0.4)
-    return Out({"pressed": brief, "xy": [x, y], "ms": args.ms, "focus_after": focus},
+    return Out({"pressed": brief, "xy": [x, y], "ms": args.ms, "focus_after": focus,
+                "scrolled": getattr(args, "_scrolled", [])},
                ["long-press at (%d,%d) for %dms" % (x, y, args.ms), "focus %s" % focus], dev.warnings, files)
 
 
@@ -309,7 +463,8 @@ def cmd_drag(ctx, args):
     script = gestures.motion_script((x, y), (tx, ty), args.hold_ms, args.steps, args.move_ms)
     dev.adb.shell(script, timeout=(args.hold_ms + args.move_ms) // 1000 + 20, check=True)
     focus = focus_after(dev, 0.8)
-    return Out({"from": brief, "from_xy": [x, y], "to": tbrief, "to_xy": [tx, ty], "focus_after": focus},
+    return Out({"from": brief, "from_xy": [x, y], "to": tbrief, "to_xy": [tx, ty], "focus_after": focus,
+                "scrolled": getattr(args, "_scrolled", [])},
                ["drag (%d,%d) -> (%d,%d)" % (x, y, tx, ty), "focus %s" % focus], dev.warnings, files)
 
 

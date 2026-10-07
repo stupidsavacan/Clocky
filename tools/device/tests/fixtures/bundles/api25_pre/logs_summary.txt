@@ -1,0 +1,8 @@
+logs since (19:24:11, 10s) | 0 relevant line(s)
+CRASH  none
+ANR    none
+PROC   none
+ACT    none
+LAUNCH none
+WIDGET none
+other  none

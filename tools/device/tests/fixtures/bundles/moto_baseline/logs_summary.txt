@@ -1,0 +1,8 @@
+logs since (19:06:29, 34s) | 38 relevant line(s)
+CRASH  none
+ANR    none
+PROC   none
+ACT    none
+LAUNCH none
+WIDGET none
+other  38 line(s) (see logcat_clocky.txt)

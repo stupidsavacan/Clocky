@@ -76,3 +76,17 @@ def build_summary_md(meta, widget_state, log_lines, files, log_gaps=None):
     out += ["", "## Files (local only, may contain personal data: do not attach except this summary)", ""]
     out += ["- `%s`" % f for f in sorted(files)]
     return "\n".join(out) + "\n"
+
+
+def build_compare_md(label, res, paths):
+    """summary.md section: SAME/DIFFERENT and JSON paths only (never values)."""
+    sm = res.get("same") or {}
+    word = lambda v: "unavailable" if v is None else ("SAME" if v else "DIFFERENT")  # noqa: E731
+    out = ["", "## Compared to %s" % label, ""]
+    if sm.get("settings") is False:
+        shown = paths[:20]
+        out.append("- settings: %d path(s) differ: %s%s" % (len(paths), ", ".join(shown), ", ..." if len(paths) > 20 else ""))
+    else:
+        out.append("- settings: %s" % word(sm.get("settings")))
+    out.append("- widgets: %s" % word(sm.get("widgets")))
+    return "\n".join(out) + "\n"

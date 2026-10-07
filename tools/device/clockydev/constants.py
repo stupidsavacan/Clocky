@@ -26,5 +26,9 @@ EXIT_DEVICE = 3     # device selection failure
 EXIT_UI = 4         # UI target not found / dump failure
 EXIT_ADB = 5        # adb or command failure
 EXIT_REFUSED = 6    # safety boundary
+EXIT_CHECK = 7      # observation succeeded, but an explicitly requested condition is false
+
+PROC_KILL_MARK = "proc-kill"
+TIME_TEXT_RE = r"^\d{1,2}[:：.]\d{2}([:：.]\d{2})?$"
 
 SESSIONS_WARN_MB = 200

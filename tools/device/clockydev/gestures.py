@@ -100,3 +100,16 @@ def scroll_points(bounds, direction, screen_h=None):
     if direction == "up":
         return (cx, top), (cx, bot)
     raise usage("BAD_DIRECTION", "scroll direction must be 'up' or 'down'")
+
+
+def hscroll_points(bounds, direction):
+    """Horizontal swipe along the middle row. 'forward' reveals content to the right (finger moves right -> left)."""
+    l, t, r, b = bounds
+    cy = (t + b) // 2
+    w = r - l
+    left, right = l + int(w * 0.25), l + int(w * 0.75)
+    if direction == "forward":
+        return (right, cy), (left, cy)
+    if direction == "back":
+        return (left, cy), (right, cy)
+    raise usage("BAD_DIRECTION", "horizontal scroll direction must be 'forward' or 'back'")

@@ -1,0 +1,22 @@
+logs since (19:06:29, 1020s) | 583 relevant line(s)
+CRASH  none
+ANR    none
+PROC   19:13:42 am_proc_start: [0,13853,10232,com.stupidsavacan.clocky,broadcast,{com.stupidsavacan.clocky/com.android.deskclock.AlarmInitReceiver}]
+PROC   19:17:44 am_kill: [0,13853,com.stupidsavacan.clocky,900,stop com.stupidsavacan.clocky due to installPackageLI]
+PROC   19:17:45 am_proc_start: [0,15199,10232,com.stupidsavacan.clocky,broadcast,{com.stupidsavacan.clocky/com.android.deskclock.AlarmInitReceiver}]
+PROC   19:19:10 am_kill: [0,15199,com.stupidsavacan.clocky,900,kill background]
+PROC   19:21:31 am_proc_start: [0,16127,10232,com.stupidsavacan.clocky,next-top-activity,{com.stupidsavacan.clocky/com.stupidsavacan.clocky.widget.DigitalWidgetConfigActivity}]
+ACT    (63 other lifecycle line(s) hidden; see logcat_clocky.txt)
+ACT    19:13:43 wm_create_activity: [0,249783761,144,com.stupidsavacan.clocky/.widget.DigitalWidgetConfigActivity,android.appwidget.action.APPWIDGET_CONFIGURE,NULL,NULL,268435456]
+ACT    19:13:45 wm_on_create_called: [249783761,com.stupidsavacan.clocky.widget.DigitalWidgetConfigActivity,performCreate,1976]
+ACT    19:13:51 wm_create_activity: [0,244219716,144,com.stupidsavacan.clocky/.widget.studio.StudioActivity,NULL,NULL,NULL,0]
+ACT    19:13:51 wm_on_create_called: [244219716,com.stupidsavacan.clocky.widget.studio.StudioActivity,performCreate,331]
+ACT    19:16:22 wm_finish_activity: [0,244219716,144,com.stupidsavacan.clocky/.widget.studio.StudioActivity,app-request]
+ACT    19:16:23 wm_on_destroy_called: [244219716,com.stupidsavacan.clocky.widget.studio.StudioActivity,performDestroy,1]
+ACT    19:17:44 wm_finish_activity: [0,249783761,144,com.stupidsavacan.clocky/.widget.DigitalWidgetConfigActivity,proc died without state saved]
+ACT    19:17:45 wm_create_activity: [0,48024695,145,com.stupidsavacan.clocky/.widget.DigitalWidgetConfigActivity,android.appwidget.action.APPWIDGET_CONFIGURE,NULL,NULL,268435456]
+ACT    ... 15 more
+LAUNCH none
+WIDGET none
+other  492 line(s) (see logcat_clocky.txt)
+WARNING buffer main rolled over: logs between the mark and 19:19:16 are lost (~767s); run `cdev logs`/`collect` right after acting
