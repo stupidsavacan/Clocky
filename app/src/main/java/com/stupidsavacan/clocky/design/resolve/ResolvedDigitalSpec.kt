@@ -104,7 +104,7 @@ data class ResolvedInfo(
     val isSample: Boolean,
 )
 
-/** Host-ticking suffix: HH with the marker face on API 26+, localized a below it. */
+/** Host-ticking suffix: HH on font-capable hosts, localized a otherwise. */
 data class ResolvedAmPm(
     val text: ResolvedText,
     val scale: Float,
@@ -144,7 +144,7 @@ enum class TextElementKind { TIME, DATE, INFO }
 enum class InfoHiddenReason { STRIP_SIZE, MINIMAL_TEMPLATE }
 
 sealed interface Degradation {
-    /** API 23–25 cannot load the dedicated marker face in RemoteViews. */
+    /** The host cannot apply the dedicated Latin marker font (including API 23–25). */
     data object AmPmLocalized : Degradation
     data class WeightApproximated(
         val element: TextElementKind,

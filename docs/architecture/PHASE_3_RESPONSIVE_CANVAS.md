@@ -1,6 +1,6 @@
 # Phase 3 — Responsive Canvas & Library: design record
 
-> Status: **design only; nothing here is implemented yet.** The owner delegated the open semantics to this record on
+> Status: **Phase 3 is design only; the independent Phase 2 marker follow-up has implementation results in §1a.** The owner delegated the open semantics to this record on
 > 2026-10-07; the rulings are in section 8 and are reflected in `CLOCKY_END_STATE.md` (section 9 lists the edits).
 > Implementation can start with 3A-0. Values marked *provisional* still wait for measurement.
 > Authority: `docs/product/CLOCKY_END_STATE.md` (§3, §5.8, §7, §8, §9, §10, §12, §13, §14). This record splits the
@@ -111,6 +111,62 @@ Robolectric: the marker fragment carries `HH` and the marker font; ja strings. D
 12-hour widget shows the same effective marker as Preview (the observed API 34 host uses disclosed fallback);
 API 25 emulator shows the disclosed fallback. The noon/midnight flip is observed
 only if a session spans it (the device clock is not changed: that needs settings outside cdev's allowlist).
+
+
+**Implementation result (2026-10-07, independent follow-up PR; merge pending).**
+- `RenderEnvironment.supportsLatinAmPmMarker` is an explicit runtime-only fact. API < 26, unknown HOME,
+  system resolver, probe failure, or an unapplied/unshaped marker face resolves to localized `a` and
+  `AmPmLocalized`. No requested values or capability flags are written to the design.
+- `AmPmHostCapability` resolves the HOME launcher (scoped manifest package-visibility query), then applies
+  the production marker RemoteViews in that launcher's package Context. It checks the dedicated Typeface
+  and all 24 hour advances against the two substituted groups. The `android` package is deliberately
+  excluded: its special Context falsely advertised support in the first capability attempt. Both provider
+  and Preview use the same probe. This is a framework/launcher-context capability check, not a launcher allowlist.
+- On a supported path the 3,132-byte OFL-derived, renamed Clocky AM PM Marker font has required `rlig`
+  substitutions and Unicode decimal-digit aliases. It stays outside FontCatalog. Marker-only layouts carry
+  accessibility exclusion in XML because the setter is not RemoteViews-remotable. Localized markers inherit
+  platform faces; an inherited bundled face falls back to system sans for the marker alone, with disclosure.
+  The requested time face is kept. Fit measures the same effective fragment used for display.
+- Font regeneration (fontTools 4.53.1) reproduced the same SHA-256. No spike Activity, debug manifest,
+  temporary resources, app clock updater, schema change, or provider/domain change is in the final tree.
+
+**Tests.** `testDebugUnitTest`: 366 tests, 0 failures/errors/skips; `lintDebug`: successful; `assembleDebug`:
+successful. Each production commit was followed by successful full unit/lint checks before subsequent
+production work. cdev pure tests: 99 passed. Pure tests cover SDK × supported/unsupported host, unchanged
+requests, hidden/24-hour cases, and platform marker fallback. RemoteViews apply/reapply, marker accessibility,
+font/shadow variants, fit, disclosure and Preview/provider parity run at SDK 23/25/26/28/31/34/35.
+Native raster/advance tests verify all 24 Latin and Arabic-digit hours plus tracking at SDK 26/28/31/34/35;
+restricted Context and unknown/system HOME regression tests cover the false-positive capability boundary.
+Existing built-in 8 and Phase 1A/1B/2 codec/regression tests pass.
+
+**Device evidence (cdev, final production APK).**
+- moto g13 / API 34 / Motorola Launcher3 / ja-JP: in-place install retained widget 23 and its original
+  appearance before editing. Force 12-hour + suffix displayed `午後` in both Studio Preview and placed widget;
+  Studio displayed `AM/PM → ロケールの表記` and explained the font fallback and retained choice. Screenshots
+  showed no clipping/overlap. With Clocky absent (`pidof`), the host clock advanced `7:19 → 7:20`, retaining
+  `午後`. Saved requests remained Force 12 / Suffix during fallback. Original preferences were then restored
+  byte-for-byte; session finished. Local evidence: `s-20261007-190630-ZY22GSDPFW`, `0018-inspect`,
+  `0020-inspect`, `0021-inspect`/`0023-inspect`, `0022-collect-fallback-post-kill`, `0033-collect-fallback-restored`.
+- clocky-api25 emulator / API 25 / Pixel (Nexus) Launcher / en-US: in-place install retained widget 4.
+  Localized `a` displayed `AM` in both Preview and placed widget, with the fallback notice in Studio and no
+  observed clipping/overlap. `am kill` did not remove the process on this host; a cdev-wrapped `run-as` kill
+  of the observed Clocky PID did. With Clocky absent before and after, the host clock advanced `10:27 → 10:29`.
+  Original JSON values were all restored; Save added only existing optional default keys. Session finished.
+  Local evidence: `s-20261007-192412-emulator-5554`, `0011-inspect`, `0013-inspect`, `0017-inspect`/`0018-inspect`,
+  `0019-collect-api25-ticking-proof`, `0027-collect-api25-restored`.
+- Collected crash buffers were empty and no crash/ANR was reported. The moto log buffer rolled over during
+  the long session; API 25's Clocky-filtered log summary had zero relevant lines, so these logs are not
+  comprehensive runtime-error evidence. Display and ticking claims above come from direct observations.
+
+**Not exercised.** Natural 11:59 → 12:00 or 23:59 → 00:00 transitions; a real launcher positively supporting
+this dedicated font; physical/API 26/28/31/35 launchers; One UI/Nova/Lawnchair; TalkBack spoken output;
+non-HOME widget hosts; device RTL/large font scale; launcher landscape/resize during this follow-up.
+Native shaping and same-package probe success are not described as real-launcher Latin verification.
+The current capability represents the resolved HOME launcher; other host implementations need separate evidence.
+
+**Shipping result.** The amended marker gate is satisfied on the two exercised hosts, with the limitations
+above explicit. This is implementation/verification completion, not a main merge. Phase 3A's prerequisite
+still requires the owner to merge this independent follow-up PR. Phase 3A/3A-0 has not started.
 
 ---
 
