@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="clocky_degraded_ampm_localized">AM/PM → ロケールの表記（午前/午後）。Android 7.1 以前では Latin のマーカー書体を使えません。AM/PM の選択は保存されます。</string>
+    <string name="clocky_degraded_ampm_localized">AM/PM → ロケールの表記（午前/午後）。このウィジェットのホストでは Latin のマーカー書体を適用できません。ロケールのマーカーはシステム書体で表示します。AM/PM の選択は保存されます。</string>
     <string name="clocky_element_info">情報</string>
     <string name="clocky_degraded_weight_font">%1$s: この書体には太さ %2$d がないため、%3$d で表示します。</string>
     <string name="clocky_degraded_font_needs_api">%1$s: 同梱書体は Android 8 以降で使えるため、システム書体で表示します。</string>

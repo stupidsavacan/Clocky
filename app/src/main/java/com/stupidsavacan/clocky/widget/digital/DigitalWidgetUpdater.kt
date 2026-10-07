@@ -136,6 +136,7 @@ object DigitalWidgetUpdater {
             ),
             nextAlarmText = nextAlarmText(context),
             sampleAlarmText = if (forEditor) sampleAlarmText(context, locale) else null,
+            supportsLatinAmPmMarker = AmPmHostCapability.supportsLatin(context),
         )
     }
 

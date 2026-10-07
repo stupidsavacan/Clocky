@@ -2,7 +2,7 @@
 <!-- Phase 2 Studio strings (docs/architecture/PHASE_2_STUDIO.md). Japanese lives in values-ja. -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Degradation disclosure -->
-    <string name="clocky_degraded_ampm_localized" tools:ignore="MissingTranslation">AM/PM → locale marker. Android 7.1 and earlier cannot use the Latin marker font. Your AM/PM choice is kept.</string>
+    <string name="clocky_degraded_ampm_localized" tools:ignore="MissingTranslation">AM/PM → locale marker. This widget host cannot apply the Latin marker font. The localized marker uses a system font. Your AM/PM choice is kept.</string>
     <string name="clocky_element_info" tools:ignore="MissingTranslation">Info</string>
     <string name="clocky_degraded_weight_font" tools:ignore="MissingTranslation">%1$s: this font has no weight %2$d, so %3$d is shown.</string>
     <string name="clocky_degraded_font_needs_api" tools:ignore="MissingTranslation">%1$s: this bundled font needs Android 8 or later, so the system font is shown.</string>

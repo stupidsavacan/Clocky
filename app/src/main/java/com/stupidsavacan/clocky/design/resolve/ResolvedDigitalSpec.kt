@@ -28,6 +28,8 @@ data class RenderEnvironment(
     val nextAlarmText: String? = null,
     /** Editor-only stand-in shown for the next-alarm Info line when no alarm is set. Never set by the provider. */
     val sampleAlarmText: String? = null,
+    /** Cross-package RemoteViews marker font/shaping capability; unknown hosts use localized a. */
+    val supportsLatinAmPmMarker: Boolean = false,
 )
 
 /**
