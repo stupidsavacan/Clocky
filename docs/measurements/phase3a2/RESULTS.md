@@ -95,6 +95,12 @@ metadata) installed in place: IDs5/7 and settings byte-identical, no crash/ANR. 
 Digital4×2. After `proc kill`, ticking11:45→11:46 in35.9s with6/6 process-absent checks.
 Fresh placement itself was not performed; existing widgets were preserved.
 
+Committed production source (`b00956a`) recheck: session `s-20261008-085636-emulator-5562`
+prepared/finished. Rebuilt APKsha256
+`8495e09b5cb9b6caf69ce0ac1facde9ee8f40fd4fc36b909eb8ee05eb65e9eb1` installed in place:
+IDs5/7 and settings byte-identical, no crash/ANR. Ticking11:56→11:57 in35.2s,6/6 process checks absent.
+The APK hash changed after comment cleanup/recompile; this check covers the committed-source artifact.
+
 - Portrait/landscape pair displayed correctly; original rotation settings restored.
 - Candidate minResize110×40dp allowed2×1,2×2,3×1,3×2; restored4×2. Resize generated intermediate
   callbacks/classes during the gesture. API30 has no SizeF map host-selection behavior.
