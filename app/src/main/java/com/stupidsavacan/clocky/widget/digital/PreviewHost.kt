@@ -100,7 +100,8 @@ class PreviewHost(
         val maxWidth = host?.maxWidthDp?.takeIf { it > 0 } ?: DEFAULT_MAX_WIDTH_DP
         return when (sizeClass) {
             SizeClass.STRIP -> SizeContext(minWidth, STRIP_MIN_HEIGHT_DP, maxWidth, STRIP_MAX_HEIGHT_DP)
-            SizeClass.CARD -> SizeContext(minWidth, CARD_MIN_HEIGHT_DP, maxWidth, CARD_MAX_HEIGHT_DP)
+            // The four-class Preview selector/render integration belongs to 3A-2.
+            SizeClass.CARD, SizeClass.SQUARE, SizeClass.LARGE -> SizeContext(minWidth, CARD_MIN_HEIGHT_DP, maxWidth, CARD_MAX_HEIGHT_DP)
         }
     }
 

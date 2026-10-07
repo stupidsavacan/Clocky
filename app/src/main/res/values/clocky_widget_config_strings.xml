@@ -76,4 +76,5 @@
     <string name="clocky_color_dark" tools:ignore="MissingTranslation">Dark</string>
     <string name="clocky_color_navy" tools:ignore="MissingTranslation">Navy</string>
     <string name="clocky_color_forest" tools:ignore="MissingTranslation">Forest</string>
+    <string name="clocky_degraded_template_unknown" tools:ignore="MissingTranslation">Template %1$s is unavailable in this version. Time First is shown; the requested template is kept.</string>
 </resources>

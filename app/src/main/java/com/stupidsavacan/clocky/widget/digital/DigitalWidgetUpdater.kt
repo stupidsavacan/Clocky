@@ -67,7 +67,8 @@ object DigitalWidgetUpdater {
         onClick: PendingIntent?,
         zones: ZoneClicks? = null,
     ): RemoteViews {
-        val spec = DesignResolver.resolve(instance.design, size, environment(context))
+        // 3A-1 is model-only: preserve the placed Phase 2 render policy until 3A-2 switches the path.
+        val spec = DesignResolver.resolve(instance.design, size, environment(context), SizeClassResolver.resolve(size.minHeightDp))
         val portrait = compose(context, spec, size.minWidthDp, size.maxHeightDp, onClick, zones)
         val landscape = compose(context, spec, size.maxWidthDp, size.minHeightDp, onClick, zones)
         return RemoteViews(landscape, portrait)
@@ -82,7 +83,7 @@ object DigitalWidgetUpdater {
         // The application context keeps fit measurement free of an Activity's AppCompat inflater.
         val app = context.applicationContext
         // The editor shows a sample next-alarm line when none is set, so the Info row can be styled.
-        val spec = DesignResolver.resolve(design, size, environment(app, forEditor = true))
+        val spec = DesignResolver.resolve(design, size, environment(app, forEditor = true), SizeClassResolver.resolve(size.minHeightDp))
         return spec to compose(app, spec, size.minWidthDp, size.maxHeightDp, onClick = null)
     }
 

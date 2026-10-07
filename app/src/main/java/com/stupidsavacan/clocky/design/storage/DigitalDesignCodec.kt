@@ -35,6 +35,8 @@ import com.stupidsavacan.clocky.design.model.TextStyle
 import com.stupidsavacan.clocky.design.model.TimeElement
 import com.stupidsavacan.clocky.design.model.normalized
 import org.json.JSONObject
+import org.json.JSONArray
+import org.json.JSONTokener
 import java.util.Locale
 
 /**
@@ -71,6 +73,7 @@ object DigitalDesignCodec {
                 putStyle(d.date.style)
                 put("formatPattern", d.date.formatPattern ?: JSONObject.NULL)
                 put("uppercase", d.date.uppercase)
+                d.date.gapDp?.let { put("gapDp", it.toDouble()) }
             })
             put("background", JSONObject().apply {
                 put("type", d.background.type.name)
@@ -83,8 +86,9 @@ object DigitalDesignCodec {
                 put("borderWidthDp", d.background.borderWidthDp.toDouble())
             })
             put("layout", JSONObject().apply {
-                put("template", d.layout.template.name)
+                put("template", d.layout.requestedTemplate ?: d.layout.template.name)
                 put("overrides", JSONObject().apply {
+                    d.layout.preservedOverrides.forEach { (key, value) -> put(key, JSONTokener(value).nextValue()) }
                     d.layout.overrides.forEach { (sizeClass, patch) ->
                         put(sizeClass.key, encodePatch(patch))
                     }
@@ -104,6 +108,7 @@ object DigitalDesignCodec {
                 putStyle(d.info.style)
                 put("timeZoneId", d.info.timeZoneId ?: JSONObject.NULL)
                 put("label", d.info.label ?: JSONObject.NULL)
+                if (!d.info.visible) put("visible", false)
             })
             put("effects", JSONObject().put("shadow", d.effects.shadow.name))
             d.style?.let { put("style", encodeTokens(it)) }
@@ -200,6 +205,7 @@ object DigitalDesignCodec {
                 style = decodeStyle(d, defaults.date.style),
                 formatPattern = d.optStringOrNull("formatPattern"),
                 uppercase = d.optBoolean("uppercase", defaults.date.uppercase),
+                gapDp = d.floatOrNull("gapDp"),
             ),
             background = BackgroundElement(
                 type = enumOr(b.optString("type"), defaults.background.type),
@@ -214,6 +220,8 @@ object DigitalDesignCodec {
             layout = DesignLayout(
                 template = enumOr(l.optString("template"), defaults.layout.template),
                 overrides = decodeOverrides(l.optJSONObject("overrides")),
+                preservedOverrides = decodePreservedOverrides(l.optJSONObject("overrides")),
+                requestedTemplate = l.optStringOrNull("template")?.takeUnless { name -> Template.entries.any { it.name == name } },
             ),
             behavior = decodeBehavior(root.optJSONObject("behavior"), defaults.behavior),
             info = decodeInfo(root.optJSONObject("info"), defaults.info),
@@ -254,6 +262,7 @@ object DigitalDesignCodec {
             style = decodeStyle(i, defaults.style),
             timeZoneId = i.optStringOrNull("timeZoneId"),
             label = i.optStringOrNull("label"),
+            visible = i.optBoolean("visible", defaults.visible),
         )
     }
 
@@ -303,6 +312,7 @@ object DigitalDesignCodec {
     }
 
     private fun encodePatch(p: LayoutPatch): JSONObject = JSONObject().apply {
+        p.preserved.forEach { (key, value) -> put(key, JSONTokener(value).nextValue()) }
         p.timeWeight?.let { put(PATH_TIME_WEIGHT, it) }
         p.dateWeight?.let { put(PATH_DATE_WEIGHT, it) }
         p.timeSizeSp?.let { put(PATH_TIME_SIZE, it.toDouble()) }
@@ -313,31 +323,57 @@ object DigitalDesignCodec {
         p.dateYDp?.let { put(PATH_DATE_Y, it.toDouble()) }
         p.dateVisible?.let { put(PATH_DATE_VISIBLE, it) }
         p.template?.let { put(PATH_TEMPLATE, it.name) }
+        p.requestedTemplate?.let { put(PATH_TEMPLATE, it) }
+        p.timeAlignment?.let { put(PATH_TIME_ALIGNMENT, it.name) }
+        p.dateAlignment?.let { put(PATH_DATE_ALIGNMENT, it.name) }
+        p.infoSizeSp?.let { put(PATH_INFO_SIZE, it.toDouble()) }
+        p.infoXDp?.let { put(PATH_INFO_X, it.toDouble()) }
+        p.infoYDp?.let { put(PATH_INFO_Y, it.toDouble()) }
+        p.infoAlignment?.let { put(PATH_INFO_ALIGNMENT, it.name) }
+        p.infoVisible?.let { put(PATH_INFO_VISIBLE, it) }
+        p.paddingDp?.let { put(PATH_PADDING, it.toDouble()) }
+        p.dateGapDp?.let { put(PATH_DATE_GAP, it.toDouble()) }
     }
 
     private fun decodeOverrides(o: JSONObject?): Map<SizeClass, LayoutPatch> {
         if (o == null) return emptyMap()
         return SizeClass.entries.mapNotNull { sizeClass ->
-            o.optJSONObject(sizeClass.key)?.let { sizeClass to decodePatch(it) }
+            o.optJSONObject(sizeClass.key)?.let { sizeClass to decodePatch(it, sizeClass) }
         }.toMap()
     }
 
-    private fun decodePatch(o: JSONObject) = LayoutPatch(
-        timeWeight = o.intOrNull(PATH_TIME_WEIGHT),
-        dateWeight = o.intOrNull(PATH_DATE_WEIGHT),
-        timeSizeSp = o.floatOrNull(PATH_TIME_SIZE),
-        dateSizeSp = o.floatOrNull(PATH_DATE_SIZE),
-        timeXDp = o.floatOrNull(PATH_TIME_X),
-        timeYDp = o.floatOrNull(PATH_TIME_Y),
-        dateXDp = o.floatOrNull(PATH_DATE_X),
-        dateYDp = o.floatOrNull(PATH_DATE_Y),
-        dateVisible = if (o.has(PATH_DATE_VISIBLE) && !o.isNull(PATH_DATE_VISIBLE)) {
-            o.getBoolean(PATH_DATE_VISIBLE)
-        } else {
-            null
-        },
-        template = o.optStringOrNull(PATH_TEMPLATE)?.let { name -> Template.entries.firstOrNull { it.name == name } },
-    )
+    private fun decodePreservedOverrides(o: JSONObject?): Map<String, String> = buildMap {
+        o?.keys()?.forEach { key ->
+            if (SizeClass.entries.none { it.key == key } || o.optJSONObject(key) == null) put(key, rawJson(o.get(key)))
+        }
+    }
+
+    private fun decodePatch(o: JSONObject, sizeClass: SizeClass): LayoutPatch {
+        val consumed = mutableSetOf<String>()
+        fun number(key: String): Number? = (o.opt(key) as? Number)?.also { consumed += key }
+        fun float(key: String): Float? = number(key)?.toFloat()
+        fun bool(key: String): Boolean? = (o.opt(key) as? Boolean)?.also { consumed += key }
+        fun alignment(key: String): Alignment? = Alignment.entries.firstOrNull { it.name == o.opt(key) }?.also { consumed += key }
+        val templateName = (o.opt(PATH_TEMPLATE) as? String)?.also { consumed += PATH_TEMPLATE }
+        val template = Template.entries.firstOrNull { it.name == templateName }
+        return LayoutPatch(
+            timeWeight = if (sizeClass.allowsWeightOverride) number(PATH_TIME_WEIGHT)?.toInt() else null,
+            dateWeight = if (sizeClass.allowsWeightOverride) number(PATH_DATE_WEIGHT)?.toInt() else null,
+            timeSizeSp = float(PATH_TIME_SIZE), dateSizeSp = float(PATH_DATE_SIZE),
+            timeXDp = float(PATH_TIME_X), timeYDp = float(PATH_TIME_Y),
+            dateXDp = float(PATH_DATE_X), dateYDp = float(PATH_DATE_Y),
+            dateVisible = bool(PATH_DATE_VISIBLE), template = template,
+            timeAlignment = alignment(PATH_TIME_ALIGNMENT), dateAlignment = alignment(PATH_DATE_ALIGNMENT),
+            infoSizeSp = float(PATH_INFO_SIZE), infoXDp = float(PATH_INFO_X), infoYDp = float(PATH_INFO_Y),
+            infoAlignment = alignment(PATH_INFO_ALIGNMENT), infoVisible = bool(PATH_INFO_VISIBLE),
+            paddingDp = float(PATH_PADDING), dateGapDp = float(PATH_DATE_GAP),
+            requestedTemplate = templateName.takeIf { template == null },
+            preserved = o.keys().asSequence().filter { it !in consumed }.associateWith { rawJson(o.get(it)) },
+        )
+    }
+
+    /** Canonical JSON text, retaining value types and nested data; formatting is not part of the schema. */
+    private fun rawJson(value: Any): String = JSONArray().put(value).toString().removePrefix("[").removeSuffix("]")
 
     // ---- v1 → v2 migration ----
 
@@ -444,6 +480,15 @@ object DigitalDesignCodec {
     const val PATH_DATE_Y = "date.yDp"
     const val PATH_DATE_VISIBLE = "date.visible"
     const val PATH_TEMPLATE = "layout.template"
+    const val PATH_TIME_ALIGNMENT = "time.alignment"
+    const val PATH_DATE_ALIGNMENT = "date.alignment"
+    const val PATH_INFO_SIZE = "info.sizeSp"
+    const val PATH_INFO_X = "info.xDp"
+    const val PATH_INFO_Y = "info.yDp"
+    const val PATH_INFO_ALIGNMENT = "info.alignment"
+    const val PATH_INFO_VISIBLE = "info.visible"
+    const val PATH_PADDING = "background.paddingDp"
+    const val PATH_DATE_GAP = "date.gapDp"
 
     private val SizeClass.key: String get() = name.lowercase(Locale.ROOT)
 

@@ -1,0 +1,34 @@
+{
+  "schema": 2,
+  "origin": "phase2-fixture",
+  "layout": {
+    "template": "CENTER_STACK",
+    "overrides": {
+      "card": {
+        "time.xDp": 20,
+        "date.yDp": 4
+      }
+    }
+  },
+  "info": {
+    "source": "SECOND_TIMEZONE",
+    "timeZoneId": "UTC",
+    "label": "UTC",
+    "sizeSp": 12
+  },
+  "effects": {
+    "shadow": "STRONG"
+  },
+  "background": {
+    "type": "GRADIENT",
+    "paddingDp": 8
+  },
+  "behavior": {
+    "hourMode": "FORCE_12_HOUR",
+    "amPm": {
+      "mode": "SUFFIX",
+      "scale": 0.4
+    },
+    "showSeconds": true
+  }
+}

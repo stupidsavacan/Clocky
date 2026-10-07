@@ -1,7 +1,8 @@
 package com.stupidsavacan.clocky.design.model
 
 /**
- * Maps host dimensions to a Phase 1A size class (CLOCKY_END_STATE.md §9; Strip and Card only).
+ * Legacy Phase 1A render policy. Kept only for provider/Preview compatibility until 3A-2.
+ * Responsive model/resolver code uses [SizeClassRule] with MAX_WIDTH / MIN_HEIGHT.
  *
  * Input is the host's OPTION_APPWIDGET_MIN_HEIGHT (dp): the landscape height, so one widget keeps
  * one class in both orientations, as in Phase 0. Heights measured on real hosts in Phase 0 —

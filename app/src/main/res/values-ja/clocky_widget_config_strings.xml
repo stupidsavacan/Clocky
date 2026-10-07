@@ -76,4 +76,5 @@
     <string name="clocky_color_dark">ダーク</string>
     <string name="clocky_color_navy">紺</string>
     <string name="clocky_color_forest">深緑</string>
+    <string name="clocky_degraded_template_unknown">テンプレート %1$s はこの版では使えません。Time Firstで表示し、要求したテンプレートは保持します。</string>
 </resources>

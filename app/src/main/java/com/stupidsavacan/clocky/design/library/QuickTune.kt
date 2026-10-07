@@ -49,6 +49,7 @@ object QuickTune {
                     p.copy(
                         timeSizeSp = p.timeSizeSp?.times(scale),
                         dateSizeSp = p.dateSizeSp?.times(scale),
+                        infoSizeSp = p.infoSizeSp?.times(scale),
                     )
                 },
             ),
@@ -113,15 +114,19 @@ object QuickTune {
 
     fun templatesFor(sizeClass: SizeClass): List<Template> = when (sizeClass) {
         SizeClass.STRIP -> Kits.stripTemplates
-        SizeClass.CARD -> Kits.cardTemplates
+        SizeClass.CARD, SizeClass.SQUARE, SizeClass.LARGE -> Kits.cardTemplates
     }
 
     /** Template effective for [sizeClass] (override first, then the design's base). */
     fun templateOf(design: DigitalDesign, sizeClass: SizeClass): Template =
-        design.layout.patchFor(sizeClass).template ?: design.layout.template
+        design.layout.inheritedPatchFor(sizeClass).let { p ->
+            if (p.requestedTemplate != null || (p.template == null && design.layout.requestedTemplate != null)) Template.TIME_FIRST
+            else p.template ?: design.layout.template
+        }
 
     fun selectTemplate(design: DigitalDesign, sizeClass: SizeClass, template: Template): DigitalDesign {
-        val patch = design.layout.patchFor(sizeClass).copy(template = template)
+        val patch = design.layout.patchFor(sizeClass).copy(template = template, requestedTemplate = null,
+            preserved = design.layout.patchFor(sizeClass).preserved - "layout.template")
         return design.copy(layout = design.layout.withPatch(sizeClass, patch))
     }
 

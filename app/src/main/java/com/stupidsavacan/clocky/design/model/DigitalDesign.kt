@@ -59,6 +59,8 @@ data class DateElement(
     val formatPattern: String? = null,
     /** Phase 1A/1B always showed dates in capitals; kept as the default. As-is uses the pattern's own case. */
     val uppercase: Boolean = true,
+    /** null retains the historical token-dependent gap (4dp with tokens, otherwise 0dp). */
+    val gapDp: Float? = null,
 )
 
 /**
@@ -115,7 +117,11 @@ data class BackgroundElement(
  */
 enum class Template { TIME_FIRST, CENTER_STACK, INLINE, SPLIT, MINIMAL }
 
-enum class SizeClass { STRIP, CARD }
+enum class SizeClass {
+    STRIP, CARD, SQUARE, LARGE;
+
+    val allowsWeightOverride: Boolean get() = this == STRIP || this == CARD
+}
 
 /**
  * Nullable per-size-class patch: `null` inherits the design's base value. Persisted as
@@ -133,23 +139,77 @@ data class LayoutPatch(
     val dateYDp: Float? = null,
     val dateVisible: Boolean? = null,
     val template: Template? = null,
+    val timeAlignment: Alignment? = null,
+    val dateAlignment: Alignment? = null,
+    val infoSizeSp: Float? = null,
+    val infoXDp: Float? = null,
+    val infoYDp: Float? = null,
+    val infoAlignment: Alignment? = null,
+    val infoVisible: Boolean? = null,
+    val paddingDp: Float? = null,
+    val dateGapDp: Float? = null,
+    /** Unknown requested template; runtime uses TIME_FIRST without rewriting this request. */
+    val requestedTemplate: String? = null,
+    /** Inert JSON values of unrecognized paths (including future values of known paths). */
+    val preserved: Map<String, String> = emptyMap(),
 ) {
     val isEmpty: Boolean get() = this == EMPTY
 
     companion object {
         val EMPTY = LayoutPatch()
     }
+
+    /** This patch wins field-by-field; null inherits from [parent]. */
+    fun over(parent: LayoutPatch): LayoutPatch = LayoutPatch(
+        timeWeight = timeWeight ?: parent.timeWeight,
+        dateWeight = dateWeight ?: parent.dateWeight,
+        timeSizeSp = timeSizeSp ?: parent.timeSizeSp,
+        dateSizeSp = dateSizeSp ?: parent.dateSizeSp,
+        timeXDp = timeXDp ?: parent.timeXDp,
+        timeYDp = timeYDp ?: parent.timeYDp,
+        dateXDp = dateXDp ?: parent.dateXDp,
+        dateYDp = dateYDp ?: parent.dateYDp,
+        dateVisible = dateVisible ?: parent.dateVisible,
+        template = if (requestedTemplate != null) null else template ?: parent.template,
+        requestedTemplate = if (template != null) null else requestedTemplate ?: parent.requestedTemplate,
+        timeAlignment = timeAlignment ?: parent.timeAlignment,
+        dateAlignment = dateAlignment ?: parent.dateAlignment,
+        infoSizeSp = infoSizeSp ?: parent.infoSizeSp,
+        infoXDp = infoXDp ?: parent.infoXDp,
+        infoYDp = infoYDp ?: parent.infoYDp,
+        infoAlignment = infoAlignment ?: parent.infoAlignment,
+        infoVisible = infoVisible ?: parent.infoVisible,
+        paddingDp = paddingDp ?: parent.paddingDp,
+        dateGapDp = dateGapDp ?: parent.dateGapDp,
+        preserved = parent.preserved + preserved,
+    )
 }
 
 data class DesignLayout(
     val template: Template = Template.TIME_FIRST,
     val overrides: Map<SizeClass, LayoutPatch> = emptyMap(),
+    val preservedOverrides: Map<String, String> = emptyMap(),
+    val requestedTemplate: String? = null,
 ) {
+    init {
+        require(overrides.all { (c, p) -> c.allowsWeightOverride || (p.timeWeight == null && p.dateWeight == null) }) {
+            "Weight overrides are supported only for Strip/Card"
+        }
+    }
+
     fun patchFor(sizeClass: SizeClass): LayoutPatch = overrides[sizeClass] ?: LayoutPatch.EMPTY
+
+    /** R2: Square/Large inherit Card, while Strip/Card inherit only the base. */
+    fun inheritedPatchFor(sizeClass: SizeClass): LayoutPatch = when (sizeClass) {
+        SizeClass.STRIP, SizeClass.CARD -> patchFor(sizeClass)
+        SizeClass.SQUARE, SizeClass.LARGE -> patchFor(sizeClass).over(patchFor(SizeClass.CARD))
+    }
 
     /** Replaces one class's patch; an empty patch removes the entry so storage stays minimal. */
     fun withPatch(sizeClass: SizeClass, patch: LayoutPatch): DesignLayout = copy(
         overrides = if (patch.isEmpty) overrides - sizeClass else overrides + (sizeClass to patch),
+        // An explicit edit replaces an unrecognized representation of this known class only.
+        preservedOverrides = preservedOverrides - sizeClass.name.lowercase(java.util.Locale.ROOT),
     )
 }
 
@@ -200,6 +260,7 @@ data class InfoElement(
     val timeZoneId: String? = null,
     /** Optional city label in front of the second time (max [MAX_INFO_LABEL] chars). */
     val label: String? = null,
+    val visible: Boolean = true,
 )
 
 /**
@@ -233,7 +294,8 @@ const val MAX_INFO_LABEL = 24
 /** Clamps requested values to their documented domains without filling inherited (null) fields. */
 fun DigitalDesign.normalized(): DigitalDesign = copy(
     time = time.copy(style = time.style.normalized()),
-    date = date.copy(style = date.style.normalized(), formatPattern = date.formatPattern?.takeIf { it.isNotBlank() }),
+    date = date.copy(style = date.style.normalized(), formatPattern = date.formatPattern?.takeIf { it.isNotBlank() },
+        gapDp = date.gapDp?.finiteOr(0f)?.coerceIn(-20f, 40f)),
     background = background.copy(
         opacity = background.opacity.unitOr(0.9f),
         cornerRadius = when (val r = background.cornerRadius) {
@@ -278,6 +340,11 @@ private fun LayoutPatch.normalized(): LayoutPatch = copy(
     timeYDp = timeYDp?.finiteOr(0f),
     dateXDp = dateXDp?.finiteOr(0f),
     dateYDp = dateYDp?.finiteOr(0f),
+    infoSizeSp = infoSizeSp?.finiteOr(1f)?.coerceAtLeast(1f),
+    infoXDp = infoXDp?.finiteOr(0f),
+    infoYDp = infoYDp?.finiteOr(0f),
+    paddingDp = paddingDp?.finiteOr(0f)?.coerceIn(0f, MAX_PADDING_DP),
+    dateGapDp = dateGapDp?.finiteOr(0f)?.coerceIn(-20f, 40f),
 )
 
 private fun Float.finiteOr(fallback: Float): Float = if (isFinite()) this else fallback

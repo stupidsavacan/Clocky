@@ -89,7 +89,7 @@ object DesignEdits {
 
     /** The design's own value for the scope (the override when one exists, else the inherited base). */
     fun weightOf(d: DigitalDesign, target: TextTarget, scope: EditScope): Int {
-        val patch = scope.sizeClass?.let { d.layout.patchFor(it) }
+        val patch = scope.sizeClass?.let { d.layout.inheritedPatchFor(it) }
         val overridden = when (target) {
             TextTarget.TIME -> patch?.timeWeight
             TextTarget.DATE -> patch?.dateWeight
@@ -99,30 +99,51 @@ object DesignEdits {
     }
 
     fun sizeOf(d: DigitalDesign, target: TextTarget, scope: EditScope): Float {
-        val patch = scope.sizeClass?.let { d.layout.patchFor(it) }
+        val patch = scope.sizeClass?.let { d.layout.inheritedPatchFor(it) }
         val overridden = when (target) {
             TextTarget.TIME -> patch?.timeSizeSp
             TextTarget.DATE -> patch?.dateSizeSp
-            TextTarget.INFO -> null
+            TextTarget.INFO -> patch?.infoSizeSp
         }
         return overridden ?: style(d, target).sizeSp
     }
 
     fun offsetOf(d: DigitalDesign, target: TextTarget, scope: EditScope): Pair<Float, Float> {
-        val patch = scope.sizeClass?.let { d.layout.patchFor(it) }
+        val patch = scope.sizeClass?.let { d.layout.inheritedPatchFor(it) }
         val s = style(d, target)
         return when (target) {
             TextTarget.TIME -> (patch?.timeXDp ?: s.xDp) to (patch?.timeYDp ?: s.yDp)
             TextTarget.DATE -> (patch?.dateXDp ?: s.xDp) to (patch?.dateYDp ?: s.yDp)
-            TextTarget.INFO -> s.xDp to s.yDp
+            TextTarget.INFO -> (patch?.infoXDp ?: s.xDp) to (patch?.infoYDp ?: s.yDp)
         }
     }
 
     fun dateVisibleOf(d: DigitalDesign, scope: EditScope): Boolean =
-        scope.sizeClass?.let { d.layout.patchFor(it).dateVisible } ?: d.date.visible
+        scope.sizeClass?.let { d.layout.inheritedPatchFor(it).dateVisible } ?: d.date.visible
 
-    fun templateOf(d: DigitalDesign, scope: EditScope): Template =
-        scope.sizeClass?.let { d.layout.patchFor(it).template } ?: d.layout.template
+    fun templateOf(d: DigitalDesign, scope: EditScope): Template {
+        val p = scope.sizeClass?.let { d.layout.inheritedPatchFor(it) }
+        if (p?.requestedTemplate != null || (p?.template == null && d.layout.requestedTemplate != null)) return Template.TIME_FIRST
+        return p?.template ?: d.layout.template
+    }
+
+    fun alignmentOf(d: DigitalDesign, target: TextTarget, scope: EditScope): Alignment {
+        val p = scope.sizeClass?.let { d.layout.inheritedPatchFor(it) }
+        return when (target) {
+            TextTarget.TIME -> p?.timeAlignment
+            TextTarget.DATE -> p?.dateAlignment
+            TextTarget.INFO -> p?.infoAlignment
+        } ?: style(d, target).alignment
+    }
+
+    fun infoVisibleOf(d: DigitalDesign, scope: EditScope): Boolean =
+        scope.sizeClass?.let { d.layout.inheritedPatchFor(it).infoVisible } ?: d.info.visible
+
+    fun paddingOf(d: DigitalDesign, scope: EditScope): Float =
+        scope.sizeClass?.let { d.layout.inheritedPatchFor(it).paddingDp } ?: d.background.paddingDp
+
+    fun dateGapOf(d: DigitalDesign, scope: EditScope): Float =
+        scope.sizeClass?.let { d.layout.inheritedPatchFor(it).dateGapDp } ?: d.date.gapDp ?: if (d.style != null) 4f else 0f
 
     /** True when the scope's class overrides [field] (the editor shows the override badge). */
     fun isOverridden(d: DigitalDesign, sizeClass: SizeClass, field: OverrideField): Boolean {
@@ -135,17 +156,31 @@ object DesignEdits {
             OverrideField.TIME_OFFSET -> p.timeXDp != null || p.timeYDp != null
             OverrideField.DATE_OFFSET -> p.dateXDp != null || p.dateYDp != null
             OverrideField.DATE_VISIBLE -> p.dateVisible != null
-            OverrideField.TEMPLATE -> p.template != null
+            OverrideField.TEMPLATE -> p.template != null || p.requestedTemplate != null
+            OverrideField.TIME_ALIGNMENT -> p.timeAlignment != null
+            OverrideField.DATE_ALIGNMENT -> p.dateAlignment != null
+            OverrideField.INFO_SIZE -> p.infoSizeSp != null
+            OverrideField.INFO_OFFSET -> p.infoXDp != null || p.infoYDp != null
+            OverrideField.INFO_ALIGNMENT -> p.infoAlignment != null
+            OverrideField.INFO_VISIBLE -> p.infoVisible != null
+            OverrideField.PADDING -> p.paddingDp != null
+            OverrideField.DATE_GAP -> p.dateGapDp != null
         }
     }
 
-    enum class OverrideField {
-        TIME_WEIGHT, DATE_WEIGHT, TIME_SIZE, DATE_SIZE, TIME_OFFSET, DATE_OFFSET, DATE_VISIBLE, TEMPLATE,
+    enum class OverrideField(vararg val paths: String) {
+        TIME_WEIGHT("time.weight"), DATE_WEIGHT("date.weight"),
+        TIME_SIZE("time.sizeSp"), DATE_SIZE("date.sizeSp"),
+        TIME_OFFSET("time.xDp", "time.yDp"), DATE_OFFSET("date.xDp", "date.yDp"),
+        DATE_VISIBLE("date.visible"), TEMPLATE("layout.template"),
+        TIME_ALIGNMENT("time.alignment"), DATE_ALIGNMENT("date.alignment"),
+        INFO_SIZE("info.sizeSp"), INFO_OFFSET("info.xDp", "info.yDp"), INFO_ALIGNMENT("info.alignment"),
+        INFO_VISIBLE("info.visible"), PADDING("background.paddingDp"), DATE_GAP("date.gapDp"),
     }
 
     /** Drops one override so the class inherits the base value again ("long press to revert", End-State 7). */
     fun revertOverride(d: DigitalDesign, sizeClass: SizeClass, field: OverrideField): DigitalDesign =
-        patched(d, sizeClass) {
+        patched(d, sizeClass, field) {
             when (field) {
                 OverrideField.TIME_WEIGHT -> it.copy(timeWeight = null)
                 OverrideField.DATE_WEIGHT -> it.copy(dateWeight = null)
@@ -154,12 +189,22 @@ object DesignEdits {
                 OverrideField.TIME_OFFSET -> it.copy(timeXDp = null, timeYDp = null)
                 OverrideField.DATE_OFFSET -> it.copy(dateXDp = null, dateYDp = null)
                 OverrideField.DATE_VISIBLE -> it.copy(dateVisible = null)
-                OverrideField.TEMPLATE -> it.copy(template = null)
+                OverrideField.TEMPLATE -> it.copy(template = null, requestedTemplate = null)
+                OverrideField.TIME_ALIGNMENT -> it.copy(timeAlignment = null)
+                OverrideField.DATE_ALIGNMENT -> it.copy(dateAlignment = null)
+                OverrideField.INFO_SIZE -> it.copy(infoSizeSp = null)
+                OverrideField.INFO_OFFSET -> it.copy(infoXDp = null, infoYDp = null)
+                OverrideField.INFO_ALIGNMENT -> it.copy(infoAlignment = null)
+                OverrideField.INFO_VISIBLE -> it.copy(infoVisible = null)
+                OverrideField.PADDING -> it.copy(paddingDp = null)
+                OverrideField.DATE_GAP -> it.copy(dateGapDp = null)
             }
         }
 
-    private fun patched(d: DigitalDesign, sizeClass: SizeClass, f: (LayoutPatch) -> LayoutPatch): DigitalDesign =
-        d.copy(layout = d.layout.withPatch(sizeClass, f(d.layout.patchFor(sizeClass))))
+    private fun patched(d: DigitalDesign, sizeClass: SizeClass, field: OverrideField, f: (LayoutPatch) -> LayoutPatch): DigitalDesign {
+        val patch = f(d.layout.patchFor(sizeClass))
+        return d.copy(layout = d.layout.withPatch(sizeClass, patch.copy(preserved = patch.preserved - field.paths.toSet())))
+    }
 
     // ---- typography ----
 
@@ -202,8 +247,13 @@ object DesignEdits {
     fun setWeight(d: DigitalDesign, target: TextTarget, weight: Int, scope: EditScope): DigitalDesign {
         val w = weight.coerceIn(MIN_WEIGHT, MAX_WEIGHT)
         val cls = scope.sizeClass
+        require(cls == null || (cls.allowsWeightOverride && target != TextTarget.INFO)) {
+            "Only Strip/Card Time/Date support weight overrides"
+        }
         if (cls != null && target != TextTarget.INFO) {
-            return patched(d, cls) { if (target == TextTarget.TIME) it.copy(timeWeight = w) else it.copy(dateWeight = w) }
+            return patched(d, cls, if (target == TextTarget.TIME) OverrideField.TIME_WEIGHT else OverrideField.DATE_WEIGHT) {
+                if (target == TextTarget.TIME) it.copy(timeWeight = w) else it.copy(dateWeight = w)
+            }
         }
         return materializeFont(d, target).withStyle(target) { it.copy(weight = w) }
     }
@@ -211,8 +261,13 @@ object DesignEdits {
     fun setSize(d: DigitalDesign, target: TextTarget, sp: Float, scope: EditScope): DigitalDesign {
         val v = sp.coerceIn(sizeRange(target))
         val cls = scope.sizeClass
-        if (cls != null && target != TextTarget.INFO) {
-            return patched(d, cls) { if (target == TextTarget.TIME) it.copy(timeSizeSp = v) else it.copy(dateSizeSp = v) }
+        if (cls != null) {
+            val field = when (target) { TextTarget.TIME -> OverrideField.TIME_SIZE; TextTarget.DATE -> OverrideField.DATE_SIZE; TextTarget.INFO -> OverrideField.INFO_SIZE }
+            return patched(d, cls, field) { when (target) {
+                TextTarget.TIME -> it.copy(timeSizeSp = v)
+                TextTarget.DATE -> it.copy(dateSizeSp = v)
+                TextTarget.INFO -> it.copy(infoSizeSp = v)
+            } }
         }
         return d.withStyle(target) { it.copy(sizeSp = v) }
     }
@@ -226,16 +281,29 @@ object DesignEdits {
     fun setOpacity(d: DigitalDesign, target: TextTarget, opacity: Float): DigitalDesign =
         d.withStyle(target) { it.copy(opacity = opacity.coerceIn(0f, 1f)) }
 
-    fun setAlignment(d: DigitalDesign, target: TextTarget, alignment: Alignment): DigitalDesign =
-        d.withStyle(target) { it.copy(alignment = alignment) }
+    fun setAlignment(d: DigitalDesign, target: TextTarget, alignment: Alignment, scope: EditScope = EditScope.ALL): DigitalDesign {
+        val cls = scope.sizeClass ?: return d.withStyle(target) { it.copy(alignment = alignment) }
+        val field = when (target) { TextTarget.TIME -> OverrideField.TIME_ALIGNMENT; TextTarget.DATE -> OverrideField.DATE_ALIGNMENT; TextTarget.INFO -> OverrideField.INFO_ALIGNMENT }
+        return patched(d, cls, field) { when (target) {
+            TextTarget.TIME -> it.copy(timeAlignment = alignment)
+            TextTarget.DATE -> it.copy(dateAlignment = alignment)
+            TextTarget.INFO -> it.copy(infoAlignment = alignment)
+        } }
+    }
 
     fun setOffset(d: DigitalDesign, target: TextTarget, xDp: Float, yDp: Float, scope: EditScope): DigitalDesign {
-        val x = xDp.coerceIn(offsetDp)
-        val y = yDp.coerceIn(offsetDp)
+        require(xDp.isFinite() && yDp.isFinite()) { "Offsets must be finite" }
+        // ±half-widget clamping belongs to the effective resolver, never the saved request.
+        val x = xDp
+        val y = yDp
         val cls = scope.sizeClass
-        if (cls != null && target != TextTarget.INFO) {
-            return patched(d, cls) {
-                if (target == TextTarget.TIME) it.copy(timeXDp = x, timeYDp = y) else it.copy(dateXDp = x, dateYDp = y)
+        if (cls != null) {
+            val field = when (target) { TextTarget.TIME -> OverrideField.TIME_OFFSET; TextTarget.DATE -> OverrideField.DATE_OFFSET; TextTarget.INFO -> OverrideField.INFO_OFFSET }
+            return patched(d, cls, field) { when (target) {
+                TextTarget.TIME -> it.copy(timeXDp = x, timeYDp = y)
+                TextTarget.DATE -> it.copy(dateXDp = x, dateYDp = y)
+                TextTarget.INFO -> it.copy(infoXDp = x, infoYDp = y)
+            }
             }
         }
         return d.withStyle(target) { it.copy(xDp = x, yDp = y) }
@@ -245,7 +313,18 @@ object DesignEdits {
 
     fun setDateVisible(d: DigitalDesign, visible: Boolean, scope: EditScope): DigitalDesign {
         val cls = scope.sizeClass
-        return if (cls != null) patched(d, cls) { it.copy(dateVisible = visible) } else d.copy(date = d.date.copy(visible = visible))
+        return if (cls != null) patched(d, cls, OverrideField.DATE_VISIBLE) { it.copy(dateVisible = visible) } else d.copy(date = d.date.copy(visible = visible))
+    }
+
+    fun setDateGap(d: DigitalDesign, dp: Float, scope: EditScope): DigitalDesign {
+        val v = dp.coerceIn(-20f, 40f)
+        val cls = scope.sizeClass ?: return d.copy(date = d.date.copy(gapDp = v))
+        return patched(d, cls, OverrideField.DATE_GAP) { it.copy(dateGapDp = v) }
+    }
+
+    fun setInfoVisible(d: DigitalDesign, visible: Boolean, scope: EditScope): DigitalDesign {
+        val cls = scope.sizeClass ?: return d.copy(info = d.info.copy(visible = visible))
+        return patched(d, cls, OverrideField.INFO_VISIBLE) { it.copy(infoVisible = visible) }
     }
 
     /** `null` is Locale Auto (contract 6); anything else is an explicit ICU pattern. */
@@ -304,8 +383,11 @@ object DesignEdits {
         ),
     )
 
-    fun setPadding(d: DigitalDesign, dp: Float): DigitalDesign =
-        d.copy(background = d.background.copy(paddingDp = dp.coerceIn(paddingDp)))
+    fun setPadding(d: DigitalDesign, dp: Float, scope: EditScope = EditScope.ALL): DigitalDesign {
+        val v = dp.coerceIn(paddingDp)
+        val cls = scope.sizeClass ?: return d.copy(background = d.background.copy(paddingDp = v))
+        return patched(d, cls, OverrideField.PADDING) { it.copy(paddingDp = v) }
+    }
 
     fun setBorderWidth(d: DigitalDesign, dp: Float): DigitalDesign =
         d.copy(background = d.background.copy(borderWidthDp = dp.coerceIn(borderDp)))
@@ -316,7 +398,8 @@ object DesignEdits {
 
     fun setTemplate(d: DigitalDesign, template: Template, scope: EditScope): DigitalDesign {
         val cls = scope.sizeClass
-        return if (cls != null) patched(d, cls) { it.copy(template = template) } else d.copy(layout = d.layout.copy(template = template))
+        return if (cls != null) patched(d, cls, OverrideField.TEMPLATE) { it.copy(template = template, requestedTemplate = null) }
+        else d.copy(layout = d.layout.copy(template = template, requestedTemplate = null))
     }
 
     fun setHourMode(d: DigitalDesign, mode: HourMode): DigitalDesign = d.copy(behavior = d.behavior.copy(hourMode = mode))
@@ -364,7 +447,7 @@ object DesignEdits {
         Slot.INFO -> d.copy(info = reference.info.copy(style = restorePlacement(reference.info.style, d.info.style)))
         Slot.BACKGROUND -> d.copy(background = reference.background, effects = reference.effects)
         Slot.LAYOUT -> d.copy(
-            layout = reference.layout,
+            layout = resetKnownLayout(d.layout, reference.layout),
             time = d.time.copy(style = placementOf(reference.time.style, d.time.style)),
             date = d.date.copy(style = placementOf(reference.date.style, d.date.style)),
             info = d.info.copy(style = placementOf(reference.info.style, d.info.style)),
@@ -377,6 +460,23 @@ object DesignEdits {
     }
 
     fun resetAll(reference: DigitalDesign): DigitalDesign = reference
+
+    /** Reset fields this version understands without deleting future classes or unrelated paths. */
+    private fun resetKnownLayout(current: com.stupidsavacan.clocky.design.model.DesignLayout,
+        reference: com.stupidsavacan.clocky.design.model.DesignLayout): com.stupidsavacan.clocky.design.model.DesignLayout {
+        var result = reference.copy(preservedOverrides = reference.preservedOverrides + current.preservedOverrides)
+        current.overrides.forEach { (c, p) ->
+            val knownPaths = OverrideField.entries.filter {
+                c.allowsWeightOverride || (it != OverrideField.TIME_WEIGHT && it != OverrideField.DATE_WEIGHT)
+            }.flatMap { it.paths.toList() }.toSet()
+            val future = p.preserved.filterKeys { it !in knownPaths }
+            if (future.isNotEmpty()) {
+                val replacement = result.patchFor(c)
+                result = result.withPatch(c, replacement.copy(preserved = future + replacement.preserved))
+            }
+        }
+        return result
+    }
 
     /** True when [slot] differs from [reference] (drives the "changed" dot and enables the reset button). */
     fun isSlotModified(d: DigitalDesign, slot: Slot, reference: DigitalDesign): Boolean =
@@ -407,7 +507,7 @@ object DesignEdits {
             info = d.info.copy(style = d.info.style.scaled()),
             layout = d.layout.copy(
                 overrides = d.layout.overrides.mapValues { (_, p) ->
-                    p.copy(timeSizeSp = p.timeSizeSp?.times(scale), dateSizeSp = p.dateSizeSp?.times(scale))
+                    p.copy(timeSizeSp = p.timeSizeSp?.times(scale), dateSizeSp = p.dateSizeSp?.times(scale), infoSizeSp = p.infoSizeSp?.times(scale))
                 },
             ),
             style = tokens.copy(textSize = TextSizeStep.MEDIUM),
