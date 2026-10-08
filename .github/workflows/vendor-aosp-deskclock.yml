@@ -1,12 +1,6 @@
 name: Vendor AOSP DeskClock snapshot
 
 on:
-  push:
-    branches:
-      - agent/aosp-direct-port
-    paths:
-      - .github/workflows/vendor-aosp-deskclock.yml
-      - tools/aosp/deskclock-upstream.env
   workflow_dispatch:
 
 permissions:
