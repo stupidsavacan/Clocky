@@ -70,6 +70,10 @@ class PreviewHost(
     private val context: Context = frame.context
     private val handler = Handler(Looper.getMainLooper())
     private var pending: Pair<DigitalDesign, SizeClass>? = null
+
+    /** The entry size (dp) of the latest render: what the resolver clamps offsets against. */
+    var lastEntrySize: SizeF? = null
+        private set
     private val renderPending = Runnable { pending?.let { (d, c) -> render(d, c) } }
 
     /** Size class the placed widget currently has, or Card when the host has not reported one. */
@@ -88,6 +92,7 @@ class PreviewHost(
     fun render(design: DigitalDesign, sizeClass: SizeClass): ResolvedDigitalSpec {
         val size = previewSize(sizeClass)
         val entry = previewEntry(sizeClass, size)
+        lastEntrySize = entry
         val density = context.resources.displayMetrics.density
         val widthPx = (entry.width * density).toInt()
         val heightPx = (entry.height * density).toInt()

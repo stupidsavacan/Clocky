@@ -18,6 +18,7 @@ import com.stupidsavacan.clocky.design.model.SizeClass
 import com.stupidsavacan.clocky.design.model.TapAction
 import com.stupidsavacan.clocky.design.model.Template
 import com.stupidsavacan.clocky.design.model.ThemeMode
+import com.stupidsavacan.clocky.design.resolve.DesignResolver
 import com.stupidsavacan.clocky.design.resolve.FontCatalog
 import com.stupidsavacan.clocky.design.resolve.ResolvedDigitalSpec
 import com.stupidsavacan.clocky.design.library.QuickTune
@@ -27,6 +28,7 @@ import com.stupidsavacan.clocky.studio.EditScope
 import com.stupidsavacan.clocky.studio.Slot
 import com.stupidsavacan.clocky.studio.TapZone
 import com.stupidsavacan.clocky.studio.TextTarget
+import com.stupidsavacan.clocky.studio.canvas.CanvasOffsets
 import com.stupidsavacan.clocky.widget.easy.DesignLabels
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -54,6 +56,9 @@ interface StudioHost {
     fun edit(id: String, key: String? = null, rebuild: Boolean = true, transform: (DigitalDesign) -> DigitalDesign)
 
     fun endGesture()
+
+    /** Rebuilds the panel so controls show edits that were made without a rebuild. */
+    fun refreshPanel()
 }
 
 /** Builds the six semantic-slot panels (Time | Date | Info | Background | Layout | Behavior). */
@@ -340,8 +345,13 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
             rows.header(str(R.string.clocky_studio_layout_position))
             rows.note(str(R.string.clocky_studio_layout_position_hint))
             offsetSliders(TextTarget.TIME, OverrideField.TIME_OFFSET)
+            nudgePad(TextTarget.TIME)
             offsetSliders(TextTarget.DATE, OverrideField.DATE_OFFSET)
-            if (d.info.source != InfoSource.NONE) offsetSliders(TextTarget.INFO, OverrideField.INFO_OFFSET)
+            nudgePad(TextTarget.DATE)
+            if (d.info.source != InfoSource.NONE) {
+                offsetSliders(TextTarget.INFO, OverrideField.INFO_OFFSET)
+                nudgePad(TextTarget.INFO)
+            }
         }
 
         val overrides = d.layout.patchFor(cls)
@@ -395,6 +405,71 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
             } },
             onGestureEnd = host::endGesture,
         )
+    }
+
+    /**
+     * 1 dp steps for [target]: a tap is one undo step, holding repeats and is also one undo step.
+     * Offsets are not drawn below API 31, so the pad is disabled there (the numeric entry stays).
+     */
+    private fun nudgePad(target: TextTarget) {
+        val name = str(when (target) {
+            TextTarget.TIME -> R.string.clocky_element_time
+            TextTarget.DATE -> R.string.clocky_element_date
+            TextTarget.INFO -> R.string.clocky_element_info
+        })
+        val usable = android.os.Build.VERSION.SDK_INT >= DesignResolver.MIN_TRANSLATION_SDK
+        val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+        val rtl = context.resources.configuration.layoutDirection == android.view.View.LAYOUT_DIRECTION_RTL
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        listOf(
+            Triple(CanvasOffsets.Nudge.LEFT, "←", R.string.clocky_studio_nudge_left),
+            Triple(CanvasOffsets.Nudge.RIGHT, "→", R.string.clocky_studio_nudge_right),
+            Triple(CanvasOffsets.Nudge.UP, "↑", R.string.clocky_studio_nudge_up),
+            Triple(CanvasOffsets.Nudge.DOWN, "↓", R.string.clocky_studio_nudge_down),
+        ).forEach { (dir, glyph, desc) ->
+            val key = "nudge.${target.name}.${dir.name}"
+            fun step() = host.edit(key, key, rebuild = false) {
+                val (x, y) = DesignEdits.offsetOf(it, target, host.scope)
+                val (nx, ny) = CanvasOffsets.nudged(x, y, dir, rtl)
+                DesignEdits.setOffset(it, target, nx, ny, host.scope)
+            }
+            var repeating = false
+            val repeat = object : Runnable {
+                override fun run() { step(); handler.postDelayed(this, NUDGE_REPEAT_MS) }
+            }
+            val button = com.google.android.material.button.MaterialButton(
+                context, null, com.google.android.material.R.attr.materialButtonOutlinedStyle,
+            ).apply {
+                text = glyph
+                contentDescription = str(desc, name)
+                minimumWidth = rows.dp(48)
+                minimumHeight = rows.dp(48)
+                insetTop = 0
+                insetBottom = 0
+                isEnabled = usable
+                setOnClickListener { step(); host.endGesture(); host.refreshPanel() }
+                setOnLongClickListener {
+                    repeating = true
+                    handler.post(repeat)
+                    true
+                }
+                setOnTouchListener { v, e ->
+                    if (repeating && (e.actionMasked == android.view.MotionEvent.ACTION_UP || e.actionMasked == android.view.MotionEvent.ACTION_CANCEL)) {
+                        repeating = false
+                        handler.removeCallbacks(repeat)
+                        host.endGesture()
+                        v.post { host.refreshPanel() }
+                    }
+                    false
+                }
+            }
+            row.addView(button, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                marginEnd = rows.dp(8)
+            })
+        }
+        rows.rowLabel(str(R.string.clocky_studio_nudge_label, name))
+        rows.add(row)
+        if (!usable) rows.note(str(R.string.clocky_studio_canvas_unavailable))
     }
 
     // ---- Behavior ----
@@ -602,6 +677,7 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
         zoneId.substringAfterLast('/').replace('_', ' ')
 
     companion object {
+        private const val NUDGE_REPEAT_MS = 60L
         /** End-State 5.2 date presets (all go through the locale's skeleton on the widget side). */
         val DATE_PRESETS = listOf("EEE, MMM d", "M月d日(E)", "yyyy.MM.dd", "EEE d MMM", "EEEE", "MMMM d")
 
