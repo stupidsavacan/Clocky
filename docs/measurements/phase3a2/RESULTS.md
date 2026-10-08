@@ -128,8 +128,8 @@ The created widget was removed via the observed launcher Remove target; IDs5/7, 
 metadata compare SAME to baseline, no crash/ANR. Existing widget positions were not changed.
 
 Shared-path tests establish effective-spec/geometry parity for all four classes. API30's simple
-Time/Date placed/Preview comparison now covers four classes; real worst-case Info/fallback
-and the resumed moto/API35 stress parity is recorded below. Sample alarm text remains the existing editor-only
+Time/Date placed/Preview comparison covers four classes; API30 worst-case Info visual parity remains
+unexercised. Subsequent moto/API35 stress parity is recorded below. Sample alarm text remains the existing editor-only
 placeholder when no real alarm is available. Square/Large own weight editing is hidden; global
 weights remain editable. Info scoped patches edit visibility/size/offsets/alignment; color/font/opacity remain global.
 No forbidden Info scoped-weight field is introduced.
@@ -152,11 +152,11 @@ on this evidence alone.
 | Pixel API30 emulator5562 | prepared, verified and finished | worst-case Info/font four-class visual parity |
 | API31–33 /API25 | not exercised | optional boundary/regression coverage |
 
-No automated device unlock, launcher-setting change on moto, wipe, reboot, uninstall, clear, log reset or
-force-stop was performed. Initial API30 operations used cdev; the moto binary screenshot exception is recorded below. Package-install-related lifecycle
+This moto-only resumption performed no automated unlock, launcher-setting change, wipe, reboot,
+uninstall, clear, log reset or force-stop. Initial API30 operations used cdev; the moto binary screenshot exception is recorded below. Package-install-related lifecycle
 force-stop lines in logs are system installation behavior, not an issued force-stop command.
 
-Remaining steps now concern the API35 p95 failure and final restoration/comment described below.
+Remaining steps concern the API35 p95 and alarm boot-crash failures; its restoration and final comment are complete.
 CI green alone does not
 close these gates. Phase3B/3C may start only after owner merge of completed3A.
 
