@@ -85,7 +85,7 @@ class CanvasStudioTest {
         val panel = panelView()
         panel.measure(
             View.MeasureSpec.makeMeasureSpec((1000 * density).toInt(), View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec((600 * density).toInt(), View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec((2000 * density).toInt(), View.MeasureSpec.AT_MOST), // the panel is wrap_content
         )
         panel.layout(0, 0, panel.measuredWidth, panel.measuredHeight)
         val geo = overlay().currentGeometry()
@@ -142,6 +142,33 @@ class CanvasStudioTest {
             assertNotNull("baseline comes from the TextView", time.baseline)
             assertTrue("baseline is inside the box", time.baseline!! in time.box.top..time.box.bottom)
             assertTrue("widget size is the rendered entry", g.widthDp > 100f && g.heightDp > 40f)
+        }
+    }
+
+    @Test fun theOverlayCoversThePreviewRowWithoutInflatingThePanel() {
+        open(widget()).use { c ->
+            val a = c.get()
+            // The way a device does it: the first pass runs before the preview has its size, and the
+            // frame is resized afterwards; the overlay must follow without anyone remeasuring by hand.
+            val panel0 = a.panelView()
+            fun pass() {
+                panel0.measure(
+                    View.MeasureSpec.makeMeasureSpec((1000 * density).toInt(), View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec((2000 * density).toInt(), View.MeasureSpec.AT_MOST),
+                )
+                panel0.layout(0, 0, panel0.measuredWidth, panel0.measuredHeight)
+            }
+            pass()
+            idle()
+            pass()
+            assertTrue("no manual layout was needed: ${a.overlay().height}", a.overlay().height > 0)
+            a.layoutPreview()
+            val panel = a.panelView()
+            val frame = a.findViewById<View>(R.id.clocky_preview_frame)
+            assertTrue("overlay is touchable: ${a.overlay().width}x${a.overlay().height}", a.overlay().width > 0 && a.overlay().height > 0)
+            assertEquals("overlay height is the preview height", frame.measuredHeight, a.overlay().height)
+            assertEquals("panel = preview + its own padding, not the available height",
+                frame.measuredHeight + panel.paddingTop + panel.paddingBottom, panel.measuredHeight)
         }
     }
 

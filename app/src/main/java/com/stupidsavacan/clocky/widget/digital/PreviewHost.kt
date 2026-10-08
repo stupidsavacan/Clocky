@@ -65,6 +65,8 @@ class PreviewHost(
     private val appWidgetId: Int,
     /** Upper bound for the displayed height; the render is scaled down uniformly to honor it. */
     private val maxDisplayHeightDp: Int = 100_000,
+    /** Called once the post-render scale and frame size are applied (overlays re-read geometry here). */
+    private val onFitted: () -> Unit = {},
     private val onRendered: (ResolvedDigitalSpec) -> Unit = {},
 ) {
     private val context: Context = frame.context
@@ -163,6 +165,7 @@ class PreviewHost(
                 width = (widthPx * scale).toInt()
                 height = (heightPx * scale).toInt()
             }
+            onFitted()
         }
     }
 

@@ -54,6 +54,8 @@ class CanvasOverlayView(
     context: Context,
     private val host: CanvasHost,
     private val appliedRoot: () -> View?,
+    /** The preview frame; its measured height is the height this overlay covers. */
+    private val sizeSource: () -> View? = appliedRoot,
 ) : View(context) {
     /** Overridable so tests can observe snap ticks without a haptic motor. */
     var haptic: (View) -> Unit = { it.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK) }
@@ -85,6 +87,17 @@ class CanvasOverlayView(
     init {
         // The panel already describes the preview; the same values stay reachable through the numeric controls.
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+
+    /**
+     * The overlay must never size its parent: a plain MATCH_PARENT view under a wrap_content panel
+     * would take all available height, and FrameLayout does not re-measure a lone match-parent child.
+     * It covers the panel's content row instead: the parent's width and the preview frame's height.
+     */
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val sibling = sizeSource()
+        val w = if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.EXACTLY) MeasureSpec.getSize(widthMeasureSpec) else sibling?.measuredWidth ?: 0
+        setMeasuredDimension(w, sibling?.measuredHeight ?: 0)
     }
 
     /** Re-reads the applied tree and repaints; call after every preview render. */

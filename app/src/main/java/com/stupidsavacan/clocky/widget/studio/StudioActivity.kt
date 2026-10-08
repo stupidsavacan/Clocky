@@ -253,6 +253,9 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
             frame = findViewById<FrameLayout>(R.id.clocky_preview_frame),
             appWidgetId = appWidgetId,
             maxDisplayHeightDp = resources.getInteger(R.integer.clocky_tune_preview_max_height_dp),
+            // The overlay takes its size from the preview frame, whose size just changed: a sibling is not
+            // re-measured by the frame's own requestLayout().
+            onFitted = { if (::canvas.isInitialized) { canvas.requestLayout(); canvas.invalidate() } },
         ) { resolved ->
             spec = resolved
             // The Info panel's "sample" note depends on the resolved spec, which only exists after a render.
@@ -266,7 +269,8 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
         }
         if (vm.previewClass == null) vm.previewClass = previewHost.hostSizeClass()
         if (vm.selected == null) vm.selected = targetOf(vm.slot)
-        canvas = CanvasOverlayView(this, this) { findViewById<FrameLayout>(R.id.clocky_preview_frame).getChildAt(0) }
+        val previewFrame = findViewById<FrameLayout>(R.id.clocky_preview_frame)
+        canvas = CanvasOverlayView(this, this, appliedRoot = { previewFrame.getChildAt(0) }, sizeSource = { previewFrame })
         findViewById<FrameLayout>(R.id.clocky_preview_panel).addView(
             canvas, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT),
         )
