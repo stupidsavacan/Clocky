@@ -189,6 +189,7 @@ Exit gate: designs can be saved, duplicated and shared, and they work naturally 
   - [ ] Phase 5+ follow-up (not a moto acceptance blocker): API35 provider p95 Card427.57ms /Square671.30ms versus400ms target; stable-host profiling/recheck remains needed. Existing AOSP alarm PendingIntent mutability crash also reproduced on PR APK. Failure evidence stays; AOSP-domain edits still require owner authorization. No broader certification claim.
   - Measurement: `docs/measurements/phase3a2/RESULTS.md`. Phase3A moto acceptance is complete under the revised scope; Phase3B/3C wait for owner merge of the implementation and revised scope. This does not complete the entire Phase3.
 - 3B Canvas
+  - [x] Issue54 shared Preview scale fix: replacement RemoteViews child is scaled synchronously; stale deferred fits ignored. moto before/during/after video reproduces the bug and confirms movement/size/opacity/weight no longer magnify the preview; settings-preserving Save/Undo covered. Awaiting owner merge; [evidence](measurements/issue54/RESULTS.md).
   - [x] Selection, drag, snap (center / edges / baselines, haptics, second finger disables snap), 1dp nudge; one gesture = one undo step. (3B-1, awaiting owner merge; record `PHASE_3_RESPONSIVE_CANVAS.md` §3.9, moto: `docs/measurements/phase3b1/RESULTS.md`; haptic / real two-finger / TalkBack not device-verified)
   - [ ] Pinch to resize text; pseudo-resize handle 2×1–5×4 using measured cell sizes.
 - 3C Library & Stacked

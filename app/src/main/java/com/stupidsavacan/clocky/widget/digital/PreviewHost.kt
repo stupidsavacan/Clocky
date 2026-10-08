@@ -150,7 +150,10 @@ class PreviewHost(
         frame.clipChildren = false
         (frame.parent as? android.view.ViewGroup)?.clipChildren = false
         val child = frame.getChildAt(0)
-        frame.post {
+        fun fit() {
+            // A replaced render must be scaled before the next draw, including during continuous edits.
+            // Deferred first-layout work belongs only to the child that requested it.
+            if (frame.getChildAt(0) !== child) return
             val parent = frame.parent as? View
             val available = parent?.let { it.width - it.paddingLeft - it.paddingRight } ?: 0
             val maxHeightPx = maxDisplayHeightDp * context.resources.displayMetrics.density
@@ -161,12 +164,16 @@ class PreviewHost(
             child.pivotY = 0f
             child.scaleX = scale
             child.scaleY = scale
-            frame.layoutParams = frame.layoutParams.apply {
+            frame.layoutParams = (frame.layoutParams ?: FrameLayout.LayoutParams(widthPx, heightPx)).apply {
                 width = (widthPx * scale).toInt()
                 height = (heightPx * scale).toInt()
             }
             onFitted()
         }
+        fit()
+        // The first render can precede parent measurement. Refit then, but never leave a replacement
+        // child at its default scale of 1 while an already measured editor waits for View.post.
+        frame.post { fit() }
     }
 
     companion object {
