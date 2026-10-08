@@ -3,9 +3,11 @@
 Date: 2026-10-08. Branch: `feat/phase3a2-responsive-render`, based on merged #48/main
 `7b7ab11bbd0efc38d733b14383d8591b62b60a20`.
 
-**Status: moto/API34 verification completed and restored; API35 fails the400ms p95 target and reproduces an existing alarm boot crash on the PR APK. Phase 3A is not complete. Keep PR49 Draft.**
+**Current acceptance (owner ruling2026-10-08): moto/API34 personal-use verification complete and restored; further verification stopped. Other-device/API/launcher certification is deferred to optional Phase 5+. PR49 awaits owner merge; no merge is authorized here.**
+
+API35 still fails the400ms p95 target and reproduces an existing alarm boot crash on the PR APK. Those observed failures are preserved, not passed; they no longer block the accepted moto widget use. See [VERIFICATION_SCOPE.md](../../product/VERIFICATION_SCOPE.md).
 The owner authorized merging #48 after green CI; #44–#48 were merged before production work.
-No owner ruling/threshold/schema/provider change was needed.
+No threshold/schema/provider change was needed for implementation. The later owner ruling changes verification scope only.
 
 ## Render contract and audit
 
@@ -138,7 +140,7 @@ No forbidden Info scoped-weight field is introduced.
 
 The submitted production metadata explicitly retains minResize250×40dp. Candidate110×40dp
 passed the template gate, API30 and moto resize checks, including fresh-placement/picker and upgrade.
-API35 performance/no-crash gates remain open; do not mix widening into an uncertified release.
+API35 performance/no-crash follow-up moves to Phase 5+. Production metadata remains250×40dp as a separate conservative scope decision; this policy revision does not enable widening.
 API30 fresh placement/picker/final-build upgrade now pass. Default minWidth250dp/minHeight70dp,
 targetCell4×2, provider component and schema2 remain unchanged. Do not widen release metadata
 on this evidence alone.
@@ -156,9 +158,7 @@ This moto-only resumption performed no automated unlock, launcher-setting change
 uninstall, clear, log reset or force-stop. Initial API30 operations used cdev; the moto binary screenshot exception is recorded below. Package-install-related lifecycle
 force-stop lines in logs are system installation behavior, not an issued force-stop command.
 
-Remaining steps concern the API35 p95 and alarm boot-crash failures; its restoration and final comment are complete.
-CI green alone does not
-close these gates. Phase3B/3C may start only after owner merge of completed3A.
+Further verification is stopped at the owner's request. API35 p95 and alarm boot-crash failures remain Phase 5+ follow-ups; its restoration and final comment are complete. CI green does not turn those failures into passes. Phase3B/3C may start after owner merge of3A and the revised moto acceptance scope.
 
 ## Resumed moto/API34 verification (2026-10-08)
 
@@ -280,18 +280,20 @@ was read and integrated on2026-10-08. Tested `c5a14b7`.
 Functional Keying A, real4×4 send/memory, four-class stress parity, rotation, resize (including
 rejected stale sends), upgrade/settings and process-absent ticking passed as reported.
 Real4×4 allocation14,203,708B,Parcel8,056B,8.67% headroom; no quality change needed.
-Required performance failed: provider total p95 Card427.57ms /Square671.30ms (batch424.08/665.63ms).
+Performance failed against the retained target (now a Phase 5+ host follow-up): provider total p95 Card427.57ms /Square671.30ms (batch424.08/665.63ms).
 First batch1,988.17/1,535.25ms. Fit and bitmap/map construction are profiling candidates;
 parallel host resource contention prevents attributing the entire excess to implementation.
 After host disk space was recovered, the agent completed the final cold boot: services/launcher
 running, settings byte-identical, ID2/original cell/span/pixel bounds restored, sessions finished.
 That boot reproduced the pre-existing AOSP alarm PendingIntent mutability crash on the PR APK
 at17:35:07 and17:35:30 (AlarmInitReceiver→fixAlarmInstances→showMissedNotification). This also
-fails the required no-crash upgrade/restoration criterion. Source inspection confirms
+fails the original API35 no-crash upgrade/restoration criterion (now Phase 5+). Source inspection confirms
 AlarmNotifications.kt's missed-notification getService and AlarmStateManager.kt scheduling
 still use FLAG_UPDATE_CURRENT without a mutability flag; these sites are unchanged by this PR.
 Do not change the AOSP domain without an owner ruling (original stop condition10).
 
-**Shipping decision: keep Draft; do not declare Phase3A complete or start3B/3C.** Recheck API35
-performance under a stable environment, profile/optimize if still over400ms, and obtain an owner
-ruling for the existing alarm boot failure. This moto-only task did not operate or restart that emulator.
+**Original broad-host decision (superseded by the later scope ruling):** keep Draft pending API35
+performance recheck/profile and owner ruling for the existing alarm boot failure.
+**Current decision:** moto personal-use acceptance is complete; these non-moto follow-ups move to
+Phase 5+ and additional testing stops. Draft/merge actions still require the owner's instruction;
+Phase3B/3C wait for owner merge. This moto-only task did not operate or restart that emulator.

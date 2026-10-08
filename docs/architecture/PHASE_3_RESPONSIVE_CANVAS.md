@@ -1,6 +1,6 @@
 # Phase 3 — Responsive Canvas & Library: design record
 
-> Status: **3A-0 complete (#47 merged); 3A-1 merged (#48); 3A-2 implemented, moto verified/restored; API35 p95 and alarm boot-crash gates failed. Keep Draft.** The independent Phase 2 follow-ups (#44–#46) are merged. The owner delegated the open semantics to this record on
+> Status: **3A-0 complete (#47 merged); 3A-1 merged (#48); 3A-2 implemented, moto personal-use acceptance complete; awaiting owner merge. Non-moto certification deferred to Phase 5+. API35 failures remain recorded.** The independent Phase 2 follow-ups (#44–#46) are merged. The owner delegated the open semantics to this record on
 > 2026-10-07; the rulings are in section 8 and are reflected in `CLOCKY_END_STATE.md` (section 9 lists the edits).
 > Universal Latin AM/PM is temporarily paused and is not a Phase 3 gate. Before 3A-0, the Phase 2 font-host parity follow-up (1b below) must make Preview/fit use the same effective font as the placed widget. 3A-0 results and remaining production gates are recorded in §2.10 (2026-10-08).
 > Authority: `docs/product/CLOCKY_END_STATE.md` (§3, §5.8, §7, §8, §9, §10, §12, §13, §14). This record splits the
@@ -554,8 +554,10 @@ class awareness only through the resolver).
 
 ### 2.9 Device checks
 
-Can be checked with cdev: classes on Pixel Launcher (API 30/35 emulators) and Motorola Launcher3 (moto g13) at
-every reachable cell; resize across class boundaries; rotation; TextClock ticking after `am kill`; preview = widget;
+**Current scope (2026-10-08):** moto g13/API34/Motorola Launcher3 is the required personal-use host. Further non-moto device/API/launcher work in this record, including API35 performance and alarm follow-up, moves to optional Phase 5+. Existing JVM/Robolectric coverage remains required. The owner accepted the completed moto coverage and stopped additional verification. See [verification scope](../product/VERIFICATION_SCOPE.md).
+
+Historical/Phase 5+ host inventory: classes on Pixel Launcher (API 30/35 emulators) and Motorola Launcher3 (moto g13) at
+every reachable cell; resize across class boundaries; rotation; TextClock ticking after `cdev proc kill`; preview = widget;
 no crash in the log; an existing Phase 2 widget unchanged after an in-place `cdev install`.
 
 Cannot be checked now: One UI Home, Nova, Lawnchair (no host available); API 26–29 and 31–33 (no emulator yet; can
@@ -585,8 +587,8 @@ refreshed main to `7b7ab11bbd0efc38d733b14383d8591b62b60a20`.
   fit/compose, RemoteViews construction, send and queue-inclusive end-to-end; additional local
   apply/bitmap/Parcel diagnostics happen after the production timestamp.
 - **Release metadata retained at250×40dp**: candidate110×40dp passed API30 after the template gate,
-  and subsequently moto also passed2×1/2×2/3×1/3×2 and fresh placement/picker. API35 performance/restoration
-  gates remain open. Default minWidth250dp and
+  and subsequently moto also passed2×1/2×2/3×1/3×2 and fresh placement/picker. Widening remains a separate
+  metadata change; API35 follow-up is now Phase 5+. Default minWidth250dp and
   targetCell4×2 preserved. No widening is claimed in the submitted metadata.
 - API30: IDs/settings, pair rotation, resize, scoped UI, ticking, fresh4×2 and Time/Date four-class parity verified.
   moto owner unlocked: Keying A/all-class stress parity, resize including held callback/send,
@@ -602,9 +604,11 @@ refreshed main to `7b7ab11bbd0efc38d733b14383d8591b62b60a20`.
   built-in content/Stacked/Corner preset, schema or provider rename.
 
 Evidence and remaining gates: [`phase3a2/RESULTS.md`](../measurements/phase3a2/RESULTS.md).
-**Phase3A is not complete**; Phase3B/3C remain gated by owner merge after required verification.
+**Phase3A acceptance for moto personal use is complete under the revised scope.** Phase3B/3C remain gated by owner merge of the implementation and scope revision; non-moto certification is not their prerequisite. No merge authorization or broad-host completion is implied.
 
 ### 2.10 Measurement results
+
+Historical 3A-0 results below predate the SPLIT fix and production verification in §2.9. Their open-gate descriptions are not the current acceptance decision.
 
 Completed 2026-10-08 against main `dddd16c7dbfdf79129cf0f763812e33ecd575fc8` (PRs #42–#46 merged).
 
@@ -639,10 +643,10 @@ are 3A work. **3A implementation can start** with those documented 3A-2 gates; n
 
 ### 2.11 Shipping gate
 
-- Thresholds and the R1 input dimensions are fixed from measured data, and END_STATE §9 is amended if they differ from 100 / 200 / 1.4.
-- On every measured launcher, every intended cell lands in its intended class and renders without clipping or overlap.
-- No existing widget changes appearance across the upgrade (moto g13 + one emulator, in-place install).
-- Spike numbers are within budget; the bitmap-memory limit is never hit with the worst-case design.
+- Retain the measured R1 MAX_WIDTH/MIN_HEIGHT rule and constants100/160/2.5625; class-rule changes require an explicit End-State/owner decision.
+- On moto, reachable representative classes render without clipping or overlap; retain the native template audit. Additional launcher/cell certification is Phase 5+.
+- Existing moto widget IDs/settings/appearance survive in-place upgrade. Additional emulator/host verification is Phase 5+.
+- Production moto p95 generation meets400ms; worst-case real sends stay under the bitmap limit. First-update latency is recorded. Spike numbers alone do not certify production. Other-host failures stay documented for Phase 5+.
 
 ### 2.12 Risks and exit conditions
 
@@ -715,8 +719,8 @@ they are reported as not verified.
 ### 3.7 Shipping gate
 
 Drag, snap, nudge and pinch change only the requested offset/size in the current scope; every gesture is one undo
-step; the preview is the production RemoteViews throughout; the placed widget matches after Save on the moto g13 and
-an API 35 emulator; nothing regresses in the Phase 2 Studio tests.
+step; the preview is the production RemoteViews throughout; the placed widget matches after Save on moto g13; nothing regresses in the Phase 2 Studio tests.
+API35 and other-host device parity is a Phase 5+ follow-up.
 
 ### 3.8 Risks and exit conditions
 
@@ -909,9 +913,10 @@ hours (only the first call is observed); real restore (above).
 
 ### 5.9 Shipping gate
 
-Backup includes exactly the intended files (static check + emulator `bmgr backupnow`); remap logic fully unit-tested
-and disclosed as device-unverified until the owner's manual restore passes (R9); pin works on Pixel Launcher and Motorola
-Launcher3 with the design applied; picker previews show Clocky's own rendering on all three API bands.
+Backup includes exactly the intended files (static/automated checks); remap logic fully unit-tested
+and disclosed as device-unverified until the owner's manual restore passes (R9); pin and picker work on Motorola
+Launcher3 with the design applied. Other-launcher/API-band picker, emulator backup and real-restore certification
+move to Phase 5+; no unverified restore claim is allowed.
 
 ### 5.10 Risks and exit conditions
 
@@ -932,7 +937,7 @@ Launcher3 with the design applied; picker previews show Clocky's own rendering o
 | render / provider / UI | Robolectric SDK 23/28/34 | map + pair, preview = widget | MotionEvent sequences | Library UI, Stacked | restore broadcast, pin, previews |
 | host behavior | cdev on device/emulator | thresholds, resize, rotation | drag, Save | import/export, apply, Stacked | backup taken, pin, picker |
 
-API 35 is not covered by Robolectric because CI runs JDK 17 (Phase 0 note); the API 35 emulator covers it on device.
+PR49 uses JDK21 for tests while application bytecode remains17. Its render coverage includes SDK23/28/30/31/34/35; keep those automated checks. Device/emulator matrix expansion is Phase 5+.
 
 ## 7. Items that cannot be verified on a device (summary)
 
@@ -940,7 +945,7 @@ API 35 is not covered by Robolectric because CI runs JDK 17 (Phase 0 note); the 
    `bmgr restore` are outside the rules).
 2. A real cloud or device-to-device restore of Clocky data.
 3. One UI Home, Nova and Lawnchair (no host available unless the owner provides one) — this leaves the End-State §14
-   launcher matrix open.
+   launcher matrix open for Phase 5+, without blocking current moto personal use.
 4. Pinch zoom and the two-finger snap cancel (cdev injects one pointer).
 5. Snap haptics (not observable over adb).
 6. TalkBack operation of the canvas (cdev refuses `settings put secure`).

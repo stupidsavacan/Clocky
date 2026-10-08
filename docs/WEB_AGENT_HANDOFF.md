@@ -2,6 +2,10 @@
 
 GitHubを唯一の正本として、通常ChatのWeb/GitHub作業を継続するための引き継ぎメモです。作業開始時は、この文書のSHAやrun番号を盲信せず、必ずGitHubから `main` / open PR / Actions を再取得してください。
 
+## Current verification scope (owner ruling2026-10-08)
+
+Current acceptance is the owner's moto g13/API34/Motorola Launcher3 personal use. Further non-moto device/API/launcher verification moves to optional Phase 5+; do not restart it without an owner request. Existing failure evidence and automated checks stay. See [VERIFICATION_SCOPE.md](product/VERIFICATION_SCOPE.md) and the current backlog. The baseline/run notes below are historical snapshots, not current verification prerequisites.
+
 ## Latest confirmed functional main baseline
 
 - functional main before this docs sync: `59a3cf486f34687399b82875bec24bd8d3b63439` (PR #29 merge)

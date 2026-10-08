@@ -4,6 +4,8 @@
 
 > Status: **standalone AOSP DeskClock port builds on GitHub Actions / source-defined Digital Widget customization integrated / real-device parity pending**
 
+現在の利用目的は **owner の moto g13 / API34 / Motorola Launcher3 で使えること**です。moto以外の端末・API・launcherの追加検証は **Phase 5+** へ移し、owner自身が使う分には不要とします。既存の測定・失敗記録と自動テストは維持します。詳細は [検証スコープ](docs/product/VERIFICATION_SCOPE.md)。
+
 ## Product direction
 
 Clocky は次の3層で構成します。
