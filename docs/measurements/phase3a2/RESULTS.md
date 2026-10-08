@@ -3,7 +3,7 @@
 Date: 2026-10-08. Branch: `feat/phase3a2-responsive-render`, based on merged #48/main
 `7b7ab11bbd0efc38d733b14383d8591b62b60a20`.
 
-**Status: implementation present; required moto/API35 shipping evidence incomplete. Phase 3A is not complete.**
+**Status: moto/API34 verification completed and restored; API35 fails the400ms p95 target and reproduces an existing alarm boot crash on the PR APK. Phase 3A is not complete. Keep PR49 Draft.**
 The owner authorized merging #48 after green CI; #44–#48 were merged before production work.
 No owner ruling/threshold/schema/provider change was needed.
 
@@ -71,8 +71,8 @@ keys at2.625 density with gradient/Info/seconds/AMPM/shadow/bundled-font fallbac
 headroom under the measured15,552,000B limit. Observed native allocation14,203,708B leaves8.67%
 headroom. Native Robolectric parcels inline pixel data (14,213,628B), so the test bounds map/action
 overhead above bitmap bytes to32KiB; this is not a real Binder Parcel measurement. This protects allocation regression,
-**not actual launcher acceptance**. Required real API35 4×4 worst-case send and performance remain
-unexercised; no shipping bitmap claim is made from Robolectric.
+**not actual launcher acceptance**. The resumed moto and independent API35 launcher results below
+provide the subsequent real-send evidence; no shipping bitmap claim is made from Robolectric alone.
 
 ## Build verification
 
@@ -129,7 +129,7 @@ metadata compare SAME to baseline, no crash/ANR. Existing widget positions were 
 
 Shared-path tests establish effective-spec/geometry parity for all four classes. API30's simple
 Time/Date placed/Preview comparison now covers four classes; real worst-case Info/fallback
-and required moto/API35 visual parity remain open. Sample alarm text remains the existing editor-only
+and the resumed moto/API35 stress parity is recorded below. Sample alarm text remains the existing editor-only
 placeholder when no real alarm is available. Square/Large own weight editing is hidden; global
 weights remain editable. Info scoped patches edit visibility/size/offsets/alignment; color/font/opacity remain global.
 No forbidden Info scoped-weight field is introduced.
@@ -137,7 +137,8 @@ No forbidden Info scoped-weight field is introduced.
 ## Metadata decision
 
 The submitted production metadata explicitly retains minResize250×40dp. Candidate110×40dp
-passed the template gate and API30 resize checks, but required moto/API35 resize, fresh-placement/picker and upgrade checks are not complete.
+passed the template gate, API30 and moto resize checks, including fresh-placement/picker and upgrade.
+API35 performance/no-crash gates remain open; do not mix widening into an uncertified release.
 API30 fresh placement/picker/final-build upgrade now pass. Default minWidth250dp/minHeight70dp,
 targetCell4×2, provider component and schema2 remain unchanged. Do not widen release metadata
 on this evidence alone.
@@ -146,16 +147,151 @@ on this evidence alone.
 
 | Host | Current ability | Remaining evidence |
 |---|---|---|
-| moto g13 API34 / Motorola launcher | prepare rejected KEYGUARD_SHOWING; owner unlock requested | all production3A-2 device gates |
-| Pixel API35 emulator5560 | prepare rejected; package/activity services unavailable, owner recovery requested | map4×4 bitmap/send/timing, upgrade/ticking, rotation/live resize, parity |
+| moto g13 API34 / Motorola launcher | owner unlocked; verified/restored/finished | home rotation deliberately not enabled; no isolated frozen-map experiment |
+| Pixel API35 emulator5560 | parallel agent recovered, verified and restored launcher | p95 target failed; alarm boot crash reproduced on PR APK |
 | Pixel API30 emulator5562 | prepared, verified and finished | worst-case Info/font four-class visual parity |
 | API31–33 /API25 | not exercised | optional boundary/regression coverage |
 
-No device unlock, launcher-setting change on moto, wipe, reboot, uninstall, clear, log reset or
-force-stop was performed. All device commands used cdev. Package-install-related lifecycle
+No automated device unlock, launcher-setting change on moto, wipe, reboot, uninstall, clear, log reset or
+force-stop was performed. Initial API30 operations used cdev; the moto binary screenshot exception is recorded below. Package-install-related lifecycle
 force-stop lines in logs are system installation behavior, not an issued force-stop command.
 
-Required next steps: recover enabled hosts; prepare/baseline/in-place install/compare/finish;
-record production p95 and first update, API35 worst-case bitmap/Parcel/send, host rotation/live
-resize, four-class Preview/widget parity and process-absent ticking. CI green alone does not
+Remaining steps now concern the API35 p95 failure and final restoration/comment described below.
+CI green alone does not
 close these gates. Phase3B/3C may start only after owner merge of completed3A.
+
+## Resumed moto/API34 verification (2026-10-08)
+
+Tested production source remains `b00956a`, PR HEAD `c5a14b7`. Independent managed worktree,
+session `s-20261008-104435-ZY22GSDPFW`, prepared and finished. Motorola Launcher3,720×1600,
+280dpi/density1.75,ja-JP,font-scale1. Screen mirroring used installed scrcpy4.1 with explicit
+moto serial, control enabled and software renderer; PC click and Home key were verified.
+Owner subsequently waived continued GUI use. Owner's PC went offline for six hours and reconnected;
+that elapsed gap is not a device time-setting change issued by this task.
+
+Actual pre-upgrade APK was pulled through cdev and hashed: `504294c7e5b494f8f23ae24909332b361fb4b66dcb9a9bb420c017aa65e11ee4`,
+matching the recorded3A-1 moto artifact. Initial stale install-cache output from a prior cdev
+session was not used as baseline identity. In-place PR APK `8495e09b5cb9b6caf69ce0ac1facde9ee8f40fd4fc36b909eb8ee05eb65e9eb1`
+preserved ID23 and byte-identical settings ([upgrade summary](moto-upgrade-summary.md)).
+4×3 now classifies Large; R2 preserves the prior Card appearance: baseline and final Time rectangle
+`[89,305][630,551]`, Date `[261,558][458,598]`, root `[28,103][692,801]` are identical.
+
+### Real production timing and memory
+
+Same queued generation/send path and ephemeral CENTER_STACK worst-case design as the API30 audit.
+Nearest-rank p95,n30 per row; first = first harness update, not controlled cold start.
+Preview/local apply/bitmap/Parcel inspection is after production timestamps and excluded.
+Generation below is `RenderBatch.generationNanos`; send/end-to-end use the surrounding updater.
+
+| Cell/class | First / p95 generation | First / p95 send | First / p95 end-to-end | Bitmap bytes | Parcel bytes |
+|---|---:|---:|---:|---:|---:|
+|4×1 Strip|291.97 /183.81ms|3.67 /2.08ms|297.79 /188.27ms|1,020,960|4,452|
+|4×2 Card|317.21 /241.52ms|1.50 /2.00ms|322.46 /246.07ms|2,243,968|5,212|
+|4×4 Square|304.33 /251.80ms|1.62 /2.01ms|308.59 /257.00ms|4,689,984|5,212|
+|4×3 Large|538.63 /374.68ms|3.06 /2.69ms|545.48 /380.73ms|3,466,976|5,212|
+
+Entry p95 resolve/fit/compose (ms), independently calculated; phase percentiles cannot be added:
+
+| Common class | Actual host SizeF key | Resolve | Fit | Compose |
+|---|---|---:|---:|---:|
+|Strip|363.42856×122.28571|0.90|113.92|4.75|
+|Strip|667.4286×58.285713|1.10|60.89|3.48|
+|Card|363.42856×260.57144|0.91|131.35|14.43|
+|Card|667.4286×132.57143|2.54|82.66|5.97|
+|Square|363.42856×537.1429|1.09|142.44|12.01|
+|Square|667.4286×281.14285|1.36|67.05|11.93|
+|Large|363.42856×398.85715|2.78|219.92|10.21|
+|Large|667.4286×206.85715|1.79|71.74|8.64|
+
+All entries within a batch use the same production class and effective system-sans face.
+Map-construction timing is retained in local JSON, separately from per-entry composition.
+4×4 actual gradient send/display succeeded for all30 samples;4,689,984B is32.15% below the
+6,912,000B screen-derived moto limit. No allocation/transaction-too-large exception observed.
+No image-quality reduction. The first package-update generation after installing the metadata
+candidate logged2,204.80ms (fit1,340.08/308.90ms,resolve82.81/2.22ms,compose1.46/0.85ms).
+This and Large's538.63ms first harness sample expose cold/inflation/sampling latency; normal
+four-class p95 is below400ms. Environment/font probing and inflation warming are profiling
+candidates, not proven causes from these phase timestamps. Host resource load was uncontrolled.
+
+### Resize, parity, metadata and ticking
+
+4×1 Strip /4×2 Card /4×3 Large /4×4 Square passed real display checks. Production PreviewHost
+rendered the same ephemeral design with actual host entry size; resolved-spec equality was true
+for all four classes. Screens show matching Time/Date/UTC Info, seconds, localized午後 marker,
+alignment/gap/padding, strong shadow, effective fallback and fit without clipping/overlap.
+Strip hides Info in both paths. Preview frame and launcher actual inner bounds differ slightly
+from reported SizeF because of host padding; no pixel-identity claim is made.
+Quick Tune showed all four selectors and selected the actual Square class at4×4.
+The debug audit now accepts `--ez hold true --ez preview true` and optional `--es template SPLIT`;
+this reuses production PreviewHost, never saves a design, and Back/onDestroy restores the saved
+design. Exit the held audit before process-kill tests. No additional renderer was introduced.
+
+Held-drag proof: DOWN at the bottom resize handle, MOVE to3×1, capture log/screen **before UP**.
+At17:26:51.595 the updater already sent the Strip map with keys268.57144×122.28571 and
+496.57144×58.285713. Final settled class/key/appearance matched. No final stale layout, blank or
+Clocky crash observed. Runtime publication was not deliberately reordered; adversarial stale
+protection remains established by the queue tests. Existing-entry selection was not isolated by
+freezing regeneration. No moto launcher setting was changed to enable home rotation; the API35
+parallel check supplies the enabled-host rotation evidence.
+
+Candidate metadata APK `10d71075ab56f79df6be1a0340f72fc650b58974282e0062cee891cef2a28722`
+temporarily used110×40dp.2×1,2×2,3×1,3×2 all reachable; natural geometry fit and display stable.
+Picker remained4×2; fresh Clocky Default ID24 appeared at4×2, then only that temporary widget
+was removed using the observed launcher Remove target. SPLIT+2×1 Strip actual diagnostic apply,
+send/display and Preview succeeded with173.71428×122.28571 /325.7143×58.285713 keys;
+no clipping/overlap, matching production spec. Original300-case/native fractional audits remain
+zero failures. This is additional real SPLIT evidence, not a claim of exhaustive real-launcher
+template×cell coverage. Final release metadata is again250×40dp,default minWidth250,target4×2.
+
+Original ID23 returned to its original4×3 cell/root/geometry. Intermediate audit-UI APK
+`ac38bfadf19f943284c8913ffbf0a9db189c0e547156a1b352fb679c3cdbdb6c` was used for the following ticking proof.
+`proc kill` then `widget --ticking --no-process` proved17:30→17:31 in64.8s,9/9 process-absent
+checks. Final settings byte-identical and IDs SAME[23]; no Clocky crash/ANR in retained final
+evidence. System rotation restored to auto/user0,
+temporary log.tag.ClockyRender restored to empty, session finished. Raw captures remain local.
+
+Final audit-lifecycle guard/status follow-up APK
+`099caa47396e9e542d4a30bffeeb863009f3182a318cd28c5f3ac841c2799402` installed in place in
+session `s-20261008-174210-ZY22GSDPFW`, which was prepared/finished. A100-sample held audit was
+exited with Back while running: no resumed Preview/continuing audit, original rendering restored,
+no Clocky crash/ANR, IDs SAME[23]/settings byte-identical to the original3A-1 baseline
+([final summary](moto-final-summary.md)). This final debug APK remains installed; release metadata
+250×40dp and production render source unchanged.
+
+### Owner ADB exception and limitations
+
+cdev was tried first. Seconds-ON UI dumps failed idle detection; overlapping failed dump attempts
+also produced UiAutomationService registration errors, not Clocky failures. Those attempts were
+allowed to finish before further UI work. Binary PNG through cdev cmd_adb was corrupted because
+it decodes stdout as text. Under the explicit PR49 owner exception, screenshot acquisition used
+`adb -s ZY22GSDPFW exec-out screencap -p`, writing binary output directly to local files; commands
+and reason are retained in local `moto-direct-adb-record.txt`. All other device commands, including
+motionevent gestures, log-property temporary change/restoration, install/kill/ticking, were cdev.
+No emulator/ADB-server operation, device authentication automation, clear/uninstall/force-stop,
+launcher preference change or log reset was issued.
+
+Full post-audit-source checks: testDebugUnitTest468 tests/0 failures/errors,lintDebug,assembleDebug
+green (JDK21). No production classifier/schema/provider/domain/font/AMPM change in this resumption.
+
+## API35 parallel report integration
+
+The independent [API35 final PR report](https://github.com/stupidsavacan/Clocky/pull/49#issuecomment-6056052332)
+was read and integrated on2026-10-08. Tested `c5a14b7`.
+Functional Keying A, real4×4 send/memory, four-class stress parity, rotation, resize (including
+rejected stale sends), upgrade/settings and process-absent ticking passed as reported.
+Real4×4 allocation14,203,708B,Parcel8,056B,8.67% headroom; no quality change needed.
+Required performance failed: provider total p95 Card427.57ms /Square671.30ms (batch424.08/665.63ms).
+First batch1,988.17/1,535.25ms. Fit and bitmap/map construction are profiling candidates;
+parallel host resource contention prevents attributing the entire excess to implementation.
+After host disk space was recovered, the agent completed the final cold boot: services/launcher
+running, settings byte-identical, ID2/original cell/span/pixel bounds restored, sessions finished.
+That boot reproduced the pre-existing AOSP alarm PendingIntent mutability crash on the PR APK
+at17:35:07 and17:35:30 (AlarmInitReceiver→fixAlarmInstances→showMissedNotification). This also
+fails the required no-crash upgrade/restoration criterion. Source inspection confirms
+AlarmNotifications.kt's missed-notification getService and AlarmStateManager.kt scheduling
+still use FLAG_UPDATE_CURRENT without a mutability flag; these sites are unchanged by this PR.
+Do not change the AOSP domain without an owner ruling (original stop condition10).
+
+**Shipping decision: keep Draft; do not declare Phase3A complete or start3B/3C.** Recheck API35
+performance under a stable environment, profile/optimize if still over400ms, and obtain an owner
+ruling for the existing alarm boot failure. This moto-only task did not operate or restart that emulator.

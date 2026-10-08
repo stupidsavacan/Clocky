@@ -1,6 +1,6 @@
 # Phase 3 — Responsive Canvas & Library: design record
 
-> Status: **3A-0 complete (#47 merged); 3A-1 merged (#48); 3A-2 implemented, required moto/API35 verification pending.** The independent Phase 2 follow-ups (#44–#46) are merged. The owner delegated the open semantics to this record on
+> Status: **3A-0 complete (#47 merged); 3A-1 merged (#48); 3A-2 implemented, moto verified/restored; API35 p95 and alarm boot-crash gates failed. Keep Draft.** The independent Phase 2 follow-ups (#44–#46) are merged. The owner delegated the open semantics to this record on
 > 2026-10-07; the rulings are in section 8 and are reflected in `CLOCKY_END_STATE.md` (section 9 lists the edits).
 > Universal Latin AM/PM is temporarily paused and is not a Phase 3 gate. Before 3A-0, the Phase 2 font-host parity follow-up (1b below) must make Preview/fit use the same effective font as the placed widget. 3A-0 results and remaining production gates are recorded in §2.10 (2026-10-08).
 > Authority: `docs/product/CLOCKY_END_STATE.md` (§3, §5.8, §7, §8, §9, §10, §12, §13, §14). This record splits the
@@ -585,11 +585,20 @@ refreshed main to `7b7ab11bbd0efc38d733b14383d8591b62b60a20`.
   fit/compose, RemoteViews construction, send and queue-inclusive end-to-end; additional local
   apply/bitmap/Parcel diagnostics happen after the production timestamp.
 - **Release metadata retained at250×40dp**: candidate110×40dp passed API30 after the template gate,
-  but required moto/API35 checks remain (API30 fresh placement/picker pass). Default minWidth250dp and
+  and subsequently moto also passed2×1/2×2/3×1/3×2 and fresh placement/picker. API35 performance/restoration
+  gates remain open. Default minWidth250dp and
   targetCell4×2 preserved. No widening is claimed in the submitted metadata.
 - API30: IDs/settings, pair rotation, resize, scoped UI, ticking, fresh4×2 and Time/Date four-class parity verified.
-  moto awaits owner unlock; API35 emulator awaits recovery of package/activity services. Real
-  API31+ rotation/live resize, allocation/send and full four-class parity remain open. No new
+  moto owner unlocked: Keying A/all-class stress parity, resize including held callback/send,
+  real SPLIT2×1,4×4 worst-case bitmap/send,3A-1 upgrade and process-absent ticking verified/restored.
+  n30 per-class generation p95183.81/241.52/251.80/374.68ms,first latency recorded. Final ID23/settings
+  byte-identical and original4×3 geometry restored,cdev finished. No moto home-rotation preference change.
+  API35 parallel report confirms functional map/memory/parity/ticking/rotation, but p95 Card427.57ms /
+  Square671.30ms exceeds400ms; final restart/pixel/settings restoration completed, but existing AOSP alarm
+  PendingIntent mutability crash reproduced on the PR APK. Final report linked in RESULTS. AOSP-domain
+  fix requires owner ruling; do not treat an existing failure as a passed no-crash gate.
+  Detailed first/phase timings,limitations and owner-authorized direct binary-screenshot ADB exception
+  are recorded in RESULTS. No new
   built-in content/Stacked/Corner preset, schema or provider rename.
 
 Evidence and remaining gates: [`phase3a2/RESULTS.md`](../measurements/phase3a2/RESULTS.md).

@@ -22,6 +22,14 @@ class ResponsiveAuditActivity : Activity() {
     private var index = 0
     private var count = 30
     private var active = false
+    private val auditDesign by lazy { DigitalDesign(
+        time = TimeElement(TextStyle(fontId = "clocky-poppins",sizeSp = 64f)),
+        layout = DesignLayout(template = intent.getStringExtra("template")?.let { Template.valueOf(it) } ?: Template.CENTER_STACK),
+        info = InfoElement(source = InfoSource.SECOND_TIMEZONE,timeZoneId = "UTC",label = "UTC"),
+        behavior = Behavior(hourMode = HourMode.FORCE_12_HOUR,showSeconds = true,amPm = AmPmStyle(AmPmMode.SUFFIX)),
+        effects = Effects(shadow = ShadowLevel.STRONG),
+        background = BackgroundElement(type = BackgroundType.GRADIENT,paddingDp = 10f),
+    ) }
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
@@ -39,20 +47,13 @@ class ResponsiveAuditActivity : Activity() {
         val app = applicationContext
         val wm = AppWidgetManager.getInstance(app)
         val options = wm.getAppWidgetOptions(id)
-        val d = DigitalDesign(
-            time = TimeElement(TextStyle(fontId = "clocky-poppins",sizeSp = 64f)),
-            layout = DesignLayout(template = Template.CENTER_STACK),
-            info = InfoElement(source = InfoSource.SECOND_TIMEZONE,timeZoneId = "UTC",label = "UTC"),
-            behavior = Behavior(hourMode = HourMode.FORCE_12_HOUR,showSeconds = true,amPm = AmPmStyle(AmPmMode.SUFFIX)),
-            effects = Effects(shadow = ShadowLevel.STRONG),
-            background = BackgroundElement(type = BackgroundType.GRADIENT,paddingDp = 10f),
-        )
         DigitalWidgetUpdater.update(app,wm,id,options,onFinished = {
             runOnUiThread {
+                if (!active) return@runOnUiThread
                 index++
                 if (index < count && active) next() else complete()
             }
-        }, measurementDesign = d, onMeasured = { batch, sendMs, endMs ->
+        }, measurementDesign = auditDesign, onMeasured = { batch, sendMs, endMs ->
             // All inspection is AFTER the production send/end timestamp, excluded from timing.
             var bytes = 0L
             val entries = JSONArray()
@@ -79,8 +80,24 @@ class ResponsiveAuditActivity : Activity() {
         val app = applicationContext
         val file = java.io.File(app.filesDir,"phase3a2-performance.json")
         file.writeText(JSONObject().put("sdk",android.os.Build.VERSION.SDK_INT).put("samples",samples).toString(2))
-        DigitalWidgetUpdater.update(app,AppWidgetManager.getInstance(app),id)
-        status.text = "Complete: ${samples.length()} updates. Saved phase3a2-performance.json; original design restored."
+        val held = intent.getBooleanExtra("hold",false)
+        if (!held) DigitalWidgetUpdater.update(app,AppWidgetManager.getInstance(app),id)
+        status.text = "Complete: ${samples.length()} updates. Saved phase3a2-performance.json; " +
+            if (held) "Back restores original design." else "original design restored."
+        if (intent.getBooleanExtra("preview",false)) {
+            // Inspection follows measurement; PreviewHost is the ordinary production preview path.
+            val frame = FrameLayout(this)
+            val container = FrameLayout(this).apply { addView(frame) }
+            setContentView(container)
+            val preview = PreviewHost(frame,id)
+            val cls = preview.hostSizeClass()
+            val previewSpec = preview.render(auditDesign,cls)
+            val entry = DigitalWidgetUpdater.renderEntry(app,auditDesign,preview.previewEntry(cls),cls,
+                DigitalWidgetUpdater.environment(app))
+            file.writeText(JSONObject().put("sdk",android.os.Build.VERSION.SDK_INT).put("samples",samples)
+                .put("previewClass",cls.name).put("previewEntry",entry.size.toString())
+                .put("previewSpecMatchesProduction",previewSpec == entry.spec).toString(2))
+        }
         active = false
     }
 
