@@ -732,6 +732,8 @@ API35 and other-host device parity is a Phase 5+ follow-up.
 
 ### 3.9 3B-1 implementation record (2026-10-08)
 
+**Issue54 follow-up:** settled3B screenshots did not cover transient scaling. moto continuous-frame evidence reproduced whole-preview magnification during edits in the shared PreviewHost, including existing size/opacity/weight controls. Synchronous presentation scaling plus current-child guarding fixes the intermediate state without changing production fit or saved values. [Before/after evidence and limitations](../measurements/issue54/RESULTS.md).
+
 Scope: selection, drag, snap, 1 dp nudge. Pinch and pseudo-resize (3B-2) are not implemented.
 
 - **Code.** Pure `studio/canvas/CanvasMath.kt` (`SnapSolver`, `CanvasOffsets`, `CanvasHitTester`; widget-dp space, no Android

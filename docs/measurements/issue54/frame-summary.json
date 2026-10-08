@@ -1,0 +1,51 @@
+{
+  "before-size-weight": {
+    "decodedFrames": 287,
+    "cardWidths": [
+      270,
+      446
+    ],
+    "cardHeights": [
+      297
+    ],
+    "expandedFrames": 147
+  },
+  "before-opacity-move": {
+    "decodedFrames": 168,
+    "cardWidths": [
+      270,
+      446
+    ],
+    "cardHeights": [
+      297
+    ],
+    "expandedFrames": 81
+  },
+  "after-size-move": {
+    "decodedFrames": 288,
+    "cardWidths": [
+      270
+    ],
+    "cardHeights": [
+      297
+    ],
+    "expandedFrames": 0
+  },
+  "after-opacity-weight": {
+    "decodedFrames": 170,
+    "cardWidths": [
+      270
+    ],
+    "cardHeights": [
+      297
+    ],
+    "expandedFrames": 0
+  },
+  "after-weight": {
+    "decodedFrames": 195,
+    "cardWidths": [
+      270
+    ],
+    "expandedFrames": 0
+  }
+}
