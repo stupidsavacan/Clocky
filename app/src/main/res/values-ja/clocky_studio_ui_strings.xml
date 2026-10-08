@@ -150,4 +150,11 @@
     <string name="clocky_tap_calendar">カレンダー</string>
     <string name="clocky_tap_edit">このウィジェットを編集</string>
     <string name="clocky_tap_none">何もしない</string>
+    <string name="clocky_studio_canvas_hint">時計の部品をタップして選択、ドラッグで移動します。中央・余白の端・ベースラインに吸着し、2本目の指を置くと吸着を解除します。</string>
+    <string name="clocky_studio_canvas_unavailable">このAndroidでは位置が表示に反映されないため、ドラッグは使えません。タップでの選択と、位置の数値入力は使えます。</string>
+    <string name="clocky_studio_nudge_label">%1$s：1dpずつ移動</string>
+    <string name="clocky_studio_nudge_left">%1$s を左へ1dp</string>
+    <string name="clocky_studio_nudge_right">%1$s を右へ1dp</string>
+    <string name="clocky_studio_nudge_up">%1$s を上へ1dp</string>
+    <string name="clocky_studio_nudge_down">%1$s を下へ1dp</string>
 </resources>

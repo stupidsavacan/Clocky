@@ -65,11 +65,17 @@ class PreviewHost(
     private val appWidgetId: Int,
     /** Upper bound for the displayed height; the render is scaled down uniformly to honor it. */
     private val maxDisplayHeightDp: Int = 100_000,
+    /** Called once the post-render scale and frame size are applied (overlays re-read geometry here). */
+    private val onFitted: () -> Unit = {},
     private val onRendered: (ResolvedDigitalSpec) -> Unit = {},
 ) {
     private val context: Context = frame.context
     private val handler = Handler(Looper.getMainLooper())
     private var pending: Pair<DigitalDesign, SizeClass>? = null
+
+    /** The entry size (dp) of the latest render: what the resolver clamps offsets against. */
+    var lastEntrySize: SizeF? = null
+        private set
     private val renderPending = Runnable { pending?.let { (d, c) -> render(d, c) } }
 
     /** Size class the placed widget currently has, or Card when the host has not reported one. */
@@ -88,6 +94,7 @@ class PreviewHost(
     fun render(design: DigitalDesign, sizeClass: SizeClass): ResolvedDigitalSpec {
         val size = previewSize(sizeClass)
         val entry = previewEntry(sizeClass, size)
+        lastEntrySize = entry
         val density = context.resources.displayMetrics.density
         val widthPx = (entry.width * density).toInt()
         val heightPx = (entry.height * density).toInt()
@@ -158,6 +165,7 @@ class PreviewHost(
                 width = (widthPx * scale).toInt()
                 height = (heightPx * scale).toInt()
             }
+            onFitted()
         }
     }
 

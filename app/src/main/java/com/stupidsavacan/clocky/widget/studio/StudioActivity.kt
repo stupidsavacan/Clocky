@@ -33,6 +33,7 @@ import com.stupidsavacan.clocky.design.model.WidgetInstance
 import com.stupidsavacan.clocky.design.resolve.ContrastChecker
 import com.stupidsavacan.clocky.design.resolve.ContrastFinding
 import com.stupidsavacan.clocky.design.resolve.ContrastLevel
+import com.stupidsavacan.clocky.design.resolve.DesignResolver
 import com.stupidsavacan.clocky.design.resolve.ResolvedDigitalSpec
 import com.stupidsavacan.clocky.design.resolve.TextElementKind
 import com.stupidsavacan.clocky.design.resolve.WallpaperHint
@@ -48,6 +49,8 @@ import com.stupidsavacan.clocky.widget.digital.DesignPreview
 import com.stupidsavacan.clocky.widget.digital.DigitalWidgetUpdater
 import com.stupidsavacan.clocky.widget.digital.PreviewHost
 import com.stupidsavacan.clocky.widget.digital.SizeClassLabels
+import com.stupidsavacan.clocky.widget.studio.canvas.CanvasHost
+import com.stupidsavacan.clocky.widget.studio.canvas.CanvasOverlayView
 import org.json.JSONObject
 import java.util.Locale
 
@@ -58,6 +61,9 @@ class StudioViewModel : ViewModel() {
     var advanced: Boolean = false
     var thisSizeOnly: Boolean = false
     var previewClass: SizeClass? = null
+
+    /** The text element the canvas and the Position controls act on; null until one is chosen. */
+    var selected: TextTarget? = null
 }
 
 /**
@@ -66,7 +72,7 @@ class StudioViewModel : ViewModel() {
  * production RemoteViews path as the widget ([PreviewHost]), and writes the widget only on Save.
  * Back out (or Cancel) leaves the saved widget untouched, asking first when there are edits.
  */
-class StudioActivity : AppCompatActivity(), StudioHost {
+class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
     private lateinit var vm: StudioViewModel
     private lateinit var store: SharedPreferencesDesignStore
@@ -83,6 +89,7 @@ class StudioActivity : AppCompatActivity(), StudioHost {
     private lateinit var undoButton: ImageButton
     private lateinit var redoButton: ImageButton
     private lateinit var backdrop: View
+    private lateinit var canvas: CanvasOverlayView
     private val tabChips = mutableMapOf<Slot, Chip>()
     private var binding = false
     private var wallpaper: WallpaperHint? = null
@@ -110,6 +117,52 @@ class StudioActivity : AppCompatActivity(), StudioHost {
     override fun endGesture() {
         session.endGesture()
         updateChrome()
+    }
+
+    override fun refreshPanel() = rebuildPanel()
+
+    // ---- CanvasHost: the canvas is an input layer over the preview; edits go through the session ----
+
+    override val canDrag: Boolean get() = Build.VERSION.SDK_INT >= DesignResolver.MIN_TRANSLATION_SDK
+    override val rtl: Boolean get() = resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
+    override val selected: TextTarget? get() = vm.selected
+
+    override fun select(target: TextTarget) {
+        vm.selected = target
+        val slot = slotOf(target)
+        if (vm.slot in TEXT_SLOTS && vm.slot != slot) {
+            vm.slot = slot
+            updateTabs()
+            rebuildPanel()
+            scroll.scrollTo(0, 0)
+        }
+        canvas.invalidate()
+    }
+
+    override fun offsetOf(target: TextTarget): Pair<Float, Float> = DesignEdits.offsetOf(design, target, scope)
+
+    override fun entrySizeDp(): Pair<Float, Float>? = previewHost.lastEntrySize?.let { it.width to it.height }
+
+    override fun paddingDp(): Float = spec?.paddingDp ?: 0f
+
+    override fun moveTo(target: TextTarget, xDp: Float, yDp: Float) {
+        val key = "canvas.move.${target.name}"
+        edit(key, key, rebuild = false) { DesignEdits.setOffset(it, target, xDp, yDp, scope) }
+    }
+
+    override fun endMove() {
+        session.endGesture()
+        // The Position sliders (Layout panel) show the new values.
+        rebuildPanel()
+        updateChrome()
+    }
+
+    override fun cancelMove() {
+        session.endGesture()
+        if (session.undo()) {
+            rebuildPanel()
+            render()
+        }
     }
 
     // ---- lifecycle ----
@@ -153,6 +206,7 @@ class StudioActivity : AppCompatActivity(), StudioHost {
         outState.putBoolean(STATE_ADVANCED, vm.advanced)
         outState.putBoolean(STATE_THIS_SIZE, vm.thisSizeOnly)
         vm.previewClass?.let { outState.putString(STATE_CLASS, it.name) }
+        vm.selected?.let { outState.putString(STATE_SELECTED, it.name) }
     }
 
     /**
@@ -173,6 +227,7 @@ class StudioActivity : AppCompatActivity(), StudioHost {
         vm.advanced = saved?.getBoolean(STATE_ADVANCED) ?: false
         vm.thisSizeOnly = saved?.getBoolean(STATE_THIS_SIZE) ?: false
         vm.previewClass = saved?.getString(STATE_CLASS)?.let { name -> SizeClass.entries.firstOrNull { it.name == name } }
+        vm.selected = saved?.getString(STATE_SELECTED)?.let { name -> TextTarget.entries.firstOrNull { it.name == name } }
     }
 
     private fun decode(json: String): DigitalDesign? =
@@ -191,13 +246,16 @@ class StudioActivity : AppCompatActivity(), StudioHost {
         undoButton = findViewById(R.id.clocky_studio_undo)
         redoButton = findViewById(R.id.clocky_studio_redo)
         backdrop = findViewById(R.id.clocky_preview_panel)
-        // Studio shows its own notices (degradations and contrast) inside the scrolling panel.
-        findViewById<View>(R.id.clocky_preview_notice).visibility = View.GONE
+        // Studio shows its own notices (degradations and contrast) inside the scrolling panel;
+        // the strip under the preview carries the canvas hint instead (set once the canvas exists).
 
         previewHost = PreviewHost(
             frame = findViewById<FrameLayout>(R.id.clocky_preview_frame),
             appWidgetId = appWidgetId,
             maxDisplayHeightDp = resources.getInteger(R.integer.clocky_tune_preview_max_height_dp),
+            // The overlay takes its size from the preview frame, whose size just changed: a sibling is not
+            // re-measured by the frame's own requestLayout().
+            onFitted = { if (::canvas.isInitialized) { canvas.requestLayout(); canvas.invalidate() } },
         ) { resolved ->
             spec = resolved
             // The Info panel's "sample" note depends on the resolved spec, which only exists after a render.
@@ -207,8 +265,19 @@ class StudioActivity : AppCompatActivity(), StudioHost {
             else if (hostFallbackFonts(resolved) != panels.builtHostFallback) rebuildPanel()
             (backdrop.background?.mutate() as? GradientDrawable)?.setColor(DesignPreview.backdropColor(resolved))
             renderChecks(resolved)
+            if (::canvas.isInitialized) canvas.refresh()
         }
         if (vm.previewClass == null) vm.previewClass = previewHost.hostSizeClass()
+        if (vm.selected == null) vm.selected = targetOf(vm.slot)
+        val previewFrame = findViewById<FrameLayout>(R.id.clocky_preview_frame)
+        canvas = CanvasOverlayView(this, this, appliedRoot = { previewFrame.getChildAt(0) }, sizeSource = { previewFrame })
+        findViewById<FrameLayout>(R.id.clocky_preview_panel).addView(
+            canvas, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT),
+        )
+        findViewById<TextView>(R.id.clocky_preview_notice).apply {
+            visibility = View.VISIBLE
+            setText(if (canDrag) R.string.clocky_studio_canvas_hint else R.string.clocky_studio_canvas_unavailable)
+        }
         panels = StudioPanels(this, panel)
 
         binding = true
@@ -260,6 +329,8 @@ class StudioActivity : AppCompatActivity(), StudioHost {
                 setOnClickListener {
                     if (vm.slot != slot) {
                         vm.slot = slot
+                        targetOf(slot)?.let { vm.selected = it }
+                        canvas.invalidate()
                         updateTabs()
                         rebuildPanel()
                         scroll.scrollTo(0, 0)
@@ -446,6 +517,21 @@ class StudioActivity : AppCompatActivity(), StudioHost {
         private const val STATE_ADVANCED = "studio.advanced"
         private const val STATE_THIS_SIZE = "studio.thisSize"
         private const val STATE_CLASS = "studio.class"
+        private const val STATE_SELECTED = "studio.selected"
+        private val TEXT_SLOTS = listOf(Slot.TIME, Slot.DATE, Slot.INFO)
+
+        private fun targetOf(slot: Slot): TextTarget? = when (slot) {
+            Slot.TIME -> TextTarget.TIME
+            Slot.DATE -> TextTarget.DATE
+            Slot.INFO -> TextTarget.INFO
+            else -> null
+        }
+
+        private fun slotOf(target: TextTarget): Slot = when (target) {
+            TextTarget.TIME -> Slot.TIME
+            TextTarget.DATE -> Slot.DATE
+            TextTarget.INFO -> Slot.INFO
+        }
         private const val MENU_RESET_ALL = 1
         private const val MENU_BROWSE = 2
     }
