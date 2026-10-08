@@ -415,7 +415,7 @@ Design
   2. targetSdk 31 以上では既定の padding が付かないので、Clocky が内側の余白を自分で持つ（§5.7）。
   3. 角丸は Match system を既定にする。
   4. **キャリブレーション**（A）: 「このランチャーでは上下が切れる」と感じた場合に備えて、ウィジェットごとに外側の inset を ±8dp で調整できる。
-  5. 次のランチャーでの検証を DoD に含める: Pixel Launcher / One UI Home / Moto / Nova / Lawnchair。
+  5. 現在の個人利用ゲートはmoto g13 / Motorola Launcher3。Pixel Launcher / One UI Home / Nova / Lawnchairを含む横断検証はPhase 5+のDoDへ移す。
 - **Generated previews**（API 35 以上）: ピッカーに Clocky Default を実際の RemoteViews で表示する。API 31〜34 は `previewLayout`、それ未満は画像。Kit の出来栄えをピッカーの時点で見せられる。
 
 ---
@@ -553,11 +553,13 @@ Design
 1. **フォントの断片を合成する**: 書体はスロットへの `addView` で差し替え、weight は断片の中で可視/不可視を切り替える。これで「書体の数×weight×要素」の組み合わせを「書体の数」個のレイアウトファイルに抑えられる。今の28 TextClock 方式から移行する。
 2. **今ある純粋関数を活かす**: `FontWeightResolver`、`RemoteViewsFontWeightPolicy`、`WidgetLetterSpacingPolicy`、`DigitalWidgetFormatPolicy`、`DigitalWidgetOffsetRenderer` の縮退ロジックは、resolve/ と render/ の部品として残す。`ProfileOverride` と各 Editor オブジェクトは汎用の Patch へ置き換える。
 3. **Digital の provider を Clocky 側へ移す**: AOSP の world-city list とオートサイザーを主経路から外す。World Clock family は別の provider にする（Issue #31 の3番の方針を採る）。*2026-10-06 実機検証による更新:* provider のクラス名を変えると、アプリ更新時に配置済みウィジェットが削除される（`android.appwidget.oldName` を付けても、API 30 の in-place 更新では保持されなかった）。そのため実装は Clocky 側へ移しつつ、登録上の component 名 `com.android.alarmclock.DigitalAppWidgetProvider` は互換のために維持する（`docs/architecture/PHASE_1A_DIGITAL_CORE.md` §5）。
-4. **テストの境界**: resolve/ は純粋な Kotlin なので unit test で網羅する。render/ は Robolectric で RemoteViews を apply したスナップショットを比べる。providers/ は実機の matrix で確認する。
+4. **テストの境界**: resolve/ は純粋な Kotlin なので unit test で網羅する。render/ は Robolectric で RemoteViews を apply したスナップショットを比べる。providers/ は現在moto実機で確認し、他hostのmatrixはPhase 5+で確認する。
 
 ---
 
 ## 13. Roadmap（End-State を一括実装しないための段階的ゲート）
+
+**2026-10-08 owner方針変更:** 現在の受け入れ対象はmoto g13 / API34 / Motorola Launcher3での個人利用。moto以外の端末・API・launcher検証はPhase 5+へ移す。Phase 5+はowner自身が使う分には不要で、他端末への対応や公開時の互換性保証が必要になった場合に行う。自動テスト・motoでの変更に応じた回帰確認は維持し、他hostの未検証・失敗は合格に書き換えない。各phaseの機能境界とownerのmerge承認は維持する。詳細・既知問題は [VERIFICATION_SCOPE.md](VERIFICATION_SCOPE.md)。
 
 このロードマップは長期仕様を小さな出荷可能単位へ分解するためのもの。**各段階の完了条件を満たすまで、次段階の機能を抱き合わせない。** 特にアーキテクチャ刷新と大規模 UI 新設を同時に行わない。
 
@@ -604,15 +606,19 @@ Design
 - Stopwatch は family 数の都合で Kit への展開を必須にしない。
 - 出荷ゲート: **時計 widget の主要 family が共通 Design model / UX で揃う。**
 
-**Phase 5 — Maturity（最終到達点）**
+**Phase 5+ — Maturity & broader compatibility（個人利用には任意の最終到達点）**
 - Library を40〜48、8〜10 Kitへ。フォントを24 familyへ。
+- moto以外の端末・API・launcherの互換性を検証する。PR #49で記録したAPI35性能超過と既存alarm起動時クラッシュも追跡する。
 - RTL、locale、font scale、TalkBack、launcher matrix、電池・性能を監査する。
+- ownerのmoto個人利用に追加の価値が不要ならPhase 5+を開始する必要はない。広範な対応をうたう前には、対象hostの失敗・未検証を解消する。
 - Google Clock との parity と Clocky 独自価値の両方を side-by-side で検証する。
 - Future 項目は必要性と Android platform の進展を見て再評価する。
 
 **スコープ規則:** Digital が Phase 1B の体験ゲートを満たすまでは、新 family を増やさない。新しい第6 family、自由レイヤー、天気・予定等を追加したい場合は、実装前に本 End-State Specification 自体を改訂する。
 
 ## 14. Definition of Done
+
+以下は長期End-State / Phase 5+の完成条件。現在のmoto個人利用の受け入れに全端末・全API・全launcherの合格は要求しない。Phase 3/4で追加する機能のmoto確認と自動チェックは引き続き必要。
 
 **体験**
 - [ ] 初めてのユーザーが、ウィジェットを追加してから満足のいくデザインを置くまで、30秒・5タップ以内で済む（社内ユーザーテストで中央値を測る）
@@ -661,9 +667,9 @@ Design
 ## Verification（この仕様の検証方法）
 
 1. Phase 0 で、§5.8 の契約を docs/spec に転記する。backlog の未定義5項目を閉じ、レビューで合意する。
-2. §9 のサイズクラスのしきい値は、Issue #31 と同じ診断用ビルドで5つのランチャーの OPTION 値を集めて確定させる。
-3. フォント断片の合成方式は、Phase 1 の最初の spike（書体2つ × weight 9 × 要素2、API 23/28/31/35 のエミュレータ）で、描画・RemoteViews のサイズ制限・時刻の自走を確認してから本実装に進む。
-4. Analog の Icon 方式は、Phase 4 の前に API 31 以上の実機3機種で spike する。
+2. §9のしきい値は3A-0実測のmaxW/minH・100/160/2.5625を維持する。追加launcherのOPTION値による横断検証はPhase 5+へ移す。
+3. フォント方式は既存の自動テストとmotoのeffective face / Preview / fit / widget契約で確認する。既存spike記録は保持し、他端末での追加確認はPhase 5+へ移す。
+4. AnalogのIcon方式はPhase 4の前にmotoでspikeし、対応可能な範囲で実装する。moto以外を含むAPI31以上の実機3機種確認はPhase 5+へ移す。
 5. Easy Creation の「30秒・5タップ」は、Phase 1B の終わりに3〜5人でユーザーテストして確かめる。
 
 

@@ -172,7 +172,9 @@ python -m unittest discover -s tools/device/tests -t tools/device
 ```
 Pure unit tests, no device needed, using sanitized captures in `tools/device/tests/fixtures`.
 
-## Integration checklist (moto g13 API 34 required; emulator API 30/35 optional)
+## Integration checklist (moto g13 API34 current host; other devices Phase 5+)
+
+Current owner scope is [moto personal use](../../docs/product/VERIFICATION_SCOPE.md). Non-moto device/emulator verification is deferred to optional Phase 5+ and should not be resumed without an owner request. The checklist below is a tool-integration recipe, not a request to repeat accepted PR49 checks or delete existing widgets. Preserve existing state and restore temporary changes.
 
 prepare/status · inspect · open widget picker · drag Clocky Digital to home · config opens (`wait --activity`) ·
 save · `widget` (id, host, settings) · add another + `key back` (cancel) · resize 4x2→4x1→4x2 · `rotate landscape` →

@@ -1,5 +1,7 @@
 # Clocky — notes for Claude Code
 
+- Current verification scope: [moto personal use / Phase 5+](docs/product/VERIFICATION_SCOPE.md). moto g13/API34/Motorola Launcher3 is the current acceptance host; other-device/API/launcher verification is optional Phase 5+ work and must not be resumed without an owner request. Keep automated checks, preserve failed evidence, and require explicit owner merge authorization.
+
 - Device/emulator verification: use `python tools/device/cdev.py <command>` (details: `tools/device/README.md`). Raw adb only via `cdev.py adb -- ...` (adds serial + safety guard).
 - Start with `prepare`, end with `finish`. If `status` shows `PENDING RESTORE`, run `restore`.
 - Exit 2/3 mean a decision is needed: never guess `--index` or `--serial`; show the candidates or `inspect`.

@@ -2,9 +2,13 @@
 
 This backlog separates **GitHub/Web-validated implementation** from work that still requires device/reference verification. GitHub `main`, current source/tests and required Actions checks are the source of truth for implementation status.
 
+## Current acceptance scope — owner ruling 2026-10-08
+
+The current goal is personal use on moto g13/API34/Motorola Launcher3. PR49 moto coverage is accepted; further verification is stopped. Other-device/API/launcher certification and related unresolved API35 work move to optional **Phase 5+**. Existing automated checks, relevant moto regressions, feature boundaries and owner merge authorization remain required. See [VERIFICATION_SCOPE.md](product/VERIFICATION_SCOPE.md). Historical unchecked device items below are not new non-moto gates.
+
 ## Phase 0 — Stabilize (`CLOCKY_END_STATE.md` §13) — complete
 
-Exit gate: the existing Digital widget can be added, configured, rendered, and resized reliably. The gate is closed. The full launcher flow passes on the Issue #31 device (moto g13, API 34, Motorola Launcher3) and on representative pre-Android-12 emulators (API 25 and API 30, Pixel Launcher). This is not a full launcher matrix. One Samsung, Nova, or Lawnchair host and API 26–29 remain unverified, and the End-State §14 launcher matrix still applies to later phases.
+Exit gate: the existing Digital widget can be added, configured, rendered, and resized reliably. The gate is closed. The full launcher flow passes on the Issue #31 device (moto g13, API 34, Motorola Launcher3) and on representative pre-Android-12 emulators (API 25 and API 30, Pixel Launcher). This is not a full launcher matrix. One Samsung, Nova, or Lawnchair host and API 26–29 remain unverified, and the End-State §14 launcher matrix is deferred to Phase 5+.
 
 - [x] Config Activity crash: `DigitalWidgetConfigActivity` now uses the Clocky-owned `Theme.Clocky.WidgetConfig` (Material3 DayNight, neutral mockup palette, night variant) instead of AOSP AppCompat `Theme.DeskClock.Settings`, which could not resolve Material `Slider` attributes.
 - [x] Inflation smoke test: Robolectric `DigitalWidgetConfigActivityTest` (API 23/28/34) inflates the Activity under its manifest theme and checks the AppWidget result contract (missing id / back → canceled, save → OK + id + persisted). It reproduces the Issue #31 `InflateException` without the fix. API 35 is not covered by Robolectric because CI runs JDK 17.
@@ -106,7 +110,7 @@ Exit gate: Clocky-owned Digital is stable for the 4×1 / 4×2 family, and the ed
 
 The 26-board mockup's Clocky Default uses **Center Stack** for Card (date above time, centered) and **Inline** for Strip (time with date beside it), as End-State §5.8 recommends, with a next-alarm row (the Phase 2 Info line). Phase 1A keeps a single `TIME_FIRST` template, matching the Phase 0 look. Choosing templates per size class and the Clocky Default preset's styling (date weight 500 over time weight 300, etc.) belong to Phase 1B (Quick Tune / Kits).
 
-## Phase 1B — Easy Creation (`CLOCKY_END_STATE.md` §6, §13) — implementation complete; wider launcher matrix pending
+## Phase 1B — Easy Creation (`CLOCKY_END_STATE.md` §6, §13) — implementation complete; wider launcher matrix deferred to Phase 5+
 
 Exit gate: a first-time user can create an attractive Digital clock in a few taps, starting from a curated design rather than a blank editor. Design record: `docs/architecture/PHASE_1B_EASY_CREATION.md`.
 
@@ -126,7 +130,7 @@ Exit gate: a first-time user can create an attractive Digital clock in a few tap
 - Found and fixed during implementation: Surprise me dropped Material You (caught by the new tests); Quick Tune preview was taller than the viewport on 2400px screens (preview now scales down uniformly); S/M truncated to "..." (button padding).
 - Not verified: launcher matrix beyond Pixel Launcher, API 26-29, font scale 200%, RTL, Quick Tune landscape on a device, Follow system on API 30 across a real day/night switch.
 
-## Phase 2 — Studio Fundamentals (`CLOCKY_END_STATE.md` §7, §13) — implemented; wider launcher matrix pending
+## Phase 2 — Studio Fundamentals (`CLOCKY_END_STATE.md` §7, §13) — implemented; wider launcher matrix deferred to Phase 5+
 
 Exit gate: an advanced user can finely customize a Digital clock without direct canvas manipulation. Design record: `docs/architecture/PHASE_2_STUDIO.md`.
 
@@ -151,7 +155,7 @@ Exit gate: an advanced user can finely customize a Digital clock without direct 
 - [x] **Phase 2 follow-up 1b — bundled-font host parity (merged as PR #45; 3A-0 prerequisite satisfied):** generalize host capability beyond the AM/PM marker; resolve/disclose ordinary Time/Date/Info remote-font non-support and make Preview/fit use the same effective face as the placed widget. All six bundled weight-400 faces fall back silently on moto g13 / API 34 / Motorola Launcher3; equal sample widths and byte-identical glyph crops confirm it. Unsupported/unknown hosts must use a platform-safe system face with explicit degradation while preserving the requested font id. Other hosts/weights are not yet audited; see `PHASE_3_RESPONSIVE_CANVAS.md` §1b. Done: `HostFontCapability` (one bundled-font flag + AM/PM marker), `RenderEnvironment.supportsBundledFonts`, `REASON_HOST_BUNDLED_UNSUPPORTED` disclosure (one line per font), requested id preserved, Preview/fit/widget share the effective face; moto g13 / Launcher3 verified for all six families (record: `PHASE_3_RESPONSIVE_CANVAS.md` §1b.1). Not exercised: other hosts/APIs; system-font inventory deferred.
 - Deliberate deferrals: see `PHASE_2_STUDIO.md` section 7 (Info icon / within-24h, Date lower-case, per-property reset dots, 3-stop / radial gradient, 24-family fonts, undo across process death, Date -> Calendar default).
 
-## Phase 3 — Responsive Canvas & Library (`CLOCKY_END_STATE.md` §7–§9, §13) — 3A-1 merged; 3A-2 implemented, device shipping gates pending
+## Phase 3 — Responsive Canvas & Library (`CLOCKY_END_STATE.md` §7–§9, §13) — 3A-1 merged; 3A-2 implemented and accepted for moto personal use; owner merge pending
 
 Exit gate: designs can be saved, duplicated and shared, and they work naturally at several sizes. Design record: `docs/architecture/PHASE_3_RESPONSIVE_CANVAS.md`. The open semantics were ruled on 2026-10-07 (record section 8) and END_STATE was amended accordingly (record section 9). 3A-0 fixed maxW/minH and 100dp / 160dp / 2.5625 for the measured host matrix (record §2.10); 3A-1 implements the pure model; render/platform activation remains 3A-2. 3A and 3B never share a PR.
 
@@ -173,17 +177,17 @@ Exit gate: designs can be saved, duplicated and shared, and they work naturally 
   - [x] Unknown class/path JSON values and unknown base/patch template requests preserved through round-trip and known edits; safe template fallback is disclosed. Quick Tune / Studio preparation and known-layout reset retain future data.
   - [x] Four-class model/edit APIs complete. Provider/Preview explicitly retain Phase 2 Strip/Card render policy; four-class selector UI and final Preview integration deferred to 3A-2.
   - [x] 416 unit/Robolectric tests (including SDK23/28/34), lint and debug assembly green. moto g13/API34 in-place upgrade preserves widget ID 23, byte-identical settings and appearance; no crash/ANR; session finished. PR-safe evidence: `docs/measurements/phase3a1/moto-upgrade-summary.md`.
-- 3A-2 Render / platform — implemented; **not shipping-certified** (API35 p95 and alarm boot-crash gates failed)
+- 3A-2 Render / platform — implemented; **moto personal-use acceptance complete**, awaiting owner merge; broader certification deferred to Phase 5+
   - [x] API31+ Keying A: distinct valid host-reported SizeF keys only; API23–30 pair; one MAX_WIDTH/MIN_HEIGHT class per widget and actual entry-specific fit.
   - [x] SPLIT Strip supported TextView spacer; explicit before/after RemoteViews.apply on SDK23/28/31/34/35. Native 300-case audit × SDK28/31/34/35 and 345 fractional-key cases × SDK31/34/35: zero failures.
   - [x] goAsync/finish, expiring single worker, latest pending generation per widget, atomic stale check/send; success/failure/coalescing/deletion/rejected-executor tests.
   - [x] Four-class Preview/Studio/Quick Tune selector; shared resolver/fit/composer; scoped Info/layout/date gap; Square/Large scoped weights absent. R2 Card inheritance; no built-in/schema/component changes.
   - [x] API30 upgrade IDs5/7 and byte-identical settings; pair rotation, resize, process-absent ticking, fresh4×2 placement, four-class Time/Date Preview parity and scoped UI. Debug timing/bitmap/Parcel instrumentation excludes diagnostic apply from timings.
-  - [x] Metadata: retain release minResize250×40dp. Candidate110×40dp passed API30 and moto 2×1/2×2/3×1/3×2 after template gate; fresh placement/picker remain4×2. Default minWidth250dp / targetCell4×2 unchanged. Widening deferred while API35 shipping gates remain open.
+  - [x] Metadata: retain release minResize250×40dp. Candidate110×40dp passed API30 and moto 2×1/2×2/3×1/3×2 after template gate; fresh placement/picker remain4×2. Default minWidth250dp / targetCell4×2 unchanged. Widening is deferred as a separate metadata decision; this policy does not enable110dp or require non-moto certification.
   - [x] motoAPI34: real4-class Keying A, worst-case4×4 send4,689,984B/Parcel5,212B; n30 per class p95 generation183.81/241.52/251.80/374.68ms; first latency explicitly recorded. Existing3A-1 ID23/settings/geometry restored byte-identically; process-absent ticking9/9. SPLIT+2×1 real apply/display/Preview succeeds. Dedicated cdev session finished.
   - [x] moto real four-class worst-case Preview spec/visual parity; held-drag callback/send before UP, no final stale layout. No moto launcher setting changed for rotation. [Independent API35 final report](https://github.com/stupidsavacan/Clocky/pull/49#issuecomment-6056052332) records rotation, stale rejection, parity, memory/send/ticking/settings and full pixel-layout restoration; emulator running, sessions finished.
-  - [ ] API35 p95 performance: independent report Card427.57ms /Square671.30ms versus400ms target. Profile/recheck under stable host resources. Final cold boot also reproduces existing AOSP alarm PendingIntent mutability crash on PR APK: no-crash gate fails; AOSP-domain fix requires owner ruling. Do not lift Draft or declare3A complete.
-  - Measurement: `docs/measurements/phase3a2/RESULTS.md`. Phase3A is not complete; Phase3B/3C wait for owner merge.
+  - [ ] Phase 5+ follow-up (not a moto acceptance blocker): API35 provider p95 Card427.57ms /Square671.30ms versus400ms target; stable-host profiling/recheck remains needed. Existing AOSP alarm PendingIntent mutability crash also reproduced on PR APK. Failure evidence stays; AOSP-domain edits still require owner authorization. No broader certification claim.
+  - Measurement: `docs/measurements/phase3a2/RESULTS.md`. Phase3A moto acceptance is complete under the revised scope; Phase3B/3C wait for owner merge of the implementation and revised scope. This does not complete the entire Phase3.
 - 3B Canvas
   - [ ] Selection, drag, snap (center / edges / baselines, haptics, second finger disables snap), 1dp nudge; one gesture = one undo step.
   - [ ] Pinch to resize text; pseudo-resize handle 2×1–5×4 using measured cell sizes.
@@ -198,6 +202,17 @@ Exit gate: designs can be saved, duplicated and shared, and they work naturally 
   - [ ] Picker previews: generated (API 35+), `previewLayout` (31–34), Clocky-rendered PNG (below 31).
   - [ ] cdev guard: refuse `bmgr restore` / `wipe` / `clear` (tooling PR).
 - Known not device-verifiable within cdev rules (see the record's section 7): `onRestored` after a real launcher restore, pinch / two-finger gestures, haptics, TalkBack, font scale 200%, launchers other than Pixel and Motorola.
+
+## Phase 5+ — optional maturity / non-moto verification
+
+Not needed for the owner to use Clocky on moto. Start only when requested for broader compatibility or release claims.
+
+- [ ] Pixel API35 performance: stable-resource recheck/profile/optimization against the unchanged400ms p95 target.
+- [ ] API35 existing AOSP alarm cold-boot PendingIntent mutability failure: investigate/fix with owner-authorized domain scope before broader acceptance.
+- [ ] Other phones, API bands and launchers (Pixel, One UI, Nova, Lawnchair): render/Preview, resize/rotation, upgrade, ticking, bitmap/Parcel and performance.
+- [ ] Wider locale/RTL/font scale/accessibility/battery and real backup/restore audits.
+
+Retain previous API30/API35 successes and failures as evidence; deferred does not mean passed. See [scope record](product/VERIFICATION_SCOPE.md).
 
 ## F0 — repository / upstream foundation — complete
 
