@@ -44,6 +44,7 @@ class QuickTuneScreen(
     private val onDone: () -> Unit,
     private val onBack: () -> Unit,
     private val onDetail: () -> Unit,
+    private val onSaveDesign: () -> Unit = {},
     private val random: Random = Random.Default,
 ) {
     private val context = root.context
@@ -101,6 +102,7 @@ class QuickTuneScreen(
         root.findViewById<Button>(R.id.clocky_tune_done).setOnClickListener { onDone() }
         root.findViewById<View>(R.id.clocky_tune_back).setOnClickListener { onBack() }
         root.findViewById<Button>(R.id.clocky_tune_detail).setOnClickListener { onDetail() }
+        root.findViewById<Button>(R.id.clocky_tune_save_design).setOnClickListener { onSaveDesign() }
         refresh()
     }
 

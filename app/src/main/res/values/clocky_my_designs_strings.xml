@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 3C-1: My Designs (saved designs, favorites). -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="clocky_mood_favorites" tools:ignore="MissingTranslation">Favorites</string>
+    <string name="clocky_mood_my_designs" tools:ignore="MissingTranslation">My Designs</string>
+    <string name="clocky_gallery_empty_my_designs" tools:ignore="MissingTranslation">No saved designs yet. Customize a clock and choose Save design to keep it here.</string>
+    <string name="clocky_gallery_empty_favorites" tools:ignore="MissingTranslation">No favorites yet. Select a clock and tap Favorite.</string>
+    <string name="clocky_gallery_favorite" tools:ignore="MissingTranslation">Favorite</string>
+    <string name="clocky_gallery_unfavorite" tools:ignore="MissingTranslation">Unfavorite</string>
+    <string name="clocky_gallery_favorite_label" tools:ignore="MissingTranslation">%1$s, favorite</string>
+    <string name="clocky_gallery_duplicate" tools:ignore="MissingTranslation">Duplicate</string>
+    <string name="clocky_gallery_rename" tools:ignore="MissingTranslation">Rename</string>
+    <string name="clocky_gallery_delete" tools:ignore="MissingTranslation">Delete</string>
+
+    <string name="clocky_my_designs_save" tools:ignore="MissingTranslation">Save design</string>
+    <string name="clocky_my_designs_save_description" tools:ignore="MissingTranslation">Save to My Designs</string>
+    <string name="clocky_my_designs_save_title" tools:ignore="MissingTranslation">Save to My Designs</string>
+    <string name="clocky_my_designs_saved" tools:ignore="MissingTranslation">Saved to My Designs</string>
+    <string name="clocky_my_designs_save_failed" tools:ignore="MissingTranslation">Could not save this design</string>
+    <string name="clocky_my_designs_rename_title" tools:ignore="MissingTranslation">Rename design</string>
+    <string name="clocky_my_designs_name_hint" tools:ignore="MissingTranslation">Design name</string>
+    <string name="clocky_my_designs_name_blank" tools:ignore="MissingTranslation">Enter a name</string>
+    <string name="clocky_my_designs_copy_name" tools:ignore="MissingTranslation">%1$s copy</string>
+    <string name="clocky_my_designs_delete_title" tools:ignore="MissingTranslation">Delete this design?</string>
+    <string name="clocky_my_designs_delete_message" tools:ignore="MissingTranslation">\"%1$s\" will be removed from My Designs. Widgets already on your home screen keep their look.</string>
+    <string name="clocky_my_designs_delete_confirm" tools:ignore="MissingTranslation">Delete</string>
+</resources>
