@@ -55,6 +55,8 @@
     <string name="clocky_studio_override_badge" tools:ignore="MissingTranslation">◆ %1$s only</string>
     <string name="clocky_studio_override_revert" tools:ignore="MissingTranslation">Use the shared value for %1$s</string>
     <string name="clocky_studio_date_show" tools:ignore="MissingTranslation">Show date</string>
+    <string name="clocky_studio_info_show" tools:ignore="MissingTranslation">Show info</string>
+    <string name="clocky_studio_date_gap" tools:ignore="MissingTranslation">Gap from time</string>
     <string name="clocky_studio_date_format" tools:ignore="MissingTranslation">Format</string>
     <string name="clocky_studio_date_auto" tools:ignore="MissingTranslation">Automatic</string>
     <string name="clocky_studio_date_custom_chip" tools:ignore="MissingTranslation">Custom</string>

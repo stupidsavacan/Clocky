@@ -4,23 +4,31 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.Build
+import android.util.SizeF
 import android.view.View
 import android.widget.FrameLayout
 import com.stupidsavacan.clocky.design.model.DigitalDesign
 import com.stupidsavacan.clocky.design.model.SizeClass
-import com.stupidsavacan.clocky.design.model.SizeClassResolver
+import com.stupidsavacan.clocky.design.model.SizeClassRule
 import com.stupidsavacan.clocky.design.resolve.ResolvedDigitalSpec
 import com.stupidsavacan.clocky.design.resolve.SizeContext
 import kotlin.math.min
 
 /** The one way any screen shows a design: resolve, fit, compose, then apply the RemoteViews locally. */
 object DesignPreview {
-    fun render(frame: FrameLayout, design: DigitalDesign, size: SizeContext): ResolvedDigitalSpec {
+    fun render(frame: FrameLayout, design: DigitalDesign, size: SizeContext,
+        sizeClass: SizeClass = SizeClassRule.resolve(size.maxWidthDp.toFloat(), size.minHeightDp.toFloat()),
+        entrySize: SizeF = SizeF(size.minWidthDp.toFloat(), size.maxHeightDp.toFloat()),
+    ): ResolvedDigitalSpec {
         val context = frame.context
         val density = context.resources.displayMetrics.density
-        val widthPx = (size.minWidthDp * density).toInt()
-        val heightPx = (size.maxHeightDp * density).toInt()
-        val (spec, remoteViews) = DigitalWidgetUpdater.buildPortrait(context, design, size)
+        val widthPx = (entrySize.width * density).toInt()
+        val heightPx = (entrySize.height * density).toInt()
+        val entry = DigitalWidgetUpdater.renderEntry(context.applicationContext, design, entrySize, sizeClass,
+            DigitalWidgetUpdater.environment(context.applicationContext, forEditor = true))
+        val spec = entry.spec
+        val remoteViews = entry.views
         frame.removeAllViews()
         // Inflate like a launcher would: an Activity context brings AppCompat's view inflater, whose
         // AppCompatImageView/TextView overrides are not RemoteViews-callable.
@@ -49,8 +57,8 @@ object DesignPreview {
  * It runs the same resolve → fit → compose path as [DigitalWidgetUpdater] and differs only in its
  * input size, so preview and widget cannot drift structurally.
  *
- * The preview shows the portrait variant (min width × max height), which is what a phone in
- * portrait displays.
+ * Matching host classes use the entry nearest the editor's current orientation; other classes
+ * use measured portrait representative entries.
  */
 class PreviewHost(
     private val frame: FrameLayout,
@@ -67,7 +75,7 @@ class PreviewHost(
     /** Size class the placed widget currently has, or Card when the host has not reported one. */
     fun hostSizeClass(): SizeClass {
         val size = hostSize() ?: return SizeClass.CARD
-        return SizeClassResolver.resolve(size.minHeightDp)
+        return SizeClassRule.resolve(size.maxWidthDp.toFloat(), size.minHeightDp.toFloat())
     }
 
     /** Coalesces rapid edits (e.g. slider drags) into one render per frame. */
@@ -79,10 +87,11 @@ class PreviewHost(
 
     fun render(design: DigitalDesign, sizeClass: SizeClass): ResolvedDigitalSpec {
         val size = previewSize(sizeClass)
+        val entry = previewEntry(sizeClass, size)
         val density = context.resources.displayMetrics.density
-        val widthPx = (size.minWidthDp * density).toInt()
-        val heightPx = (size.maxHeightDp * density).toInt()
-        val spec = DesignPreview.render(frame, design, size)
+        val widthPx = (entry.width * density).toInt()
+        val heightPx = (entry.height * density).toInt()
+        val spec = DesignPreview.render(frame, design, size, sizeClass, entry)
         fitIntoParent(widthPx, heightPx)
         onRendered(spec)
         return spec
@@ -90,19 +99,33 @@ class PreviewHost(
 
     /**
      * The host's real size when it matches [sizeClass]; otherwise a representative size measured on
-     * Phase 0 hosts (moto g13: 4×1 ≈ 363×58..122dp, 4×2 ≈ 363×132..260dp) using the host's widths
-     * when known.
+     * Phase 3A-0 hosts (moto g13: 4×1 Strip, 4×2 Card, 2×2 Square, 4×3 Large).
      */
     fun previewSize(sizeClass: SizeClass): SizeContext {
         val host = hostSize()
-        if (host != null && SizeClassResolver.resolve(host.minHeightDp) == sizeClass) return host
-        val minWidth = host?.minWidthDp?.takeIf { it > 0 } ?: DEFAULT_MIN_WIDTH_DP
-        val maxWidth = host?.maxWidthDp?.takeIf { it > 0 } ?: DEFAULT_MAX_WIDTH_DP
+        if (host != null && SizeClassRule.resolve(host.maxWidthDp.toFloat(), host.minHeightDp.toFloat()) == sizeClass) return host
+        // Complete measured pairs, so a host's wide Card bounds cannot silently turn a Square sample into Large.
         return when (sizeClass) {
-            SizeClass.STRIP -> SizeContext(minWidth, STRIP_MIN_HEIGHT_DP, maxWidth, STRIP_MAX_HEIGHT_DP)
-            // The four-class Preview selector/render integration belongs to 3A-2.
-            SizeClass.CARD, SizeClass.SQUARE, SizeClass.LARGE -> SizeContext(minWidth, CARD_MIN_HEIGHT_DP, maxWidth, CARD_MAX_HEIGHT_DP)
+            SizeClass.STRIP -> SizeContext(363, 58, 667, 122)
+            SizeClass.CARD -> SizeContext(363, 132, 667, 260)
+            SizeClass.SQUARE -> SizeContext(173, 132, 325, 260)
+            SizeClass.LARGE -> SizeContext(363, 206, 667, 398)
         }
+    }
+
+    fun previewEntry(sizeClass: SizeClass, size: SizeContext = previewSize(sizeClass)): SizeF {
+        if (hostSizeClass() == sizeClass) {
+            val options = AppWidgetManager.getInstance(context).getAppWidgetOptions(appWidgetId)
+            val plan = ResponsiveRenderPlan.from(options, Build.VERSION.SDK_INT)
+            val landscape = context.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            val width = if (landscape) size.maxWidthDp else size.minWidthDp
+            val height = if (landscape) size.minHeightDp else size.maxHeightDp
+            if (plan.useMap) return plan.entries.minBy {
+                kotlin.math.abs(it.width - width) + kotlin.math.abs(it.height - height)
+            }
+            return SizeF(width.toFloat(), height.toFloat())
+        }
+        return SizeF(size.minWidthDp.toFloat(), size.maxHeightDp.toFloat())
     }
 
     private fun hostSize(): SizeContext? {

@@ -47,6 +47,7 @@ import com.stupidsavacan.clocky.widget.digital.DegradationNotices
 import com.stupidsavacan.clocky.widget.digital.DesignPreview
 import com.stupidsavacan.clocky.widget.digital.DigitalWidgetUpdater
 import com.stupidsavacan.clocky.widget.digital.PreviewHost
+import com.stupidsavacan.clocky.widget.digital.SizeClassLabels
 import org.json.JSONObject
 import java.util.Locale
 
@@ -211,12 +212,12 @@ class StudioActivity : AppCompatActivity(), StudioHost {
         panels = StudioPanels(this, panel)
 
         binding = true
-        classToggle.check(if (previewClass == SizeClass.STRIP) R.id.clocky_preview_strip else R.id.clocky_preview_card)
+        classToggle.check(SizeClassLabels.button(previewClass))
         modeToggle.check(if (vm.advanced) R.id.clocky_studio_mode_advanced else R.id.clocky_studio_mode_basic)
         binding = false
         classToggle.addOnButtonCheckedListener { _, id, checked ->
             if (checked && !binding) {
-                vm.previewClass = if (id == R.id.clocky_preview_strip) SizeClass.STRIP else SizeClass.CARD
+                vm.previewClass = SizeClassLabels.fromButton(id)
                 updateScopeSwitch()
                 rebuildPanel()
                 render()
@@ -287,9 +288,9 @@ class StudioActivity : AppCompatActivity(), StudioHost {
     }
 
     private fun updateScopeSwitch() {
-        val relevant = vm.slot == Slot.TIME || vm.slot == Slot.DATE || vm.slot == Slot.LAYOUT
+        val relevant = vm.slot in listOf(Slot.TIME, Slot.DATE, Slot.INFO, Slot.BACKGROUND, Slot.LAYOUT)
         scopeSwitch.visibility = if (relevant) View.VISIBLE else View.GONE
-        val sizeName = getString(if (previewClass == SizeClass.STRIP) R.string.clocky_preview_strip else R.string.clocky_preview_card)
+        val sizeName = getString(SizeClassLabels.label(previewClass))
         binding = true
         scopeSwitch.text = getString(R.string.clocky_studio_only_size, sizeName)
         scopeSwitch.isChecked = vm.thisSizeOnly

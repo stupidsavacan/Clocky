@@ -8,6 +8,8 @@
     <string name="clocky_gallery_title" tools:ignore="MissingTranslation">Choose a clock</string>
     <string name="clocky_gallery_subtitle_card" tools:ignore="MissingTranslation">Live time · shown at 4×2</string>
     <string name="clocky_gallery_subtitle_strip" tools:ignore="MissingTranslation">Live time · shown at 4×1</string>
+    <string name="clocky_gallery_subtitle_square" tools:ignore="MissingTranslation">Live time · Square layout</string>
+    <string name="clocky_gallery_subtitle_large" tools:ignore="MissingTranslation">Live time · Large layout</string>
     <string name="clocky_gallery_add" tools:ignore="MissingTranslation">Add this clock</string>
     <string name="clocky_gallery_customize" tools:ignore="MissingTranslation">Customize</string>
     <string name="clocky_gallery_selected" tools:ignore="MissingTranslation">%1$s, selected</string>

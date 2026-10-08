@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
@@ -20,15 +21,36 @@ import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
  */
 abstract class ClockyDigitalWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
-        super.onReceive(context, intent)
-        when (intent.action) {
+        val render = when (intent.action) {
+            AppWidgetManager.ACTION_APPWIDGET_UPDATE,
+            AppWidgetManager.ACTION_APPWIDGET_OPTIONS_CHANGED,
             Intent.ACTION_LOCALE_CHANGED,
             Intent.ACTION_TIME_CHANGED,
-            // The Info line's next alarm is rendered text, so it is refreshed when the alarm changes.
-            AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED -> DigitalWidgetUpdater.updateAll(context)
-            // A "Do nothing" tap zone points here so the tap is consumed instead of reaching the widget.
-            TapIntents.ACTION_NOOP -> Unit
+            AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED -> true
+            else -> false
         }
+        if (!render) { super.onReceive(context, intent); return }
+        val result = goAsync()
+        // One pending result for the broadcast, released for success, stale work, invalid input or exception.
+        val remaining = java.util.concurrent.atomic.AtomicInteger(1)
+        val done = { if (remaining.decrementAndGet() == 0) result?.finish(); Unit }
+        try {
+            val app = context.applicationContext
+            val wm = AppWidgetManager.getInstance(app)
+            val ids = when (intent.action) {
+                AppWidgetManager.ACTION_APPWIDGET_UPDATE -> intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS) ?: intArrayOf()
+                AppWidgetManager.ACTION_APPWIDGET_OPTIONS_CHANGED -> intArrayOf(intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID))
+                else -> wm.getAppWidgetIds(ComponentName(app, com.android.alarmclock.DigitalAppWidgetProvider::class.java))
+            }
+            ids.filter { it != AppWidgetManager.INVALID_APPWIDGET_ID }.distinct().forEach { id ->
+                val options = if (intent.action == AppWidgetManager.ACTION_APPWIDGET_OPTIONS_CHANGED) {
+                    intent.getBundleExtra(AppWidgetManager.EXTRA_APPWIDGET_OPTIONS) ?: wm.getAppWidgetOptions(id)
+                } else wm.getAppWidgetOptions(id)
+                remaining.incrementAndGet()
+                try { DigitalWidgetUpdater.update(app, wm, id, options, done) }
+                catch (e: Exception) { done(); throw e }
+            }
+        } finally { done() }
     }
 
     override fun onUpdate(context: Context, wm: AppWidgetManager, appWidgetIds: IntArray) {
@@ -46,6 +68,6 @@ abstract class ClockyDigitalWidgetProvider : AppWidgetProvider() {
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         val store = SharedPreferencesDesignStore(context)
-        appWidgetIds.forEach { store.delete(it) }
+        appWidgetIds.forEach { DigitalWidgetUpdater.queue.invalidate(it); store.delete(it) }
     }
 }

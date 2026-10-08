@@ -17,7 +17,8 @@
   Clocky 4x1 / 4x2 Digital geometry (Phase 0, Issue #31). Values restored from the retained MVP
   provider metadata in ci/Clocky_MVP_source.zip (res/xml/clock_widget_info.xml) instead of the AOSP
   generic 206x129dp / 136x59dp sizing, except minResizeHeight: 40dp (one row) because the MVP's
-  70dp made 4x1 unreachable on a real launcher. See docs/spec/WIDGET_CUSTOMIZATION_CONTRACT.md section 11.
+  70dp made 4x1 unreachable on a real launcher. Phase 3A-2 retains 250dp until the
+  measured 110dp candidate is verified on moto/API35 as well as API30. Default stays 4x2.
 -->
 
 <appwidget-provider

@@ -137,7 +137,7 @@ object DigitalWidgetComposer {
         when (spec.template) {
             Template.TIME_FIRST -> rv.setViewPadding(R.id.clocky_date_slot, 0, gapPx, 0, 0)
             Template.CENTER_STACK -> rv.setViewPadding(R.id.clocky_date_slot, 0, 0, 0, gapPx)
-            Template.SPLIT -> if (spec.sizeClass == SizeClass.CARD) {
+            Template.SPLIT -> if (spec.sizeClass != SizeClass.STRIP) {
                 rv.setViewPadding(R.id.clocky_date_slot, 0, 0, 0, gapPx)
             }
             Template.INLINE -> {

@@ -39,6 +39,11 @@ android {
     testOptions {
         // Robolectric smoke tests inflate real app resources/themes (Issue #31 regression guard).
         unitTests.isIncludeAndroidResources = true
+        // API35/native graphics plus the template matrix need more than Gradle's 512MB default.
+        unitTests.all {
+            it.maxHeapSize = "2g"
+            it.forkEvery = 20
+        }
     }
 
     packaging {

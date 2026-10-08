@@ -44,7 +44,12 @@ class GalleryScreen(
 
     init {
         root.findViewById<TextView>(R.id.clocky_gallery_subtitle).setText(
-            if (sizeClass == SizeClass.STRIP) R.string.clocky_gallery_subtitle_strip else R.string.clocky_gallery_subtitle_card,
+            when (sizeClass) {
+                SizeClass.STRIP -> R.string.clocky_gallery_subtitle_strip
+                SizeClass.CARD -> R.string.clocky_gallery_subtitle_card
+                SizeClass.SQUARE -> R.string.clocky_gallery_subtitle_square
+                SizeClass.LARGE -> R.string.clocky_gallery_subtitle_large
+            },
         )
         buildMoodChips()
         buildCards()
@@ -104,7 +109,7 @@ class GalleryScreen(
         val innerWidthDp = tileWidthDp - 2 * TILE_INSET_DP
         val innerHeightDp = tileHeightDp - TILE_INSET_DP
         val size = SizeContext(innerWidthDp, innerHeightDp, innerWidthDp, innerHeightDp)
-        val spec = DesignPreview.render(tileFrame, builtin.instantiate(), size)
+        val spec = DesignPreview.render(tileFrame, builtin.instantiate(), size, sizeClass)
         val tileWidthPx = (tileWidthDp * density).roundToInt()
         val tileHeightPx = (tileHeightDp * density).roundToInt()
         val tile = FrameLayout(context).apply {

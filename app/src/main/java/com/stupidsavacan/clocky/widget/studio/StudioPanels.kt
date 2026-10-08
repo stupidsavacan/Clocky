@@ -130,6 +130,10 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
         if (host.advanced) {
             rows.header(str(R.string.clocky_studio_advanced))
             letterSpacing(TextTarget.DATE)
+            rows.slider(str(R.string.clocky_studio_date_gap), DesignEdits.dateGapOf(d, scope), -20f..40f, 1f,
+                format = { "${it.roundToInt()} dp" },
+                onChange = { v -> host.edit("date.gap", "date.gap", rebuild = false) { DesignEdits.setDateGap(it, v, scope) } },
+                onGestureEnd = host::endGesture)
             rows.textField(
                 label = str(R.string.clocky_studio_date_pattern),
                 value = current.orEmpty(),
@@ -174,7 +178,11 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
             InfoSource.SECOND_TIMEZONE -> timezoneControls()
             InfoSource.NONE -> Unit
         }
-        textBasics(TextTarget.INFO, null, null, withWeight = host.advanced)
+        rows.switch(str(R.string.clocky_studio_info_show), DesignEdits.infoVisibleOf(d, scope)) { on ->
+            host.edit("info.visible") { DesignEdits.setInfoVisible(it, on, scope) }
+        }
+        scope.sizeClass?.let { overrideBadge(it, OverrideField.INFO_VISIBLE) }
+        textBasics(TextTarget.INFO, null, OverrideField.INFO_SIZE, withWeight = host.advanced)
         if (host.advanced) {
             rows.header(str(R.string.clocky_studio_advanced))
             fontChips(TextTarget.INFO)
@@ -256,9 +264,9 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
             if (host.advanced) {
                 rows.header(str(R.string.clocky_studio_advanced))
                 rows.slider(
-                    str(R.string.clocky_studio_bg_padding), bg.paddingDp, DesignEdits.paddingDp, 1f,
+                    str(R.string.clocky_studio_bg_padding), DesignEdits.paddingOf(d, scope), DesignEdits.paddingDp, 1f,
                     format = { "${it.roundToInt()} dp" },
-                    onChange = { v -> host.edit("bg.padding", "bg.padding", rebuild = false) { DesignEdits.setPadding(it, v) } },
+                    onChange = { v -> host.edit("bg.padding", "bg.padding", rebuild = false) { DesignEdits.setPadding(it, v, scope) } },
                     onGestureEnd = host::endGesture,
                 )
                 if (bg.type == BackgroundType.OUTLINE) {
@@ -333,6 +341,7 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
             rows.note(str(R.string.clocky_studio_layout_position_hint))
             offsetSliders(TextTarget.TIME, OverrideField.TIME_OFFSET)
             offsetSliders(TextTarget.DATE, OverrideField.DATE_OFFSET)
+            if (d.info.source != InfoSource.NONE) offsetSliders(TextTarget.INFO, OverrideField.INFO_OFFSET)
         }
 
         val overrides = d.layout.patchFor(cls)
@@ -340,7 +349,9 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
             rows.header(str(R.string.clocky_studio_layout_overrides, sizeName(cls)))
             rows.note(str(R.string.clocky_studio_layout_overrides_hint))
             rows.button(str(R.string.clocky_studio_layout_revert, sizeName(cls))) {
-                host.edit("layout.revertAll") { it.copy(layout = it.layout.withPatch(cls, com.stupidsavacan.clocky.design.model.LayoutPatch.EMPTY)) }
+                host.edit("layout.revertAll") {
+                    it.copy(layout = it.layout.withPatch(cls, com.stupidsavacan.clocky.design.model.LayoutPatch(preserved = it.layout.patchFor(cls).preserved)))
+                }
             }
         }
     }
@@ -353,13 +364,17 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
                 Alignment.CENTER to str(R.string.clocky_studio_align_center),
                 Alignment.END to str(R.string.clocky_studio_align_end),
             ),
-            DesignEdits.style(d, target).alignment,
-        ) { picked -> host.edit("layout.align.${target.name}") { DesignEdits.setAlignment(it, target, picked) } }
+            DesignEdits.alignmentOf(d, target, scope),
+        ) { picked -> host.edit("layout.align.${target.name}") { DesignEdits.setAlignment(it, target, picked, scope) } }
     }
 
     private fun offsetSliders(target: TextTarget, field: OverrideField) {
         val (x, y) = DesignEdits.offsetOf(d, target, scope)
-        val name = str(if (target == TextTarget.TIME) R.string.clocky_element_time else R.string.clocky_element_date)
+        val name = str(when (target) {
+            TextTarget.TIME -> R.string.clocky_element_time
+            TextTarget.DATE -> R.string.clocky_element_date
+            TextTarget.INFO -> R.string.clocky_element_info
+        })
         val badge = badgeFor(field)
         rows.slider(
             str(R.string.clocky_studio_layout_offset_x, name), x, DesignEdits.offsetDp, 1f,
@@ -458,10 +473,9 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
     // ---- shared text controls ----
 
     private fun textBasics(target: TextTarget, weightField: OverrideField?, sizeField: OverrideField?, withWeight: Boolean = true) {
-        // Existing Info UI is global until the four-class scope integration in 3A-2.
-        val elementScope = if (target == TextTarget.INFO) EditScope.ALL else scope
+        val elementScope = scope
         fontChips(target)
-        if (withWeight && elementScope.sizeClass?.allowsWeightOverride != false) {
+        if (withWeight && (elementScope.sizeClass == null || (target != TextTarget.INFO && elementScope.sizeClass?.allowsWeightOverride == true))) {
             val weight = DesignEdits.weightOf(d, target, elementScope)
             val badge = weightField?.let { badgeFor(it) }
             rows.slider(
@@ -557,7 +571,7 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
         }
     }
 
-    private fun sizeName(cls: SizeClass) = str(if (cls == SizeClass.STRIP) R.string.clocky_preview_strip else R.string.clocky_preview_card)
+    private fun sizeName(cls: SizeClass) = str(com.stupidsavacan.clocky.widget.digital.SizeClassLabels.label(cls))
 
     // ---- reset ----
 
