@@ -27,6 +27,14 @@
         android:textStyle="bold" />
 
     <Button
+        android:id="@+id/clocky_tune_save_design"
+        style="?attr/borderlessButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:contentDescription="@string/clocky_my_designs_save_description"
+        android:text="@string/clocky_my_designs_save" />
+
+    <Button
         android:id="@+id/clocky_tune_detail"
         style="?attr/borderlessButtonStyle"
         android:layout_width="wrap_content"

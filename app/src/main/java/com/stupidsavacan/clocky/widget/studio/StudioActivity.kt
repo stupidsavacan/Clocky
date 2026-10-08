@@ -38,7 +38,9 @@ import com.stupidsavacan.clocky.design.resolve.ResolvedDigitalSpec
 import com.stupidsavacan.clocky.design.resolve.TextElementKind
 import com.stupidsavacan.clocky.design.resolve.WallpaperHint
 import com.stupidsavacan.clocky.design.storage.DigitalDesignCodec
+import com.stupidsavacan.clocky.design.storage.FileDesignRepository
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
+import com.stupidsavacan.clocky.widget.easy.MyDesignsDialogs
 import com.stupidsavacan.clocky.studio.DesignEdits
 import com.stupidsavacan.clocky.studio.EditScope
 import com.stupidsavacan.clocky.studio.EditSession
@@ -449,11 +451,13 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
     private fun showMenu(anchor: View) {
         PopupMenu(this, anchor).apply {
             menu.add(0, MENU_RESET_ALL, 0, R.string.clocky_studio_reset_all)
+            menu.add(0, MENU_SAVE_DESIGN, 2, R.string.clocky_my_designs_save_title)
             if (intent.getBooleanExtra(EXTRA_OFFER_GALLERY, false)) menu.add(0, MENU_BROWSE, 1, R.string.clocky_browse_designs)
             setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     MENU_RESET_ALL -> confirmResetAll()
                     MENU_BROWSE -> exitWith(RESULT_BROWSE_DESIGNS)
+                    MENU_SAVE_DESIGN -> MyDesignsDialogs.saveDesign(this@StudioActivity, FileDesignRepository(this@StudioActivity), design)
                 }
                 true
             }
@@ -534,5 +538,6 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
         }
         private const val MENU_RESET_ALL = 1
         private const val MENU_BROWSE = 2
+        private const val MENU_SAVE_DESIGN = 3
     }
 }

@@ -13,16 +13,19 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.android.deskclock.R
-import com.stupidsavacan.clocky.design.library.BuiltinDesign
 import com.stupidsavacan.clocky.design.library.BuiltinDesigns
 import com.stupidsavacan.clocky.design.library.QuickTune
 import com.stupidsavacan.clocky.design.model.DigitalDesign
 import com.stupidsavacan.clocky.design.model.SizeClass
 import com.stupidsavacan.clocky.design.model.WidgetInstance
 import com.stupidsavacan.clocky.design.storage.DigitalDesignCodec
+import com.stupidsavacan.clocky.design.storage.BuiltinFavorites
+import com.stupidsavacan.clocky.design.storage.FileDesignRepository
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
 import com.stupidsavacan.clocky.widget.digital.DigitalWidgetUpdater
+import com.stupidsavacan.clocky.widget.easy.GalleryEntry
 import com.stupidsavacan.clocky.widget.easy.GalleryScreen
+import com.stupidsavacan.clocky.widget.easy.MyDesignsDialogs
 import com.stupidsavacan.clocky.widget.studio.StudioActivity
 import com.stupidsavacan.clocky.widget.easy.QuickTuneScreen
 import org.json.JSONObject
@@ -43,6 +46,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
     private lateinit var store: SharedPreferencesDesignStore
+    private lateinit var repository: FileDesignRepository
     private lateinit var host: FrameLayout
 
     private var screen = Screen.GALLERY
@@ -75,6 +79,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             return
         }
         store = SharedPreferencesDesignStore(this)
+        repository = FileDesignRepository(this)
         host = FrameLayout(this).also {
             setContentView(it)
             ViewCompat.setOnApplyWindowInsetsListener(it) { view, insets ->
@@ -146,24 +151,31 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             root = inflate(R.layout.clocky_gallery),
             sizeClass = hostClass,
             initialSelectedId = selectedId,
-            onSelect = { builtin -> select(builtin) },
-            onAdd = { finishWith((selectedBuiltin() ?: BuiltinDesigns.default).instantiate()) },
+            repository = repository,
+            builtinFavorites = BuiltinFavorites(this),
+            onSelect = { entry -> select(entry) },
+            onAdd = { finishWith(selectedDesign()) },
             onCustomize = {
-                draft = (selectedBuiltin() ?: BuiltinDesigns.default).instantiate()
-                showQuickTune(fromGallery = true)
+                draft = selectedDesign()
+                // A saved pre-1B design has no tokens to tune; its editor is the detailed one.
+                if (QuickTune.isTunable(draft)) showQuickTune(fromGallery = true) else launchDetailedEditor(draft, offerGallery = true)
             },
         ).also { gallery -> galleryScreen = gallery }
     }
 
     private var galleryScreen: GalleryScreen? = null
 
-    private fun select(builtin: BuiltinDesign) {
-        selectedId = builtin.id
-        draft = builtin.instantiate()
-        galleryScreen?.select(builtin.id)
+    private fun select(entry: GalleryEntry) {
+        selectedId = entry.key
+        draft = entry.design
+        galleryScreen?.select(entry.key)
     }
 
-    private fun selectedBuiltin(): BuiltinDesign? = BuiltinDesigns.byId(selectedId)
+    /** The selected built-in or saved design (a snapshot); Clocky Default when the selection is gone. */
+    private fun selectedDesign(): DigitalDesign =
+        BuiltinDesigns.byId(selectedId)?.instantiate()
+            ?: selectedId?.let { repository.get(it)?.design }
+            ?: BuiltinDesigns.default.instantiate()
 
     private fun showQuickTune(fromGallery: Boolean) {
         screen = Screen.QUICK_TUNE
@@ -178,6 +190,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
             onDone = { finishWith(tune?.draft ?: draft) },
             onBack = { onBack() },
             onDetail = { launchDetailedEditor(tune?.draft ?: draft, offerGallery = false) },
+            onSaveDesign = { MyDesignsDialogs.saveDesign(this, repository, tune?.draft ?: draft) },
         )
     }
 

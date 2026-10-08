@@ -193,7 +193,7 @@ Exit gate: designs can be saved, duplicated and shared, and they work naturally 
   - [x] Selection, drag, snap (center / edges / baselines, haptics, second finger disables snap), 1dp nudge; one gesture = one undo step. (3B-1, awaiting owner merge; record `PHASE_3_RESPONSIVE_CANVAS.md` §3.9, moto: `docs/measurements/phase3b1/RESULTS.md`; haptic / real two-finger / TalkBack not device-verified)
   - [ ] Pinch to resize text; pseudo-resize handle 2×1–5×4 using measured cell sizes.
 - 3C Library & Stacked
-  - [ ] `DesignRepository` + My Designs (save, duplicate, rename, delete, favorites).
+  - [x] `DesignRepository` + My Designs (save, duplicate, rename, delete, favorites). 3C-1: `files/designs/<uuid>.json`, Gallery My Designs/Favorites, Save from Quick Tune/Studio. Automated tests only; moto verification pending device grant (Issue #51).
   - [ ] Import / Export (`.clocky`, `CLOCKY2:` text code), share sheet.
   - [ ] Apply to other widgets.
   - [ ] Stacked family: new provider (component name frozen on first release), `STACKED` template.
