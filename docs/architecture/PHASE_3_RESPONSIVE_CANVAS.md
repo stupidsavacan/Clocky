@@ -730,6 +730,38 @@ API35 and other-host device parity is a Phase 5+ follow-up.
 | Slot bounds differ between preview and launcher (host padding) | Show the launcher padding hint (End-State §7) and rely on calibration (End-State §9.4, later) |
 | Pinch conflicts with the scroll container | Canvas consumes two-pointer events; if unreliable, pinch is dropped and size stays slider-only |
 
+### 3.9 3B-1 implementation record (2026-10-08)
+
+Scope: selection, drag, snap, 1 dp nudge. Pinch and pseudo-resize (3B-2) are not implemented.
+
+- **Code.** Pure `studio/canvas/CanvasMath.kt` (`SnapSolver`, `CanvasOffsets`, `CanvasHitTester`; widget-dp space, no Android
+  types). `widget/studio/canvas/AppliedGeometry.kt` reads slot bounds and `TextView.getBaseline()` from the RemoteViews tree
+  `PreviewHost` applied (matrix walk, so preview scale and the offset translation are included).
+  `CanvasOverlayView` is an input/guide layer added over the preview frame; it renders no clock.
+  `StudioActivity` is its `CanvasHost`; `DesignEdits` and `EditSession` are unchanged (3C may rely on that).
+- **Selection** is `StudioViewModel.selected`, kept in sync with the Time/Date/Info tabs and saved in instance state. On
+  the Layout/Background/Behavior tabs selecting on the canvas does not switch tabs, so Position sliders stay visible.
+- **Drag** writes `DesignEdits.setOffset(..., host.scope)` with key `canvas.move.<TARGET>`: one gesture is one undo step,
+  and the result equals typing the same values. Requested X is mirrored for RTL (resolver mirrors it back). Gestures are
+  clamped to the smaller of the 200 dp control range and half the previewed entry (the resolver's clamp); a stored value
+  already beyond that is not pulled in. System `ACTION_CANCEL` undoes the whole drag.
+- **Snap** (6 screen dp, converted through the preview scale): widget center lines, padding edges (moving edges), other
+  elements' centers, other elements' baselines (moving baseline). Haptic `CLOCK_TICK` when a snap engages or changes.
+  Ruling taken here: placing a second finger disables snapping for the rest of that gesture (sticky, to avoid a jump when
+  it lifts); the first finger keeps dragging; lifting the dragging finger while another is down ends the gesture.
+- **Hit test** uses the applied bounds grown to at least 48 dp; overlap goes to the nearest center. An element translated
+  outside the preview row cannot be grabbed (clamping keeps this rare).
+- **Nudge** is a four-button pad per element in the Layout panel's Position section (advanced mode): a tap is one step and
+  one undo entry; holding repeats every 60 ms and is also one undo entry. Left/right mirror in RTL.
+- **API 23–30 (R4).** Drag and nudge are disabled; selection works; the strip under the preview and the Position section say
+  why. No ghost overlay. **Accessibility:** the overlay is not an accessibility node; numeric entry and the nudge pad are
+  the accessible path (TalkBack virtual nodes for the canvas are not implemented).
+- **Tests.** Pure: `CanvasMathTest` (snap, clamp, RTL, nudge, hit test, gesture→Edit coalescing/equality). Robolectric
+  (`CanvasStudioTest`): applied-geometry read, tap selection, drag/undo coalescing, Save value = drag value, cancel,
+  scope patch, snap + haptic tick, second finger (before and mid-drag), SDK 30 contract, RTL, nudge, overlay sizing.
+- **moto g13:** [RESULTS](../measurements/phase3b1/RESULTS.md). Device bugs found and fixed: overlay sizing (twice) and a stale
+  selection frame. Not verified: haptic, real two-finger cancel, TalkBack, landscape, other hosts.
+
 ---
 
 ## 4. 3C — Library & Stacked
