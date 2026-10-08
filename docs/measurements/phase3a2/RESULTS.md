@@ -78,8 +78,9 @@ unexercised; no shipping bitmap claim is made from Robolectric.
 
 Robolectric SDK35 requires JDK21; CI now selects21 while application bytecode remains17.
 Native SDK/template coverage exceeded Gradle's default512MiB heap in the full suite; test forks
-use2GiB and recycle after20 test classes. No production dependency added. Final full run: `testDebugUnitTest lintDebug assembleDebug` green;468 tests,0 failures/errors,
+use2GiB and recycle after20 test classes. No production dependency added. Final full run and production-commit recheck: `testDebugUnitTest lintDebug assembleDebug` green;468 tests,0 failures/errors,
 including existing model/codec regressions. Lint has existing warnings but no errors.
+PR49 Current App CI on0aa4e5d passed (8m34s); subsequent commits only add this evidence.
 
 ## API30 device evidence
 
@@ -93,7 +94,7 @@ Final source verification: cdev session `s-20261008-084339-emulator-5562` prepar
 APKsha256 `179ed57e293a34490db434e24b924c4ae4b2d16382da449361fb47954b937bf2` (retained250dp
 metadata) installed in place: IDs5/7 and settings byte-identical, no crash/ANR. Picker displays Clocky
 Digital4×2. After `proc kill`, ticking11:45→11:46 in35.9s with6/6 process-absent checks.
-Fresh placement itself was not performed; existing widgets were preserved.
+Fresh placement was subsequently verified in the dedicated session below; existing widgets were preserved.
 
 Committed production source (`b00956a`) recheck: session `s-20261008-085636-emulator-5562`
 prepared/finished. Rebuilt APKsha256
@@ -109,8 +110,26 @@ The APK hash changed after comment cleanup/recompile; this check covers the comm
 - Studio showed four selector buttons; scoped Square/Large Time weights absent; Info scope visible.
   Temporary draft changes discarded; final settings compare SAME.
 
-Shared-path tests establish effective-spec/geometry parity for all four classes; real placed/Preview
-visual comparison for all classes remains open. Sample alarm text remains the existing editor-only
+Fresh placement/parity session `s-20261008-090311-emulator-5562` prepared/finished: a temporary
+Clocky Default widget ID9 was placed on a separate launcher page at4×2, then resized through
+4×3 Large,4×4 Square,4×1 Strip and4×2 Card. Quick Tune automatically selected the production
+class, and Time/Date template, visibility, face IDs and geometry matched the placed widget after
+uniform display scaling. Observed text rectangles (pixels; rounding differences expected):
+
+| Class | Placed Time / Date | Preview Time / Date |
+|---|---|---|
+| Strip |468×230 /212×47|468×230 /212×47|
+| Card |575×284 /265×58|465×230 /215×47|
+| Square |575×284 /265×58|224×111 /104×23|
+| Large |575×284 /265×58|303×149 /140×30|
+
+This checks Clocky Default with Time/Date, not all templates or worst-case Info/font combinations.
+The created widget was removed via the observed launcher Remove target; IDs5/7, settings and
+metadata compare SAME to baseline, no crash/ANR. Existing widget positions were not changed.
+
+Shared-path tests establish effective-spec/geometry parity for all four classes. API30's simple
+Time/Date placed/Preview comparison now covers four classes; real worst-case Info/fallback
+and required moto/API35 visual parity remain open. Sample alarm text remains the existing editor-only
 placeholder when no real alarm is available. Square/Large own weight editing is hidden; global
 weights remain editable. Info scoped patches edit visibility/size/offsets/alignment; color/font/opacity remain global.
 No forbidden Info scoped-weight field is introduced.
@@ -118,8 +137,8 @@ No forbidden Info scoped-weight field is introduced.
 ## Metadata decision
 
 The submitted production metadata explicitly retains minResize250×40dp. Candidate110×40dp
-passed the template gate and API30 resize checks, but moto/API35, fresh-placement default,
-picker and final-build upgrade checks are not complete. Default minWidth250dp/minHeight70dp,
+passed the template gate and API30 resize checks, but required moto/API35 resize, fresh-placement/picker and upgrade checks are not complete.
+API30 fresh placement/picker/final-build upgrade now pass. Default minWidth250dp/minHeight70dp,
 targetCell4×2, provider component and schema2 remain unchanged. Do not widen release metadata
 on this evidence alone.
 
@@ -129,7 +148,7 @@ on this evidence alone.
 |---|---|---|
 | moto g13 API34 / Motorola launcher | prepare rejected KEYGUARD_SHOWING; owner unlock requested | all production3A-2 device gates |
 | Pixel API35 emulator5560 | prepare rejected; package/activity services unavailable, owner recovery requested | map4×4 bitmap/send/timing, upgrade/ticking, rotation/live resize, parity |
-| Pixel API30 emulator5562 | prepared, verified and finished | fresh placement; full four-class visual parity |
+| Pixel API30 emulator5562 | prepared, verified and finished | worst-case Info/font four-class visual parity |
 | API31–33 /API25 | not exercised | optional boundary/regression coverage |
 
 No device unlock, launcher-setting change on moto, wipe, reboot, uninstall, clear, log reset or

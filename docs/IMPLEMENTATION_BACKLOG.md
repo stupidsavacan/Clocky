@@ -178,8 +178,8 @@ Exit gate: designs can be saved, duplicated and shared, and they work naturally 
   - [x] SPLIT Strip supported TextView spacer; explicit before/after RemoteViews.apply on SDK23/28/31/34/35. Native 300-case audit × SDK28/31/34/35 and 345 fractional-key cases × SDK31/34/35: zero failures.
   - [x] goAsync/finish, expiring single worker, latest pending generation per widget, atomic stale check/send; success/failure/coalescing/deletion/rejected-executor tests.
   - [x] Four-class Preview/Studio/Quick Tune selector; shared resolver/fit/composer; scoped Info/layout/date gap; Square/Large scoped weights absent. R2 Card inheritance; no built-in/schema/component changes.
-  - [x] API30 upgrade IDs5/7 and byte-identical settings; pair rotation, resize, process-absent ticking and scoped UI. Debug timing/bitmap/Parcel instrumentation excludes diagnostic apply from timings.
-  - [x] Metadata: retain release minResize250×40dp. Candidate110×40dp passed API30 2×1/2×2/3×1/3×2 after template gate; moto/API35 and fresh placement/picker checks pending. Default minWidth250dp / targetCell4×2 unchanged.
+  - [x] API30 upgrade IDs5/7 and byte-identical settings; pair rotation, resize, process-absent ticking, fresh4×2 placement, four-class Time/Date Preview parity and scoped UI. Debug timing/bitmap/Parcel instrumentation excludes diagnostic apply from timings.
+  - [x] Metadata: retain release minResize250×40dp. Candidate110×40dp passed API30 2×1/2×2/3×1/3×2 after template gate; API30 fresh placement/picker pass; moto/API35 checks pending. Default minWidth250dp / targetCell4×2 unchanged.
   - [ ] Required motoAPI34 / PixelAPI35 production timing, worst-case4×4 bitmap/send, upgrade and process-absent ticking. moto keyguard-locked; API35 package/activity services unavailable. Owner intervention requested; no unlock/reboot attempted.
   - [ ] API31+ rotation/live resize and real four-class Preview/widget parity. Shared effective-spec/geometry tests do not certify launcher behavior.
   - Measurement: `docs/measurements/phase3a2/RESULTS.md`. Phase3A is not complete; Phase3B/3C wait for owner merge.

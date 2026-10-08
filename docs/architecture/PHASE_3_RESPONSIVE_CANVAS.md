@@ -585,9 +585,9 @@ refreshed main to `7b7ab11bbd0efc38d733b14383d8591b62b60a20`.
   fit/compose, RemoteViews construction, send and queue-inclusive end-to-end; additional local
   apply/bitmap/Parcel diagnostics happen after the production timestamp.
 - **Release metadata retained at250×40dp**: candidate110×40dp passed API30 after the template gate,
-  but required moto/API35 and fresh placement/picker checks remain. Default minWidth250dp and
+  but required moto/API35 checks remain (API30 fresh placement/picker pass). Default minWidth250dp and
   targetCell4×2 preserved. No widening is claimed in the submitted metadata.
-- API30: in-place IDs/settings, pair rotation, resize, scoped UI, process-absent ticking verified.
+- API30: IDs/settings, pair rotation, resize, scoped UI, ticking, fresh4×2 and Time/Date four-class parity verified.
   moto awaits owner unlock; API35 emulator awaits recovery of package/activity services. Real
   API31+ rotation/live resize, allocation/send and full four-class parity remain open. No new
   built-in content/Stacked/Corner preset, schema or provider rename.
