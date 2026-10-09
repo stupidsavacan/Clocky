@@ -78,4 +78,44 @@ class PreviewScaleTest {
         }
     }
 
+    @Test fun simulatedCellsAndPinchFramesAreScaledSynchronouslyThroughProductionViews() {
+        Robolectric.buildActivity(Activity::class.java).setup().use { controller ->
+            val parent = FrameLayout(controller.get()); val frame = FrameLayout(controller.get())
+            parent.addView(frame); controller.get().setContentView(parent)
+            parent.layout(0, 0, 120, 900)
+            val preview = PreviewHost(frame, AppWidgetManager.INVALID_APPWIDGET_ID, 100)
+            val density = frame.resources.displayMetrics.density
+            for (cells in com.stupidsavacan.clocky.studio.canvas.PreviewCells.ALL) {
+                for (sp in listOf(60f, 80f, 110f)) {
+                    val d = DesignEdits.setSize(DigitalDesign(), TextTarget.TIME, sp, EditScope.ALL)
+                    preview.render(d, cells.sizeClass, cells.size)
+                    val child = frame.getChildAt(0)
+                    val entry = preview.lastEntrySize!!
+                    val expected = minOf(1f, 120f / (entry.width * density).toInt(), 100f * density / (entry.height * density).toInt())
+                    assertEquals(expected, child.scaleX, 0.0001f)
+                    assertEquals(expected, child.scaleY, 0.0001f)
+                    assertEquals((child.layoutParams.width * expected).toInt(), frame.layoutParams.width)
+                    assertTrue(child.findViewById<android.view.View>(com.android.deskclock.R.id.clocky_time_slot) != null)
+                }
+            }
+            // All superseded deferred fits must leave the last child unchanged.
+            val current = frame.getChildAt(0); val scale = current.scaleX
+            shadowOf(Looper.getMainLooper()).idle()
+            assertEquals(scale, current.scaleX, 0f)
+        }
+    }
+
+    @Test @Config(qualifiers = "land")
+    fun simulatedLandscapeUsesTheMeasuredLandscapeEntryAndKeepsWidgetClass() {
+        Robolectric.buildActivity(Activity::class.java).setup().use { c ->
+            val frame = FrameLayout(c.get())
+            val preview = PreviewHost(frame, AppWidgetManager.INVALID_APPWIDGET_ID)
+            val cells = com.stupidsavacan.clocky.studio.canvas.PreviewCells(4, 2)
+            val spec = preview.render(DigitalDesign(), cells.sizeClass, cells.size)
+            assertEquals(667f, preview.lastEntrySize!!.width, 0f)
+            assertEquals(132f, preview.lastEntrySize!!.height, 0f)
+            assertEquals(SizeClass.CARD, spec.sizeClass)
+        }
+    }
+
 }

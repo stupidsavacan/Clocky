@@ -7,6 +7,9 @@ import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
+import android.view.MotionEvent
+import android.view.ViewConfiguration
+import com.stupidsavacan.clocky.studio.canvas.PreviewCells
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
@@ -63,6 +66,7 @@ class StudioViewModel : ViewModel() {
     var advanced: Boolean = false
     var thisSizeOnly: Boolean = false
     var previewClass: SizeClass? = null
+    var previewCells: PreviewCells? = null
 
     /** The text element the canvas and the Position controls act on; null until one is chosen. */
     var selected: TextTarget? = null
@@ -92,6 +96,8 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
     private lateinit var redoButton: ImageButton
     private lateinit var backdrop: View
     private lateinit var canvas: CanvasOverlayView
+    private lateinit var resizeHandle: Button
+    private var canvasScope: EditScope? = null
     private val tabChips = mutableMapOf<Slot, Chip>()
     private var binding = false
     private var wallpaper: WallpaperHint? = null
@@ -148,11 +154,24 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
     override fun paddingDp(): Float = spec?.paddingDp ?: 0f
 
     override fun moveTo(target: TextTarget, xDp: Float, yDp: Float) {
-        val key = "canvas.move.${target.name}"
-        edit(key, key, rebuild = false) { DesignEdits.setOffset(it, target, xDp, yDp, scope) }
+        val key = "canvas.edit.${target.name}"
+        edit(key, key, rebuild = false) { DesignEdits.setOffset(it, target, xDp, yDp, canvasScope ?: scope) }
+    }
+
+    override fun beginMove() {
+        canvasScope = scope
+        session.beginGesture()
+    }
+
+    override fun sizeOf(target: TextTarget): Float = DesignEdits.sizeOf(design, target, canvasScope ?: scope)
+
+    override fun resizeTo(target: TextTarget, sizeSp: Float) {
+        val key = "canvas.edit.${target.name}"
+        edit(key, key, rebuild = false) { DesignEdits.setSize(it, target, sizeSp, canvasScope ?: scope) }
     }
 
     override fun endMove() {
+        canvasScope = null
         session.endGesture()
         // The Position sliders (Layout panel) show the new values.
         rebuildPanel()
@@ -160,11 +179,10 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
     }
 
     override fun cancelMove() {
-        session.endGesture()
-        if (session.undo()) {
-            rebuildPanel()
-            render()
-        }
+        canvasScope = null
+        session.cancelGesture()
+        rebuildPanel()
+        render()
     }
 
     // ---- lifecycle ----
@@ -200,6 +218,7 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        if (::canvas.isInitialized) canvas.cancelTouch()
         super.onSaveInstanceState(outState)
         val s = vm.session ?: return
         outState.putString(STATE_BASELINE, DigitalDesignCodec.encode(s.baseline).toString())
@@ -209,6 +228,7 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
         outState.putBoolean(STATE_THIS_SIZE, vm.thisSizeOnly)
         vm.previewClass?.let { outState.putString(STATE_CLASS, it.name) }
         vm.selected?.let { outState.putString(STATE_SELECTED, it.name) }
+        vm.previewCells?.let { outState.putInt(STATE_COLUMNS, it.columns); outState.putInt(STATE_ROWS, it.rows) }
     }
 
     /**
@@ -226,6 +246,10 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
         restoredDraft?.let { s.adopt(it) }
         vm.session = s
         saved?.getString(STATE_SLOT)?.let { name -> Slot.entries.firstOrNull { it.name == name }?.let { vm.slot = it } }
+        if (saved?.containsKey(STATE_COLUMNS) == true) {
+            val c = saved.getInt(STATE_COLUMNS); val r = saved.getInt(STATE_ROWS)
+            if (c in 2..5 && r in 1..4) vm.previewCells = PreviewCells(c, r)
+        }
         vm.advanced = saved?.getBoolean(STATE_ADVANCED) ?: false
         vm.thisSizeOnly = saved?.getBoolean(STATE_THIS_SIZE) ?: false
         vm.previewClass = saved?.getString(STATE_CLASS)?.let { name -> SizeClass.entries.firstOrNull { it.name == name } }
@@ -281,6 +305,7 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
             setText(if (canDrag) R.string.clocky_studio_canvas_hint else R.string.clocky_studio_canvas_unavailable)
         }
         panels = StudioPanels(this, panel)
+        bindResizeHandle()
 
         binding = true
         classToggle.check(SizeClassLabels.button(previewClass))
@@ -288,7 +313,9 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
         binding = false
         classToggle.addOnButtonCheckedListener { _, id, checked ->
             if (checked && !binding) {
+                vm.previewCells = null
                 vm.previewClass = SizeClassLabels.fromButton(id)
+                updateResizeLabel()
                 updateScopeSwitch()
                 rebuildPanel()
                 render()
@@ -319,6 +346,115 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
         findViewById<View>(R.id.clocky_studio_back).setOnClickListener { requestExit() }
         findViewById<Button>(R.id.clocky_studio_save).setOnClickListener { save() }
         findViewById<View>(R.id.clocky_studio_more).setOnClickListener { showMenu(it) }
+    }
+
+    /** Preview-only grid simulation. Never calls AppWidgetManager.updateAppWidgetOptions or the store. */
+    private fun setPreviewCells(cells: PreviewCells?) {
+        vm.previewCells = cells
+        if (cells != null) vm.previewClass = cells.sizeClass
+        binding = true
+        classToggle.check(SizeClassLabels.button(previewClass))
+        binding = false
+        updateResizeLabel()
+        rebuildPanel()
+        render()
+    }
+
+    private fun updateResizeLabel() {
+        if (!::resizeHandle.isInitialized) return
+        val cells = vm.previewCells
+        resizeHandle.contentDescription = getString(R.string.clocky_studio_resize_preview) +
+            (cells?.let { " ${it.columns}×${it.rows}" } ?: "") + " — " + getString(SizeClassLabels.label(previewClass))
+        findViewById<TextView>(R.id.clocky_preview_notice).text =
+            getString(if (canDrag) R.string.clocky_studio_canvas_hint else R.string.clocky_studio_canvas_unavailable) +
+                (cells?.let { " · ${it.columns}×${it.rows} — ${getString(SizeClassLabels.label(it.sizeClass))}" } ?: "")
+    }
+
+    private fun bindResizeHandle() {
+        resizeHandle = Button(this).apply {
+            id = R.id.clocky_studio_resize_preview
+            text = "↘"
+            minWidth = 0; minimumWidth = 0
+        }
+        val dp48 = (48 * resources.displayMetrics.density).toInt()
+        findViewById<FrameLayout>(R.id.clocky_preview_panel).addView(resizeHandle,
+            FrameLayout.LayoutParams(dp48, dp48, android.view.Gravity.BOTTOM or android.view.Gravity.END))
+        updateResizeLabel()
+        resizeHandle.setOnClickListener {
+            val choices = PreviewCells.ALL
+            val labels = choices.map { "${it.columns}×${it.rows} — ${getString(SizeClassLabels.label(it.sizeClass))}" }.toTypedArray()
+            AlertDialog.Builder(this).setTitle(R.string.clocky_studio_resize_preview)
+                .setSingleChoiceItems(labels, choices.indexOf(vm.previewCells)) { dialog, index ->
+                    setPreviewCells(choices[index])
+                    resizeHandle.announceForAccessibility(resizeHandle.contentDescription)
+                    dialog.dismiss()
+                }.setNegativeButton(android.R.string.cancel, null).show()
+        }
+        var pointer = -1
+        var startX = 0f; var startY = 0f; var scale = 1f
+        var original: PreviewCells? = null
+        var originalClass = previewClass
+        var start = PreviewCells(4, 2)
+        var dragging = false
+        resizeHandle.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    pointer = event.getPointerId(0)
+                    startX = event.rawX; startY = event.rawY
+                    original = vm.previewCells; originalClass = previewClass
+                    val measured = previewHost.previewSize(previewClass)
+                    start = original ?: PreviewCells.ALL.minBy {
+                        val size = it.size
+                        kotlin.math.abs(size.minWidthDp - measured.minWidthDp) +
+                            kotlin.math.abs(size.minHeightDp - measured.minHeightDp) +
+                            kotlin.math.abs(size.maxWidthDp - measured.maxWidthDp) +
+                            kotlin.math.abs(size.maxHeightDp - measured.maxHeightDp)
+                    }
+                    scale = canvas.currentGeometry()?.transform?.pxPerDp ?: resources.displayMetrics.density
+                    dragging = false
+                    view.parent.requestDisallowInterceptTouchEvent(true)
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val i = event.findPointerIndex(pointer)
+                    if (i >= 0) {
+                        // Screen coordinates stay stable while the panel itself changes height.
+                        val dx = event.rawX + event.getX(i) - event.x - startX
+                        val dy = event.rawY + event.getY(i) - event.y - startY
+                        if (kotlin.math.hypot(dx, dy) > ViewConfiguration.get(this).scaledTouchSlop) dragging = true
+                        if (dragging) {
+                            val next = start.dragged((if (rtl) -dx else dx) / scale, dy / scale,
+                                resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+                            if (next != vm.previewCells) setPreviewCells(next)
+                        }
+                    }
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    vm.previewClass = originalClass
+                    setPreviewCells(original)
+                    pointer = -1
+                    view.parent.requestDisallowInterceptTouchEvent(false)
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (pointer < 0) return@setOnTouchListener true
+                    if (!dragging) view.performClick() else view.announceForAccessibility(view.contentDescription)
+                    pointer = -1
+                    view.parent.requestDisallowInterceptTouchEvent(false)
+                    true
+                }
+                MotionEvent.ACTION_POINTER_UP -> {
+                    if (event.getPointerId(event.actionIndex) == pointer) {
+                        vm.previewClass = originalClass; setPreviewCells(original)
+                        pointer = -1
+                        view.parent.requestDisallowInterceptTouchEvent(false)
+                    }
+                    true
+                }
+                else -> true
+            }
+        }
     }
 
     private fun rebuildTabs() {
@@ -380,7 +516,7 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
     }
 
     private fun render() {
-        previewHost.schedule(design, previewClass)
+        previewHost.schedule(design, previewClass, vm.previewCells?.size)
         updateTabs()
         updateChrome()
     }
@@ -521,6 +657,8 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
         private const val STATE_ADVANCED = "studio.advanced"
         private const val STATE_THIS_SIZE = "studio.thisSize"
         private const val STATE_CLASS = "studio.class"
+        private const val STATE_COLUMNS = "studio.columns"
+        private const val STATE_ROWS = "studio.rows"
         private const val STATE_SELECTED = "studio.selected"
         private val TEXT_SLOTS = listOf(Slot.TIME, Slot.DATE, Slot.INFO)
 

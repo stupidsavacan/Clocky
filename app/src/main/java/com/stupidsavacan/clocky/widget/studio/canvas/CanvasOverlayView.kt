@@ -13,12 +13,12 @@ import android.view.ViewGroup
 import com.stupidsavacan.clocky.studio.TextTarget
 import com.stupidsavacan.clocky.studio.canvas.CanvasHitTester
 import com.stupidsavacan.clocky.studio.canvas.CanvasOffsets
-import com.stupidsavacan.clocky.studio.canvas.ElementGeometry
+import com.stupidsavacan.clocky.studio.canvas.CanvasPinch
 import com.stupidsavacan.clocky.studio.canvas.Guide
 import com.stupidsavacan.clocky.studio.canvas.SnapResult
 import com.stupidsavacan.clocky.studio.canvas.SnapSolver
 
-/** What the canvas needs from Studio; every change it makes goes through [moveTo] (an EditSession edit). */
+/** Studio input contract: move and resize both write through the active EditSession transaction. */
 interface CanvasHost {
     /** False where the platform does not draw offsets (API < 31): selection works, dragging does not. */
     val canDrag: Boolean
@@ -35,6 +35,9 @@ interface CanvasHost {
 
     /** Writes the requested offset as part of the drag in progress (one undo step per gesture). */
     fun moveTo(target: TextTarget, xDp: Float, yDp: Float)
+    fun beginMove()
+    fun sizeOf(target: TextTarget): Float
+    fun resizeTo(target: TextTarget, sizeSp: Float)
     fun endMove()
 
     /** The system took the touch away: drop everything the drag changed. */
@@ -47,8 +50,9 @@ interface CanvasHost {
  * [AppliedGeometryReader], and a drag only ever calls [CanvasHost.moveTo].
  *
  * Gesture rules (End-State 7): the first finger drags; snapping gives a haptic tick when it
- * engages; placing a second finger switches snapping off for the rest of that gesture. Lifting the
- * dragging finger while another is down ends the gesture.
+ * engages; placing a second finger switches snapping off for the rest of that gesture.
+ * Changing the two-pointer span beyond touch slop switches to resizing.
+ * Lifting either pinch pointer ends the transaction without resuming drag.
  */
 class CanvasOverlayView(
     context: Context,
@@ -75,11 +79,29 @@ class CanvasOverlayView(
         class Dragging(
             val target: TextTarget, val pointerId: Int, val downX: Float, val downY: Float, val start: AppliedGeometry,
             val startOffset: Pair<Float, Float>, var snapEnabled: Boolean, var lastGuides: List<Guide> = emptyList(),
-            var edited: Boolean = false,
         ) : Gesture
     }
 
     private var gesture: Gesture? = null
+    private data class Pinch(val firstId: Int, val secondId: Int, val startSpan: Float, val startSp: Float,
+        var active: Boolean = false)
+    private var pinch: Pinch? = null
+    private var snapDisabled = false
+
+    private fun span(event: MotionEvent, p: Pinch): Float? {
+        val a = event.findPointerIndex(p.firstId)
+        val b = event.findPointerIndex(p.secondId)
+        if (a < 0 || b < 0) return null
+        return kotlin.math.hypot(event.getX(a) - event.getX(b), event.getY(a) - event.getY(b))
+    }
+    private fun target(g: Gesture): TextTarget = when (g) {
+        is Gesture.Pressed -> g.target
+        is Gesture.Dragging -> g.target
+    }
+    private fun owner(g: Gesture): Int = when (g) {
+        is Gesture.Pressed -> g.pointerId
+        is Gesture.Dragging -> g.pointerId
+    }
 
     /** Current snap guides, for tests and accessibility; empty when not snapped. */
     val activeGuides: List<Guide> get() = guides
@@ -99,6 +121,9 @@ class CanvasOverlayView(
         val w = if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.EXACTLY) MeasureSpec.getSize(widthMeasureSpec) else sibling?.measuredWidth ?: 0
         setMeasuredDimension(w, sibling?.measuredHeight ?: 0)
     }
+
+    /** End interrupted touch streams, including Activity state saving. */
+    fun cancelTouch() = finish(commit = false)
 
     /** Re-reads the applied tree and repaints; call after every preview render. */
     fun refresh() {
@@ -140,11 +165,16 @@ class CanvasOverlayView(
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> return down(event)
             MotionEvent.ACTION_POINTER_DOWN -> {
-                (gesture as? Gesture.Dragging)?.let {
-                    it.snapEnabled = false
-                    clearGuides()
+                val g = gesture ?: return false
+                snapDisabled = true
+                (g as? Gesture.Dragging)?.snapEnabled = false
+                clearGuides()
+                if (pinch == null) {
+                    val p = Pinch(owner(g), event.getPointerId(event.actionIndex), 0f, host.sizeOf(target(g)))
+                    val distance = span(event, p)
+                    if (distance != null && distance > slop) pinch = p.copy(startSpan = distance)
                 }
-                return gesture != null
+                return true
             }
             MotionEvent.ACTION_MOVE -> {
                 move(event)
@@ -154,7 +184,10 @@ class CanvasOverlayView(
                 val g = gesture
                 val liftedId = event.getPointerId(event.actionIndex)
                 val owner = when (g) { is Gesture.Pressed -> g.pointerId; is Gesture.Dragging -> g.pointerId; null -> -1 }
-                if (g != null && liftedId == owner) finish(commit = true)
+                val p = pinch
+                if (g != null && (liftedId == owner || (p?.active == true && liftedId == p.secondId))) {
+                    finish(commit = true)
+                } else if (p != null && liftedId == p.secondId) pinch = null
                 return true
             }
             MotionEvent.ACTION_UP -> {
@@ -172,6 +205,7 @@ class CanvasOverlayView(
     }
 
     private fun down(event: MotionEvent): Boolean {
+        if (gesture != null) finish(commit = false)
         val geo = currentGeometry() ?: return false
         geometry = geo
         val x = geo.transform.toDpX(event.x)
@@ -180,6 +214,9 @@ class CanvasOverlayView(
         val minTargetDp = CanvasHitTester.MIN_TARGET_DP * density / geo.transform.pxPerDp
         val hit = CanvasHitTester.hit(x, y, geo.elements, minTargetDp) ?: return false
         host.select(hit.target)
+        host.beginMove()
+        snapDisabled = false
+        pinch = null
         parent?.requestDisallowInterceptTouchEvent(true)
         gesture = Gesture.Pressed(hit.target, event.getPointerId(0), event.x, event.y, geo)
         invalidate()
@@ -188,10 +225,22 @@ class CanvasOverlayView(
 
     private fun move(event: MotionEvent) {
         var g = gesture ?: return
+        pinch?.let { p ->
+            val distance = span(event, p)
+            if (distance == null) { finish(commit = false); return }
+            if (!p.active && kotlin.math.abs(distance - p.startSpan) > slop) p.active = true
+            if (p.active) {
+                CanvasPinch.size(p.startSp, p.startSpan, distance)?.let {
+                    host.resizeTo(target(g), it)
+                }
+                clearGuides()
+                return
+            }
+        }
         val index = event.findPointerIndex(
             when (g) { is Gesture.Pressed -> g.pointerId; is Gesture.Dragging -> g.pointerId },
         )
-        if (index < 0) return
+        if (index < 0) { finish(commit = false); return }
         val px = event.getX(index)
         val py = event.getY(index)
 
@@ -202,7 +251,7 @@ class CanvasOverlayView(
             if (dx * dx + dy * dy < slop * slop) return
             g = Gesture.Dragging(
                 g.target, g.pointerId, g.downX, g.downY, g.start, host.offsetOf(g.target),
-                snapEnabled = event.pointerCount == 1,
+                snapEnabled = event.pointerCount == 1 && !snapDisabled,
             )
             gesture = g
         }
@@ -240,7 +289,6 @@ class CanvasOverlayView(
         guides = shown
 
         host.moveTo(drag.target, x, y)
-        drag.edited = true
         invalidate()
     }
 
@@ -254,10 +302,17 @@ class CanvasOverlayView(
         val g = gesture
         gesture = null
         guides = emptyList()
-        if (g is Gesture.Dragging && g.edited) {
+        pinch = null
+        if (g != null) {
             if (commit) host.endMove() else host.cancelMove()
         }
+        parent?.requestDisallowInterceptTouchEvent(false)
         invalidate()
+    }
+
+    override fun onDetachedFromWindow() {
+        finish(commit = false)
+        super.onDetachedFromWindow()
     }
 
     private fun paint(color: Int, widthDp: Float) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
