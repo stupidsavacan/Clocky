@@ -23,6 +23,9 @@ import com.stupidsavacan.clocky.design.storage.BuiltinFavorites
 import com.stupidsavacan.clocky.design.storage.FileDesignRepository
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
 import com.stupidsavacan.clocky.widget.digital.DigitalWidgetUpdater
+import com.stupidsavacan.clocky.widget.easy.DesignExchangeController
+import com.stupidsavacan.clocky.widget.easy.DesignLabels
+import com.stupidsavacan.clocky.widget.easy.ExportSource
 import com.stupidsavacan.clocky.widget.easy.GalleryEntry
 import com.stupidsavacan.clocky.widget.easy.GalleryScreen
 import com.stupidsavacan.clocky.widget.easy.MyDesignsDialogs
@@ -55,6 +58,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
     private var previewClass: SizeClass? = null
     private var cameFromGallery = true
     private var tune: QuickTuneScreen? = null
+    private lateinit var exchange: DesignExchangeController
 
     private val detailedEditor = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         when (result.resultCode) {
@@ -80,7 +84,11 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         }
         store = SharedPreferencesDesignStore(this)
         repository = FileDesignRepository(this)
-        host = FrameLayout(this).also {
+        exchange = DesignExchangeController(this, repository, onImported = { galleryScreen?.showImported(it) }).also {
+            it.sourceFor = { key -> exportSourceFor(key) }
+            savedInstanceState?.let { state -> it.restoreState(state) }
+        }
+        host =FrameLayout(this).also {
             setContentView(it)
             ViewCompat.setOnApplyWindowInsetsListener(it) { view, insets ->
                 val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
@@ -120,6 +128,7 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
         outState.putString(STATE_SELECTED, selectedId)
         outState.putString(STATE_DRAFT, DigitalDesignCodec.encode(tune?.draft ?: draft).toString())
         outState.putBoolean(STATE_FROM_GALLERY, cameFromGallery)
+        exchange.saveState(outState)
         (tune?.previewClass ?: previewClass)?.let { outState.putString(STATE_CLASS, it.name) }
     }
 
@@ -160,7 +169,19 @@ class DigitalWidgetConfigActivity : AppCompatActivity() {
                 // A saved pre-1B design has no tokens to tune; its editor is the detailed one.
                 if (QuickTune.isTunable(draft)) showQuickTune(fromGallery = true) else launchDetailedEditor(draft, offerGallery = true)
             },
+            onImport = { exchange.showImportChoices() },
+            onExport = { key -> exchange.exportToFile(key) },
+            onShare = { key -> exchange.share(key) },
         ).also { gallery -> galleryScreen = gallery }
+    }
+
+    /** What the Gallery card [key] exports (a built-in or a My Design); null when the card is gone. */
+    private fun exportSourceFor(key: String): ExportSource? {
+        val builtin = BuiltinDesigns.byId(key)
+        return when {
+            builtin != null -> ExportSource(getString(DesignLabels.design(builtin.id)), DigitalDesignCodec.encode(builtin.instantiate()))
+            else -> repository.get(key)?.let { ExportSource(it.name, repository.rawDesign(it.id) ?: DigitalDesignCodec.encode(it.design)) }
+        }
     }
 
     private var galleryScreen: GalleryScreen? = null

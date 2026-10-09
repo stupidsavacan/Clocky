@@ -850,6 +850,41 @@ host; no placed widget changes unless the user applied a design to it.
 | Stacked hour/minute split doubles TextClocks and breaks fit | Ship Stacked without split styling; the split stays Power-user for Phase 5 |
 | Stacked component name later regretted | Not reversible after release; fixed by R10 before 3C-4 |
 
+### 4.9 3C-2 implementation record (Import / Export / Share)
+
+Code: `design/exchange/DesignExchange.kt` (pure format core), `DesignSharing.kt` (share sheet + FileProvider staging),
+`widget/easy/DesignExchangeController.kt` (SAF launchers, dialogs), Gallery buttons Import / Export / Share.
+
+- **Formats.** Both routes carry the same envelope. `.clocky` = UTF-8 JSON. `CLOCKY2:` = base64url (RFC 4648 §5, unpadded
+  on export; whitespace ignored and correct `=` padding accepted on import; non-canonical bits rejected) of zlib-deflate.
+  Decoded envelope limit 8192 bytes; the payload is also capped at 12288 characters before decoding. Inflation runs in 1 KB
+  steps and stops when output would pass the limit (decompression-bomb safe); trailing bytes after the stream are corrupt.
+  A design over the limit is never truncated: Share goes straight to the file route; copying a code is not offered.
+  A `.clocky` file has no 8 KB cap, but import reads at most 1 MiB and JSON nesting is limited to 32.
+- **Fields.** The saved design JSON is exported verbatim (`DesignRepository.rawDesign`), so unknown schema-2 keys survive
+  export -> import -> re-export. Keys named in `DesignExchange.PRIVATE_KEYS` (`appWidgetId`, `calibration`, device details)
+  are removed at any depth on export and on import. Schema 1 documents are migrated to 2 on import; `formatVersion` > 1 and
+  `schema` > 2 are refused with an "update Clocky" message.
+- **Fonts.** A font id not in `FontCatalog` is replaced by `system-sans` (the id carries no category, so the default of the
+  MODERN category is the only choice available) and listed in a dialog after the import.
+- **Import is always a new My Design** (`createFromDocument`, fresh UUID, name cleaned to the My Designs rules, blank ->
+  "Imported design"). It never reads or writes a widget or an existing entry.
+- **Android.** Export: `ACTION_CREATE_DOCUMENT` (`application/octet-stream`, title `<name>.clocky`). Import:
+  `ACTION_OPEN_DOCUMENT` (`*/*`, since providers label `.clocky` inconsistently) or a paste dialog with a Paste button.
+  Share: `ACTION_SEND` chooser as `text/plain` code or as `.clocky` via FileProvider authority `${applicationId}.files`
+  (the AOSP `${applicationId}` authority is unchanged). The provider is not exported and `res/xml/clocky_file_paths.xml`
+  exposes only `cache/shared_designs/`; staged files older than 24 h are pruned on the next share. No storage permission
+  and no `VIEW` filter for `.clocky` were added.
+- **Quick Tune.** Not given its own share button: its Save design button already feeds My Designs, from where the
+  Gallery shares. Studio and Canvas are untouched (3B-2 owns them).
+- **Tests.** `DesignExchangeTest` (formats, limits, corruption, privacy, fonts), `DesignRepositoryImportTest`,
+  `DesignExchangeGalleryTest` (SAF intents, share/FileProvider, widget immutability). Automated only. On Windows
+  hosts androidx `FileProvider` rejects backslash paths, so `DesignSharing.uriFor` is replaced by a stub there and the
+  real-provider root test (`providerOnlyServesTheShareDirectory`) is skipped; run it on a POSIX host. The provider's declared
+  roots are checked on every host.
+- **Not verified on a device.** SAF pickers and share targets on the moto g13 (UNVERIFIED until Device Broker v2 is
+  bootstrapped and the FIFO lease is held). Nothing in this change was sent to a real third party.
+
 ---
 
 ## 5. 3D — Platform integration

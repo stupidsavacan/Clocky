@@ -194,7 +194,7 @@ Exit gate: designs can be saved, duplicated and shared, and they work naturally 
   - [ ] Pinch to resize text; pseudo-resize handle 2×1–5×4 using measured cell sizes.
 - 3C Library & Stacked
   - [x] `DesignRepository` + My Designs (save, duplicate, rename, delete, favorites). 3C-1: `files/designs/<uuid>.json`, Gallery My Designs/Favorites, Save from Quick Tune/Studio. Automated tests only; moto verification pending device grant (Issue #51).
-  - [ ] Import / Export (`.clocky`, `CLOCKY2:` text code), share sheet.
+  - [x] Import / Export (`.clocky`, `CLOCKY2:` text code), share sheet. 3C-2: Gallery Import / Export / Share, `${applicationId}.files` FileProvider; record `PHASE_3_RESPONSIVE_CANVAS.md` §4.9. Automated tests only; moto verification UNVERIFIED (Device Broker v2 not yet bootstrapped).
   - [ ] Apply to other widgets.
   - [ ] Stacked family: new provider (component name frozen on first release), `STACKED` template.
 - 3D Platform integration

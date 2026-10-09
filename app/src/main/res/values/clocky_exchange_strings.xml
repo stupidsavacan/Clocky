@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 3C-2: import, export and share of My Designs (.clocky file, CLOCKY2 text code). -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="clocky_exchange_import" tools:ignore="MissingTranslation">Import</string>
+    <string name="clocky_exchange_export" tools:ignore="MissingTranslation">Export</string>
+    <string name="clocky_exchange_share" tools:ignore="MissingTranslation">Share</string>
+
+    <string name="clocky_exchange_import_title" tools:ignore="MissingTranslation">Import a design</string>
+    <string name="clocky_exchange_import_from_file" tools:ignore="MissingTranslation">From a .clocky file</string>
+    <string name="clocky_exchange_import_from_code" tools:ignore="MissingTranslation">Paste a text code</string>
+    <string name="clocky_exchange_code_title" tools:ignore="MissingTranslation">Paste text code</string>
+    <string name="clocky_exchange_code_hint" tools:ignore="MissingTranslation">CLOCKY2:…</string>
+    <string name="clocky_exchange_code_paste" tools:ignore="MissingTranslation">Paste</string>
+    <string name="clocky_exchange_code_import" tools:ignore="MissingTranslation">Import</string>
+
+    <string name="clocky_exchange_share_title" tools:ignore="MissingTranslation">Share design</string>
+    <string name="clocky_exchange_share_as_code" tools:ignore="MissingTranslation">Text code</string>
+    <string name="clocky_exchange_share_as_file" tools:ignore="MissingTranslation">.clocky file</string>
+    <string name="clocky_exchange_share_chooser" tools:ignore="MissingTranslation">Share design via</string>
+    <string name="clocky_exchange_share_too_large" tools:ignore="MissingTranslation">This design is too big for a text code, so it is shared as a .clocky file.</string>
+    <string name="clocky_exchange_share_failed" tools:ignore="MissingTranslation">Could not share this design</string>
+
+    <string name="clocky_exchange_export_saved" tools:ignore="MissingTranslation">Design exported</string>
+    <string name="clocky_exchange_export_failed" tools:ignore="MissingTranslation">Could not export this design</string>
+    <string name="clocky_exchange_open_failed" tools:ignore="MissingTranslation">Could not read that file</string>
+
+    <string name="clocky_exchange_imported" tools:ignore="MissingTranslation">Imported to My Designs: %1$s</string>
+    <string name="clocky_exchange_imported_default_name" tools:ignore="MissingTranslation">Imported design</string>
+    <string name="clocky_exchange_save_failed" tools:ignore="MissingTranslation">Could not save the imported design</string>
+
+    <string name="clocky_exchange_fonts_title" tools:ignore="MissingTranslation">Some fonts are not available</string>
+    <string name="clocky_exchange_fonts_message" tools:ignore="MissingTranslation">This design uses fonts this version of Clocky does not have (%1$s). The default font is used in their place.</string>
+
+    <string name="clocky_exchange_error_title" tools:ignore="MissingTranslation">Cannot import this design</string>
+    <string name="clocky_exchange_error_empty" tools:ignore="MissingTranslation">Nothing to import.</string>
+    <string name="clocky_exchange_error_wrong_prefix" tools:ignore="MissingTranslation">This is not a Clocky text code. It should start with CLOCKY2:</string>
+    <string name="clocky_exchange_error_bad_base64" tools:ignore="MissingTranslation">The text code contains characters that do not belong. Copy it again in full.</string>
+    <string name="clocky_exchange_error_truncated" tools:ignore="MissingTranslation">The text code or file looks cut off. Copy or send it again in full.</string>
+    <string name="clocky_exchange_error_bad_deflate" tools:ignore="MissingTranslation">The text code is damaged and cannot be read.</string>
+    <string name="clocky_exchange_error_too_large" tools:ignore="MissingTranslation">This is too large to import. Text codes are limited to 8 KB; share bigger designs as a .clocky file.</string>
+    <string name="clocky_exchange_error_not_json" tools:ignore="MissingTranslation">This is not a readable Clocky design file.</string>
+    <string name="clocky_exchange_error_wrong_format" tools:ignore="MissingTranslation">This is not a Clocky design.</string>
+    <string name="clocky_exchange_error_future_format" tools:ignore="MissingTranslation">This design was made with a newer version of Clocky. Update Clocky to import it.</string>
+    <string name="clocky_exchange_error_future_schema" tools:ignore="MissingTranslation">This design uses features from a newer version of Clocky. Update Clocky to import it.</string>
+    <string name="clocky_exchange_error_invalid_design" tools:ignore="MissingTranslation">The design data is incomplete or invalid.</string>
+</resources>
