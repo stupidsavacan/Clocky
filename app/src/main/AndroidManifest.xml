@@ -68,6 +68,10 @@
         <activity android:name=".alarms.AlarmActivity" android:directBootAware="true" android:excludeFromRecents="true" android:resizeableActivity="false" android:showOnLockScreen="true" android:showWhenLocked="true" android:taskAffinity="" android:windowSoftInputMode="stateAlwaysHidden" />
         <activity android:name=".AlarmSelectionActivity" android:label="@string/dismiss_alarm" android:theme="@android:style/Theme.Holo.Light.Dialog.NoActionBar" />
         <provider android:name=".provider.ClockProvider" android:authorities="${applicationId}" android:directBootAware="true" android:exported="false" />
+        <!-- Design sharing (Phase 3C-2): a separate authority; ${applicationId} above belongs to the AOSP ClockProvider. -->
+        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.files" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/clocky_file_paths" />
+        </provider>
         <receiver android:name=".AlarmInitReceiver" android:exported="true" android:directBootAware="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

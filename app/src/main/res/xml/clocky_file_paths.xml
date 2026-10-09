@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider roots for design sharing (Phase 3C-2): only cache/shared_designs/, nothing else of the app is reachable. -->
+<paths>
+    <cache-path name="shared_designs" path="shared_designs/" />
+</paths>
