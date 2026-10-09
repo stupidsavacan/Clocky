@@ -21,7 +21,9 @@ import com.stupidsavacan.clocky.design.library.BuiltinDesigns
 import com.stupidsavacan.clocky.design.model.BackgroundElement
 import com.stupidsavacan.clocky.design.model.BackgroundType
 import com.stupidsavacan.clocky.design.model.ColorRef
+import com.stupidsavacan.clocky.design.model.DateElement
 import com.stupidsavacan.clocky.design.model.DigitalDesign
+import com.stupidsavacan.clocky.design.model.FontIds
 import com.stupidsavacan.clocky.design.model.InfoSource
 import com.stupidsavacan.clocky.design.model.SizeClass
 import com.stupidsavacan.clocky.design.model.TextStyle
@@ -453,9 +455,9 @@ class StudioActivityTest {
         HostFontCapability.probeOverride = { HostFontCapability.Support.NONE }
         open(widget()).use { controller ->
             val activity = controller.get()
-            activity.click("Poppins")
+            activity.click("Poppins (System)")
             activity.selectTab(Slot.DATE)
-            activity.click("Poppins")
+            activity.click("Poppins (System)")
             val notes = activity.findViewById<ViewGroup>(R.id.clocky_studio_checks).texts()
             val host = notes.filter { it.contains("Poppins") && it.contains("system font") }
             assertEquals("one line for Time and Date together: $notes", 1, host.size)
@@ -483,11 +485,84 @@ class StudioActivityTest {
     }
 
     @Test
+    fun fontChipsLabelEveryChoiceThatWouldLookLikeSystemOnThisHostAndWeight() {
+        HostFontCapability.probeOverride = { HostFontCapability.Support.NONE }
+        val design = DigitalDesign(time = TimeElement(TextStyle(fontId = FontIds.SYSTEM_SANS, weight = 900, sizeSp = 64f)))
+        open(widget(), design).use { controller ->
+            val activity = controller.get()
+            val labels = activity.panel().findAll(Chip::class.java).map { it.text.toString() }
+            // Issue #60: at weight 900 on a host without bundled fonts, every non-System choice renders as System.
+            for (name in listOf("Light", "Rounded", "Serif", "Condensed", "Mono", "Poppins", "Varela Round",
+                "DM Serif Display", "Barlow Condensed", "IBM Plex Mono", "Bebas Neue")) {
+                assertTrue("$name is labelled as shown in the system font: $labels", "$name (System)" in labels)
+            }
+            assertTrue("System itself is not relabelled: $labels", "System" in labels)
+            // The chip previews the effective face, not the bundled face the host cannot render.
+            assertEquals(StudioRows.typefaceOf(app, FontIds.SYSTEM_SANS), activity.chip("Poppins (System)").typeface)
+        }
+    }
+
+    @Test
+    fun capableHostLabelsOnlyWeightLimitedPlatformFamilies() {
+        val design = DigitalDesign(time = TimeElement(TextStyle(fontId = FontIds.SYSTEM_SANS, weight = 900, sizeSp = 64f)))
+        open(widget(), design).use { controller ->
+            val labels = controller.get().panel().findAll(Chip::class.java).map { it.text.toString() }
+            assertTrue("bundled faces render on this host: $labels", "Poppins" in labels && "Bebas Neue" in labels)
+            assertTrue("Serif has no 900 face: $labels", "Serif (System)" in labels)
+        }
+    }
+
+    @Test
+    fun platformFamilyOffWeight400OffersTheWeightItHasAndThenRendersIt() {
+        val design = DigitalDesign(time = TimeElement(TextStyle(fontId = FontIds.SYSTEM_SANS, weight = 900, sizeSp = 64f)))
+        open(widget(), design).use { controller ->
+            val activity = controller.get()
+            activity.click("Serif (System)")
+            assertEquals("the request is kept", "serif", activity.design.time.style.fontId)
+            assertEquals("still the system face", R.id.clocky_face_w900, activity.timeFaceId())
+            val notes = activity.panel().texts()
+            assertTrue("weight note next to the control: $notes", notes.any { it.contains("Serif") && it.contains("400") && it.contains("900") })
+            activity.panel().findAll(Button::class.java).first { it.text == "Use weight 400" }.performClick()
+            idle()
+            assertEquals(400, activity.design.time.style.weight)
+            assertEquals("serif", activity.design.time.style.fontId)
+            assertEquals("the serif face now renders", R.id.clocky_face_single, activity.timeFaceId())
+            val after = activity.panel().texts()
+            assertTrue("Serif is no longer marked: $after", "Serif" in activity.panel().findAll(Chip::class.java).map { it.text.toString() })
+            assertFalse("no weight note left: $after", after.any { it.contains("only has weight 400") })
+        }
+    }
+
+    @Test
+    @Config(sdk = [34], qualifiers = "ja")
+    fun japaneseDateNoteIsNotShownWhenTheWholeDateIsAlreadyTheSystemFont() {
+        HostFontCapability.probeOverride = { HostFontCapability.Support.NONE }
+        val design = DigitalDesign(date = DateElement(visible = true, style = TextStyle(fontId = "clocky-poppins", weight = 400, sizeSp = 16f)))
+        open(widget(), design).use { controller ->
+            val activity = controller.get()
+            activity.selectTab(Slot.DATE)
+            val notes = activity.panel().texts()
+            assertFalse("no 'only the Japanese part' note on a fallback host: $notes", notes.any { it.contains("和文部分") })
+        }
+    }
+
+    @Test
+    @Config(sdk = [34], qualifiers = "ja")
+    fun japaneseDateNoteStaysWhenTheBundledFaceRenders() {
+        val design = DigitalDesign(date = DateElement(visible = true, style = TextStyle(fontId = "clocky-poppins", weight = 400, sizeSp = 16f)))
+        open(widget(), design).use { controller ->
+            val activity = controller.get()
+            activity.selectTab(Slot.DATE)
+            assertTrue(activity.panel().texts().any { it.contains("和文部分") })
+        }
+    }
+
+    @Test
     @Config(sdk = [23])
     fun bundledFontBelowApi26IsDisclosedAndStillRendersTheSystemFont() {
         open(widget()).use { controller ->
             val activity = controller.get()
-            activity.click("Poppins")
+            activity.click("Poppins (System)")
             val notes = activity.findViewById<ViewGroup>(R.id.clocky_studio_checks).texts()
             assertTrue("needs-Android-8 notice shown: $notes", notes.any { it.contains("Android 8") })
             assertEquals("the draft still requests the bundled font", "clocky-poppins", activity.design.time.style.fontId)

@@ -116,6 +116,7 @@ object DesignResolver {
             paddingDp = d.background.paddingDp,
             gapDp = d.date.gapDp ?: if (tokens != null) TEMPLATE_GAP_DP else 0f,
             degradations = degradations.toList() + themeNotes,
+            supportsBundledFonts = env.supportsBundledFonts,
         )
     }
 

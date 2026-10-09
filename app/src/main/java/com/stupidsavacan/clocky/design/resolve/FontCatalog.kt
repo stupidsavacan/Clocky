@@ -101,6 +101,14 @@ object FontCatalog {
         }
     }
 
+    /**
+     * Whether a request for [fontId] is shown as the system sans (host, Android version or the family's
+     * weights), i.e. it would look the same as choosing System. The font picker labels these choices.
+     */
+    fun showsAsSystem(fontId: String, requestedWeight: Int, sdkInt: Int, hostBundledFonts: Boolean): Boolean =
+        fontId != FontIds.SYSTEM_SANS &&
+            resolve(fontId, requestedWeight, sdkInt, hostBundledFonts).face.fontId == FontIds.SYSTEM_SANS
+
     private fun resolveBundled(
         family: Family,
         requestedWeight: Int,

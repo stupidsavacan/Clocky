@@ -5,11 +5,13 @@ import android.text.format.DateFormat
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import com.android.deskclock.R
+import com.stupidsavacan.clocky.customization.font.LegacyWidgetFontFamilyPolicy
 import com.stupidsavacan.clocky.design.model.Alignment
 import com.stupidsavacan.clocky.design.model.AmPmMode
 import com.stupidsavacan.clocky.design.model.BackgroundType
 import com.stupidsavacan.clocky.design.model.CornerRadius
 import com.stupidsavacan.clocky.design.model.DigitalDesign
+import com.stupidsavacan.clocky.design.model.FontIds
 import com.stupidsavacan.clocky.design.model.HourMode
 import com.stupidsavacan.clocky.design.model.InfoSource
 import com.stupidsavacan.clocky.design.model.MAX_INFO_LABEL
@@ -79,11 +81,16 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
     var builtHostFallback: Set<String> = emptySet()
         private set
 
+    /** The host bundled-font capability the font chips were labelled against (unknown before the first render). */
+    var builtBundledFonts: Boolean = false
+        private set
+
     fun build(slot: Slot) {
         rows.clear()
         builtSlot = slot
         showsSampleNote = false
         builtHostFallback = hostFallbackFonts(host.spec)
+        builtBundledFonts = host.spec?.supportsBundledFonts ?: false
         when (slot) {
             Slot.TIME -> time()
             Slot.DATE -> date()
@@ -150,7 +157,10 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
     }
 
     private fun cjkNote(target: TextTarget) {
-        val family = FontCatalog.family(DesignEdits.fontIdOf(d, target)) ?: return
+        val fontId = DesignEdits.fontIdOf(d, target)
+        val family = FontCatalog.family(fontId) ?: return
+        // The whole date is already in the system font; "only the Japanese part" would be wrong.
+        if (showsAsSystem(fontId, DesignEdits.weightOf(d, target, scope))) return
         val lang = Locale.getDefault().language
         if (!family.coversCjk && lang in CJK_LANGUAGES) rows.note(str(R.string.clocky_studio_cjk_fallback))
     }
@@ -563,7 +573,7 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
                 } },
                 onGestureEnd = host::endGesture,
             )
-            weightDisclosure(target, weight)
+            weightDisclosure(target, weight, elementScope)
         }
         val size = DesignEdits.sizeOf(d, target, elementScope)
         val badge = sizeField?.let { badgeFor(it) }
@@ -585,27 +595,48 @@ class StudioPanels(private val host: StudioHost, container: LinearLayout) {
     }
 
     /** Requested weight vs what this font and Android version can show (principle 5), next to the control. */
-    private fun weightDisclosure(target: TextTarget, requested: Int) {
+    private fun weightDisclosure(target: TextTarget, requested: Int, elementScope: EditScope) {
         val fontId = DesignEdits.fontIdOf(d, target)
         val family = FontCatalog.family(fontId) ?: return
         // Host fallback is disclosed by its own notice; a weight note for the stand-in face would repeat it.
         if (fontId in builtHostFallback) return
         val face = FontCatalog.resolve(fontId, requested, android.os.Build.VERSION.SDK_INT)
+        val name = str(DesignLabels.font(family.id))
+        if (face.fontFallbackReason == FontCatalog.REASON_WEIGHT_UNAVAILABLE) {
+            // A platform alias off weight 400 looks exactly like System; say so here and offer the one weight it has.
+            rows.note(str(R.string.clocky_studio_font_needs_400, name, requested), emphasized = true)
+            rows.button(str(R.string.clocky_studio_use_weight_400)) {
+                host.edit("weight.${target.name}") {
+                    DesignEdits.setWeight(it, target, LegacyWidgetFontFamilyPolicy.EXACT_WEIGHT, elementScope)
+                }
+            }
+            return
+        }
         val shown = if (face.fontFallbackReason != null) face.effectiveWeight else face.face.weight
         if (shown != requested) {
-            rows.note(str(R.string.clocky_studio_weight_shows, requested, shown, str(DesignLabels.font(family.id))), emphasized = true)
+            rows.note(str(R.string.clocky_studio_weight_shows, requested, shown, name), emphasized = true)
         }
     }
 
     private fun fontChips(target: TextTarget) {
         val current = DesignEdits.fontIdOf(d, target)
+        val weight = DesignEdits.weightOf(d, target, scope)
         rows.chips(
             str(R.string.clocky_studio_font),
-            FontCatalog.families.map { it.id to str(DesignLabels.font(it.id)) },
+            FontCatalog.families.map { family ->
+                val name = str(DesignLabels.font(family.id))
+                family.id to if (showsAsSystem(family.id, weight)) str(R.string.clocky_studio_font_shows_system, name) else name
+            },
             current,
-            render = { chip, id -> StudioRows.typefaceOf(context, id)?.let { chip.typeface = it } },
+            // A chip previews the face the widget will show, not one this host or weight cannot render.
+            render = { chip, id ->
+                StudioRows.typefaceOf(context, if (showsAsSystem(id, weight)) FontIds.SYSTEM_SANS else id)?.let { chip.typeface = it }
+            },
         ) { picked -> host.edit("font.${target.name}") { DesignEdits.setFont(it, target, picked) } }
     }
+
+    private fun showsAsSystem(fontId: String, weight: Int): Boolean =
+        FontCatalog.showsAsSystem(fontId, weight, android.os.Build.VERSION.SDK_INT, builtBundledFonts)
 
     private fun letterSpacing(target: TextTarget) {
         rows.slider(
