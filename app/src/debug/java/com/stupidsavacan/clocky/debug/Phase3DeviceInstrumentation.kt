@@ -261,9 +261,16 @@ class Phase3DeviceInstrumentation : Instrumentation() {
     private fun chooseCells(label: String) {
         onMain { studio.findViewById<View>(R.id.clocky_studio_resize_preview).performClick() }
         waitForIdleSync()
-        val node = find(uiAutomation.rootInActiveWindow) { it.text?.toString()?.startsWith("$label ") == true }
-            ?: error("Cell $label absent")
-        check(node.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+        val deadline = SystemClock.uptimeMillis() + 5000
+        var clicked = false
+        while (!clicked && SystemClock.uptimeMillis() < deadline) {
+            val node = find(uiAutomation.rootInActiveWindow) {
+                it.viewIdResourceName == "android:id/text1" && it.text?.toString()?.startsWith("$label ") == true
+            }
+            clicked = node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
+            if (!clicked) SystemClock.sleep(100)
+        }
+        check(clicked) { "Cell $label could not be clicked after dialog became visible" }
         waitForIdleSync()
         SystemClock.sleep(250)
     }
@@ -425,4 +432,3 @@ class Phase3DeviceInstrumentation : Instrumentation() {
         waitForIdleSync()
     }
 }
-
