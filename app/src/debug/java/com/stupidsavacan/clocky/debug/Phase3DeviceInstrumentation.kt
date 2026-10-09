@@ -77,6 +77,9 @@ class Phase3DeviceInstrumentation : Instrumentation() {
             observeTouches()
             val original = onMain { studio.design }
             if (arguments.getString("mode") == "extended") {
+                if (arguments.getString("orientation") == "landscape") check(onMain {
+                    studio.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+                }) { "Requested landscape was not applied" }
                 extended(id, original)
                 report.putString("clocky-results", results.toString())
                 report.putString("clocky-summary", "PASS: handle, drag transition, Save and UI restoration")
@@ -264,10 +267,15 @@ class Phase3DeviceInstrumentation : Instrumentation() {
         var bounds: Rect? = null
         while (bounds == null && SystemClock.uptimeMillis() < deadline) {
             val node = find(uiAutomation.rootInActiveWindow) {
-                it.viewIdResourceName == "android:id/text1" && it.text?.toString()?.startsWith("$label ") == true
+                it.isVisibleToUser && it.viewIdResourceName == "android:id/text1" &&
+                    it.text?.toString()?.startsWith("$label ") == true
             }
             node?.let { bounds = Rect().also(it::getBoundsInScreen).takeUnless(Rect::isEmpty) }
-            if (bounds == null) SystemClock.sleep(100)
+            if (bounds == null) {
+                find(uiAutomation.rootInActiveWindow) { it.isScrollable }
+                    ?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                SystemClock.sleep(100)
+            }
         }
         val point = checkNotNull(bounds) { "Cell $label absent from visible dialog" }
         val down = SystemClock.uptimeMillis()
@@ -360,8 +368,9 @@ class Phase3DeviceInstrumentation : Instrumentation() {
         }
         val down = SystemClock.uptimeMillis()
         send(down, MotionEvent.ACTION_DOWN, intArrayOf(7), floatArrayOf(x), y)
-        val endX = x - 95f * scale
-        val endY = y - 138f * scale
+        val landscape = onMain { studio.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE }
+        val endX = x - (if (landscape) 171f else 95f) * scale
+        val endY = y - (if (landscape) 74f else 138f) * scale
         send(down, MotionEvent.ACTION_MOVE, intArrayOf(7), floatArrayOf(endX), endY)
         onMain {
             check(vm.previewCells == PreviewCells(3, 2)) { "Handle cells ${vm.previewCells}" }
