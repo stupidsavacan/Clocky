@@ -77,3 +77,37 @@ unequal finger movement can therefore transition into pinch. The pseudo handle r
 and cannot predict a launcher's exact host padding, reachable cells or orientation behavior beyond recorded
 data. The accessible numeric/dialog alternatives are covered in automation, not by spoken TalkBack checks.
 No merge is authorized by these results.
+
+
+## CI follow-up: fractional MotionEvent coordinates (2026-10-09)
+
+[Ubuntu failure run 37891340667](https://github.com/stupidsavacan/Clocky/actions/runs/37891340667)
+executed 551 tests on source `ec1554659dc57063b6fa6ba3fa087b3f7302808e`; only
+`CanvasStudioTest.pinchTracksIdsAndIsOneUndoStepWithNumericEquality` failed at the full-design assertion.
+The downloaded JUnit artifact shows Time size expected 96.0sp, actual 95.99999sp, with all other fields equal.
+The difference is exactly one float ULP at 96sp (0.00000762939453125sp).
+
+The test ignored its helper's actual coordinate-span ratio and multiplied the requested 64sp by an idealized
+1.5. Float `(x + distance) - x` does not necessarily equal distance. A deterministic Windows MotionEvent
+reproduction uses `Math.nextDown(512f)` as the first pointer coordinate, placing the applied preview beneath it:
+start span 100.00003051757812px, final span 150.00003051757812px, ratio 1.4999998807907104, size
+95.99999237060547sp. Keeping the old 96sp expectation reproduced the same failure locally. Linux's exact
+starting coordinate was not logged; no particular font/layout origin or timing race is claimed.
+
+The helper now reads start/final spans from the actual MotionEvents, independently of production pointer-ID
+lookup. Time, scoped Date and API23/30 expectations use that ratio, as Info already did. Full DigitalDesign
+assertions, one history entry, exact Undo and exact Redo remain strict. The new fractional-coordinate regression
+also asserts the exact `nextDown(1.5f)` ratio and `nextDown(96f)` requested size with zero tolerance. The
+API23/30 check is strengthened from a size tolerance to exact full-design equality. No production code changes;
+no rounding of requested sizes, relaxed model comparisons or alternate preview renderer.
+
+Local CI-fix validation: targeted CanvasStudio/CanvasResize/PreviewScale tests **45 passed**; full
+`testDebugUnitTest` **552 passed, 0 failures/errors/skips**; `lintDebug` and `assembleDebug` successful;
+`git diff --check` passed. Remote CI results are tracked in the PR follow-up. Original Ubuntu artifact/log and
+Windows failing reproduction are retained under ignored `build/phase3b2`.
+
+**Updated device status:** Owner confirmed Broker v2 initial bootstrap complete and two independent worktrees'
+FIFO preservation-only smoke units (Issue #51 audit). The empty-registry observation above describes the initial
+implementation, not current availability. This CI fix performs no phone access and leaves the long-lived
+`moto g13 - Clocky owner control` scrcpy window untouched. Feature-specific genuine pinch, Save parity,
+performance, TalkBack, haptic and landscape checks remain PENDING; bootstrap smoke is not feature acceptance.

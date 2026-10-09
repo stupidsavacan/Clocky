@@ -447,27 +447,61 @@ class CanvasStudioTest {
         }
     }
 
-    private fun pinch(a: StudioActivity, target: TextTarget = TextTarget.TIME, cancel: Boolean = false): Float {
+    private fun pinch(a: StudioActivity, target: TextTarget = TextTarget.TIME, cancel: Boolean = false,
+        startX: Float? = null,
+    ): Float {
         val (geo, overlay) = a.layoutPreview().let { it.geometry!! to it.overlay }
-        val (x, y) = geo.centerPx(target)
-        overlay.send(MotionEvent.ACTION_DOWN, Finger(x, y, 7))
-        overlay.send(MotionEvent.ACTION_POINTER_DOWN, Finger(x, y, 7), Finger(x + 100f, y, 19), actionIndex = 1)
+        val (centerX, y) = geo.centerPx(target)
+        val x = startX ?: centerX
+        assertTrue("first pointer selects the target", overlay.send(MotionEvent.ACTION_DOWN, Finger(x, y, 7)))
+        // Read spans at the MotionEvent boundary: (x + distance) - x need not equal distance
+        // when float coordinates cross a binade. The expected state must use the injected span.
+        val down = event(MotionEvent.ACTION_POINTER_DOWN, SystemClock.uptimeMillis(),
+            Finger(x, y, 7), Finger(x + 100f, y, 19), actionIndex = 1)
+        val startSpan = down.getX(1) - down.getX(0)
+        overlay.onTouchEvent(down)
+        down.recycle()
         // Reorder indices: tracking must use stable IDs, not pointer indices.
         overlay.send(MotionEvent.ACTION_MOVE, Finger(x + 125f, y, 19), Finger(x, y, 7))
-        overlay.send(MotionEvent.ACTION_MOVE, Finger(x + 150f, y, 19), Finger(x, y, 7))
+        val finalMove = event(MotionEvent.ACTION_MOVE, SystemClock.uptimeMillis(),
+            Finger(x + 150f, y, 19), Finger(x, y, 7))
+        val finalSpan = finalMove.getX(0) - finalMove.getX(1)
+        overlay.onTouchEvent(finalMove)
+        finalMove.recycle()
         overlay.send(if (cancel) MotionEvent.ACTION_CANCEL else MotionEvent.ACTION_POINTER_UP,
             Finger(x + 150f, y, 19), Finger(x, y, 7), actionIndex = 0)
         overlay.send(MotionEvent.ACTION_UP, Finger(x, y, 7))
         idle()
-        return ((x + 150f) - x) / ((x + 100f) - x)
+        return finalSpan / startSpan
     }
 
     @Test fun pinchTracksIdsAndIsOneUndoStepWithNumericEquality() {
         open(widget()).use { c ->
             val a = c.get(); val before = a.design
-            pinch(a)
+            val ratio = pinch(a)
             val expected = DesignEdits.setSize(before, TextTarget.TIME,
-                DesignEdits.sizeOf(before, TextTarget.TIME, EditScope.ALL) * 1.5f, EditScope.ALL)
+                DesignEdits.sizeOf(before, TextTarget.TIME, EditScope.ALL) * ratio, EditScope.ALL)
+            assertEquals(expected, a.design)
+            assertEquals(1, a.session().historySize)
+            a.undo(); assertEquals(before, a.design)
+            assertTrue(a.session().redo()); assertEquals(expected, a.design)
+        }
+    }
+
+    @Test @Config(qualifiers = "mdpi")
+    fun fractionalPointerCoordinatesReproduceLinuxSizeWithoutChangingOtherFields() {
+        open(widget()).use { c ->
+            val a = c.get(); val before = a.design
+            // Keep the chosen fractional coordinate inside the applied Time view regardless of layout.
+            val centerX = a.layoutPreview().geometry!!.centerPx(TextTarget.TIME).first
+            a.findViewById<android.widget.FrameLayout>(R.id.clocky_preview_frame).translationX = Math.nextDown(512f) - centerX
+            val ratio = pinch(a, startX = Math.nextDown(512f))
+            assertEquals(Math.nextDown(1.5f), ratio, 0f)
+            // At this origin the injected spans are 100.0000305px and 150.0000305px.
+            // 64sp scales to the float immediately below 96sp, not an idealized 96sp.
+            assertEquals(Math.nextDown(96f), a.design.time.style.sizeSp, 0f)
+            val expected = DesignEdits.setSize(before, TextTarget.TIME,
+                DesignEdits.sizeOf(before, TextTarget.TIME, EditScope.ALL) * ratio, EditScope.ALL)
             assertEquals(expected, a.design)
             assertEquals(1, a.session().historySize)
             a.undo(); assertEquals(before, a.design)
@@ -477,9 +511,10 @@ class CanvasStudioTest {
 
     @Test @Config(sdk = [23, 30]) fun pinchWorksBelowApi31WhenDraggingIsDisabled() {
         open(widget()).use { c ->
-            val a = c.get(); val before = a.design.time.style.sizeSp
-            pinch(a)
-            assertEquals(before * 1.5f, a.design.time.style.sizeSp, 0.001f)
+            val a = c.get(); val before = a.design
+            val ratio = pinch(a)
+            assertEquals(DesignEdits.setSize(before, TextTarget.TIME,
+                DesignEdits.sizeOf(before, TextTarget.TIME, EditScope.ALL) * ratio, EditScope.ALL), a.design)
             assertEquals(0f, a.design.time.style.xDp, 0f)
         }
     }
@@ -489,11 +524,11 @@ class CanvasStudioTest {
             val a = c.get()
             a.findViewById<MaterialSwitch>(R.id.clocky_studio_scope).isChecked = true
             val before = a.design
-            pinch(a, TextTarget.DATE)
+            val ratio = pinch(a, TextTarget.DATE)
             assertEquals(TextTarget.DATE, a.selected)
             assertEquals(before.date, a.design.date)
             assertEquals(DesignEdits.setSize(before, TextTarget.DATE,
-                DesignEdits.sizeOf(before, TextTarget.DATE, a.scope) * 1.5f, a.scope), a.design)
+                DesignEdits.sizeOf(before, TextTarget.DATE, a.scope) * ratio, a.scope), a.design)
         }
     }
 

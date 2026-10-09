@@ -781,9 +781,12 @@ remain the accessible alternative to pinch. No provider/schema/resolver/storage 
 
 [Implementation, automated results, measurement limits and pending device gates](../measurements/phase3b2/RESULTS.md).
 Issue54 synchronous scale/stale-child protection is covered through intermediate production PreviewHost renders.
-**Moto acceptance PENDING:** this PC's Broker v2 registry has no registered devices; no bootstrap, lease or
-phone access is claimed. True two-pointer pinch cannot be validated by single-pointer cdev drag. PR is for
-review only; no merge performed.
+**Moto acceptance PENDING:** initial implementation found no registered devices and performed no phone access.
+Owner subsequently confirmed Broker v2 bootstrap and independent FIFO preservation smoke units (Issue #51).
+The CI follow-up preserves strict numeric-design equality using actual MotionEvent spans and adds a deterministic
+fractional-coordinate regression; production behavior is unchanged. Feature acceptance remains pending:
+true two-pointer pinch cannot be validated by single-pointer cdev drag. The owner-control scrcpy window is
+untouched. PR is for review only; no merge performed.
 
 ---
 
