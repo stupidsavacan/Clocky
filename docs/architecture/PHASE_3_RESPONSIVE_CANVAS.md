@@ -781,12 +781,18 @@ remain the accessible alternative to pinch. No provider/schema/resolver/storage 
 
 [Implementation, automated results, measurement limits and pending device gates](../measurements/phase3b2/RESULTS.md).
 Issue54 synchronous scale/stale-child protection is covered through intermediate production PreviewHost renders.
-**Moto acceptance PENDING:** initial implementation found no registered devices and performed no phone access.
+Initial implementation found no registered devices and performed no phone access.
 Owner subsequently confirmed Broker v2 bootstrap and independent FIFO preservation smoke units (Issue #51).
 The CI follow-up preserves strict numeric-design equality using actual MotionEvent spans and adds a deterministic
-fractional-coordinate regression; production behavior is unchanged. Feature acceptance remains pending:
-true two-pointer pinch cannot be validated by single-pointer cdev drag. The owner-control scrcpy window is
-untouched. PR is for review only; no merge performed.
+fractional-coordinate regression; production behavior is unchanged. Owner authorized merging #57/#58.
+[Subsequent moto evidence](../measurements/phase3b2/MOTO_2026_10_09.md): three native two-pointer
+configurations passed 10 cases each; eight additional portrait checks covered actual handle dragging,
+drag-to-pinch/one Undo, exact Save and original-setting restoration. Large production generation n30 p95
+264.869ms met the400ms target. Final stock main APK, ID23/settings/geometry and FREE Broker state verified.
+Instrumentation caused automatic target force-stop on finish, so its registration was disabled and that
+workflow must not be repeated under preservation rules. Physical-finger usability, corrected landscape
+gestures, pixel-level placed-widget parity, rapid-pinch frame pacing, TalkBack and haptics remain pending.
+The owner-control scrcpy window remained open. A single-pointer cdev drag does not validate pinch.
 
 ---
 
@@ -906,8 +912,10 @@ Code: `design/exchange/DesignExchange.kt` (pure format core), `DesignSharing.kt`
   hosts androidx `FileProvider` rejects backslash paths, so `DesignSharing.uriFor` is replaced by a stub there and the
   real-provider root test (`providerOnlyServesTheShareDirectory`) is skipped; run it on a POSIX host. The provider's declared
   roots are checked on every host.
-- **Not verified on a device.** SAF pickers and share targets on the moto g13 (UNVERIFIED until Device Broker v2 is
-  bootstrapped and the FIFO lease is held). Nothing in this change was sent to a real third party.
+- **Moto smoke after merge.** Under a verified Broker FIFO lease, the production Gallery opened the Android
+  import picker, export document-creation picker and file-sharing chooser; each was cancelled. See
+  [integration evidence](../measurements/phase3b2/MOTO_2026_10_09.md#importexport-integration-smoke).
+  No file round trip or actual share recipient was tested. Nothing was sent to a real third party.
 
 ---
 

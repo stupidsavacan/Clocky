@@ -1,0 +1,45 @@
+{
+  "source": "c76b290b4b91caecd4e151a85c6a24f6911f66be",
+  "orientation": "portrait",
+  "cases": [
+    {
+      "case": "pseudo-handle-cancel-restores",
+      "passed": true
+    },
+    {
+      "case": "pseudo-handle-drag-class-transition",
+      "passed": true
+    },
+    {
+      "case": "drag-unsnapped-to-pinch-owner-up-one-undo",
+      "passed": true
+    },
+    {
+      "case": "pinch-TIME",
+      "ratio": 0.75,
+      "scope": "EditScope(sizeClass=null)",
+      "cancel": false,
+      "requestedSp": 90,
+      "ids": "7,9",
+      "reordered": true,
+      "passed": true
+    },
+    {
+      "case": "saved-design-preview-production-spec-parity",
+      "passed": true
+    },
+    {
+      "case": "pinch-save-exact-design",
+      "passed": true
+    },
+    {
+      "case": "placed-widget-visible-after-save",
+      "passed": true
+    },
+    {
+      "case": "save-restoration-byte-identical",
+      "passed": true
+    }
+  ],
+  "instrumentationStatus": "historical; disabled after automatic target force-stop was observed"
+}

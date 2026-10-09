@@ -1,5 +1,13 @@
 # Phase 3B-2: pinch and preview widget resizing
 
+**Latest status (2026-10-09):** #57 and #58 were owner-authorized and merged. Subsequent moto runs
+verified native two-pointer interactions, handle dragging, drag-to-pinch history, reversible Save and
+production generation timing. See [current moto evidence and remaining gates](MOTO_2026_10_09.md).
+Older PENDING/no-phone-access statements below describe the implementation/CI-fix stages.
+The historical instrumentation runner was disabled after Android's automatic target force-stop was
+observed; that method must not be repeated under the current preservation rules. Final stock-main
+APK, original widget ID23/settings/geometry and FREE Broker state were independently verified.
+
 Implementation branch: `feat/phase3b2-pinch`, based on merged main `fe92f05558b4febb534262b260390fe4969d7893` (#56).
 Scope: Studio input and preview sizing only. No provider identity, schema, resolver, installed widget options,
 widget persistence format, Gallery/library, Import/Export, platform integration or Phase 5 changes.

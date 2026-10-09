@@ -1,0 +1,260 @@
+{
+  "source": "daee072a3d1ba2be6c925459243533261949251c",
+  "runs": [
+    {
+      "configuration": "lowids",
+      "cases": [
+        {
+          "case": "pinch-TIME",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 180,
+          "ids": "0,1",
+          "reordered": false,
+          "passed": true
+        },
+        {
+          "case": "pinch-TIME",
+          "ratio": 0.75,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 90,
+          "ids": "0,1",
+          "reordered": false,
+          "passed": true
+        },
+        {
+          "case": "pinch-TIME",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": true,
+          "requestedSp": 180,
+          "ids": "0,1",
+          "reordered": false,
+          "passed": true
+        },
+        {
+          "case": "pinch-DATE",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 24,
+          "ids": "0,1",
+          "reordered": false,
+          "passed": true
+        },
+        {
+          "case": "preview-2\u00d71",
+          "class": "STRIP",
+          "passed": true
+        },
+        {
+          "case": "preview-3\u00d72",
+          "class": "CARD",
+          "passed": true
+        },
+        {
+          "case": "preview-4\u00d73",
+          "class": "LARGE",
+          "passed": true
+        },
+        {
+          "case": "preview-4\u00d74",
+          "class": "SQUARE",
+          "passed": true
+        },
+        {
+          "case": "pinch-TIME",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=SQUARE)",
+          "cancel": false,
+          "requestedSp": 180,
+          "ids": "0,1",
+          "reordered": false,
+          "passed": true
+        },
+        {
+          "case": "pinch-INFO",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 21.6,
+          "ids": "0,1",
+          "reordered": false,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "configuration": "reordered",
+      "cases": [
+        {
+          "case": "pinch-TIME",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 180,
+          "ids": "0,1",
+          "reordered": true,
+          "passed": true
+        },
+        {
+          "case": "pinch-TIME",
+          "ratio": 0.75,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 90,
+          "ids": "0,1",
+          "reordered": true,
+          "passed": true
+        },
+        {
+          "case": "pinch-TIME",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": true,
+          "requestedSp": 180,
+          "ids": "0,1",
+          "reordered": true,
+          "passed": true
+        },
+        {
+          "case": "pinch-DATE",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 24,
+          "ids": "0,1",
+          "reordered": true,
+          "passed": true
+        },
+        {
+          "case": "preview-2\u00d71",
+          "class": "STRIP",
+          "passed": true
+        },
+        {
+          "case": "preview-3\u00d72",
+          "class": "CARD",
+          "passed": true
+        },
+        {
+          "case": "preview-4\u00d73",
+          "class": "LARGE",
+          "passed": true
+        },
+        {
+          "case": "preview-4\u00d74",
+          "class": "SQUARE",
+          "passed": true
+        },
+        {
+          "case": "pinch-TIME",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=SQUARE)",
+          "cancel": false,
+          "requestedSp": 180,
+          "ids": "0,1",
+          "reordered": true,
+          "passed": true
+        },
+        {
+          "case": "pinch-INFO",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 21.6,
+          "ids": "0,1",
+          "reordered": true,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "configuration": "arbitrary",
+      "cases": [
+        {
+          "case": "pinch-TIME",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 180,
+          "ids": "7,9",
+          "reordered": true,
+          "passed": true
+        },
+        {
+          "case": "pinch-TIME",
+          "ratio": 0.75,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 90,
+          "ids": "7,9",
+          "reordered": true,
+          "passed": true
+        },
+        {
+          "case": "pinch-TIME",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": true,
+          "requestedSp": 180,
+          "ids": "7,9",
+          "reordered": true,
+          "passed": true
+        },
+        {
+          "case": "pinch-DATE",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 24,
+          "ids": "7,9",
+          "reordered": true,
+          "passed": true
+        },
+        {
+          "case": "preview-2\u00d71",
+          "class": "STRIP",
+          "passed": true
+        },
+        {
+          "case": "preview-3\u00d72",
+          "class": "CARD",
+          "passed": true
+        },
+        {
+          "case": "preview-4\u00d73",
+          "class": "LARGE",
+          "passed": true
+        },
+        {
+          "case": "preview-4\u00d74",
+          "class": "SQUARE",
+          "passed": true
+        },
+        {
+          "case": "pinch-TIME",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=SQUARE)",
+          "cancel": false,
+          "requestedSp": 180,
+          "ids": "7,9",
+          "reordered": true,
+          "passed": true
+        },
+        {
+          "case": "pinch-INFO",
+          "ratio": 1.5,
+          "scope": "EditScope(sizeClass=null)",
+          "cancel": false,
+          "requestedSp": 21.6,
+          "ids": "7,9",
+          "reordered": true,
+          "passed": true
+        }
+      ]
+    }
+  ]
+}

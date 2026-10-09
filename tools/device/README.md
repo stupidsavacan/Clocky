@@ -126,6 +126,14 @@ script. The broker independently compares original/restored settings, widget IDs
 geometry and display state, runs finish and checks no PENDING RESTORE before release.
 It cannot automatically restore arbitrary widget edits or certify pixel equality.
 
+Do not use `am instrument` targeting the installed Clocky package under the current
+preservation rules. Moto Phase3 testing observed Android automatically force-stop the
+target on instrumentation completion (`finished inst`), even without an explicit
+force-stop command. The historical runner is disabled; see
+[evidence and recovery](../../docs/measurements/phase3b2/MOTO_2026_10_09.md#instrumentation-lifecycle-limitation-and-landscape).
+Prefer ordinary debug Activity lifecycles for supported measurement work. Historical
+native-input assertions do not certify a safe ongoing instrumentation workflow.
+
 Keep the current installed APK when a safe baseline return is unavailable; never
 downgrade automatically. The handoff records the remaining SHA/source commit and
 widget/settings preservation result. Do not delete existing widgets, uninstall,
