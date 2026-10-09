@@ -12,8 +12,16 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.view.KeyEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.TextView
+import android.widget.FrameLayout
+import androidx.lifecycle.ViewModelProvider
+import com.stupidsavacan.clocky.widget.studio.StudioViewModel
+import com.stupidsavacan.clocky.studio.canvas.PreviewCells
+import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
+import com.stupidsavacan.clocky.widget.digital.PreviewHost
+import com.stupidsavacan.clocky.widget.digital.DigitalWidgetUpdater
 import com.android.deskclock.R
 import com.stupidsavacan.clocky.design.model.DigitalDesign
 import com.stupidsavacan.clocky.design.model.InfoSource
@@ -55,6 +63,12 @@ class Phase3DeviceInstrumentation : Instrumentation() {
             // `am instrument -e` supplies strings, whereas direct instrumentation callers may use ints.
             val id = arguments.getString("widgetId")?.toIntOrNull() ?: arguments.getInt("widgetId", -1)
             check(id >= 0) { "Existing widgetId required" }
+            if (arguments.getString("mode") == "restore") {
+                restoreSaved(id)
+                report.putString("clocky-summary", "PASS: original restored through Studio Save")
+                finish(Activity.RESULT_OK, report)
+                return
+            }
             studio = startActivitySync(Intent(targetContext, StudioActivity::class.java)
                 .setAction(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
                 .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
@@ -63,6 +77,13 @@ class Phase3DeviceInstrumentation : Instrumentation() {
             SystemClock.sleep(500)
             observeTouches()
             val original = onMain { studio.design }
+            if (arguments.getString("mode") == "extended") {
+                extended(id, original)
+                report.putString("clocky-results", results.toString())
+                report.putString("clocky-summary", "PASS: handle, drag transition, Save and UI restoration")
+                finish(Activity.RESULT_OK, report)
+                return
+            }
             pinch(TextTarget.TIME, 1.5f)
             pinch(TextTarget.TIME, 0.75f)
             pinch(TextTarget.TIME, 1.5f, cancel = true)
@@ -175,7 +196,7 @@ class Phase3DeviceInstrumentation : Instrumentation() {
         check(child.height * child.scaleY <= frame.height + 1f) { "Rendered child exceeds fitted frame height" }
     }
 
-    private fun pinch(target: TextTarget, ratio: Float, cancel: Boolean = false) {
+    private fun pinch(target: TextTarget, ratio: Float, cancel: Boolean = false, keepResult: Boolean = false) {
         val before = onMain { studio.design }
         val scope = onMain { studio.scope }
         val point = onMain {
@@ -226,10 +247,164 @@ class Phase3DeviceInstrumentation : Instrumentation() {
             onMain { studio.findViewById<View>(R.id.clocky_studio_undo).performClick() }
             waitForIdleSync()
             check(onMain { studio.design } == before)
+            if (keepResult) {
+                onMain { studio.findViewById<View>(R.id.clocky_studio_redo).performClick() }
+                waitForIdleSync()
+                check(onMain { studio.design } == expected)
+            }
         }
         results.put(JSONObject().put("case", "pinch-$target").put("ratio", ratio)
             .put("scope", scope.toString()).put("cancel", cancel).put("requestedSp", requested)
             .put("ids", "$firstId,$secondId").put("reordered", reordered).put("passed", true))
+    }
+
+    private fun chooseCells(label: String) {
+        onMain { studio.findViewById<View>(R.id.clocky_studio_resize_preview).performClick() }
+        waitForIdleSync()
+        val node = find(uiAutomation.rootInActiveWindow) { it.text?.toString()?.startsWith("$label ") == true }
+            ?: error("Cell $label absent")
+        check(node.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+        waitForIdleSync()
+        SystemClock.sleep(250)
+    }
+
+    private fun passed(name: String) { results.put(JSONObject().put("case", name).put("passed", true)) }
+
+    private fun extended(id: Int, original: DigitalDesign) {
+        chooseCells("4×3")
+        handle(cancel = true, original)
+        handle(cancel = false, original)
+        chooseCells("4×3")
+        dragTransition(original)
+        onMain { studio.finish() }
+        waitForIdleSync()
+        // Saving is separately guarded by exact reversibility of the current stored JSON.
+        val prefs = targetContext.getSharedPreferences(SharedPreferencesDesignStore.PREFS_NAME, 0)
+        val raw = prefs.getString(SharedPreferencesDesignStore.key(id), null) ?: error("Saved widget required")
+        val design = DigitalDesignCodec.decode(JSONObject(raw))
+        check(DesignEdits.prepare(design) == design) { "Studio preparation changes baseline; Save trial refused" }
+        check(DigitalDesignCodec.encode(design).toString() == raw) { "Baseline is not byte-restorable through Save" }
+        val backup = java.io.File(targetContext.filesDir, "phase3-moto-original-$id.json")
+        check(!backup.exists() || backup.readText() == raw) { "Unrestored earlier backup; refusing overwrite" }
+        backup.writeText(raw)
+        try {
+            studio = openStudio(id)
+            waitForIdleSync()
+            SystemClock.sleep(500)
+            pinch(TextTarget.TIME, 0.75f, keepResult = true)
+            val changed = onMain { studio.design }
+            val frame = FrameLayout(targetContext)
+            val preview = PreviewHost(frame, id)
+            val cls = onMain { preview.hostSizeClass() }
+            val spec = onMain { preview.render(changed, cls) }
+            val entry = DigitalWidgetUpdater.renderEntry(targetContext, changed, preview.previewEntry(cls), cls,
+                DigitalWidgetUpdater.environment(targetContext))
+            check(spec == entry.spec) { "Preview and production entry specs differ" }
+            passed("saved-design-preview-production-spec-parity")
+            onMain { studio.findViewById<View>(R.id.clocky_studio_save).performClick() }
+            waitForIdleSync()
+            check(SharedPreferencesDesignStore(targetContext).load(id).design == changed)
+            check(prefs.getString(SharedPreferencesDesignStore.key(id), null) != raw)
+            passed("pinch-save-exact-design")
+            val keyDown = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HOME)
+            val keyUp = KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HOME)
+            check(uiAutomation.injectInputEvent(keyDown, true))
+            check(uiAutomation.injectInputEvent(keyUp, true))
+            SystemClock.sleep(1000)
+            check(find(uiAutomation.rootInActiveWindow) {
+                it.viewIdResourceName == "com.stupidsavacan.clocky:id/clocky_widget_root"
+            } != null) { "Placed widget absent on launcher after Save" }
+            passed("placed-widget-visible-after-save")
+        } finally {
+            restoreSaved(id)
+        }
+        check(prefs.getString(SharedPreferencesDesignStore.key(id), null) == raw)
+        passed("save-restoration-byte-identical")
+    }
+
+    private fun openStudio(id: Int, draft: String? = null): StudioActivity {
+        val intent = Intent(targetContext, StudioActivity::class.java)
+            .setAction(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
+            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        draft?.let { intent.putExtra(StudioActivity.EXTRA_DRAFT_JSON, it) }
+        return startActivitySync(intent) as StudioActivity
+    }
+
+    private fun restoreSaved(id: Int) {
+        val backup = java.io.File(targetContext.filesDir, "phase3-moto-original-$id.json")
+        if (!backup.exists()) return
+        val raw = backup.readText()
+        studio = openStudio(id, raw)
+        waitForIdleSync()
+        check(onMain { DigitalDesignCodec.encode(studio.design).toString() } == raw)
+        onMain { studio.findViewById<View>(R.id.clocky_studio_save).performClick() }
+        waitForIdleSync()
+        check(targetContext.getSharedPreferences(SharedPreferencesDesignStore.PREFS_NAME, 0)
+            .getString(SharedPreferencesDesignStore.key(id), null) == raw)
+    }
+
+    private fun handle(cancel: Boolean, original: DigitalDesign) {
+        val vm = onMain { ViewModelProvider(studio)[StudioViewModel::class.java] }
+        val (x, y, scale) = onMain {
+            val bounds = Rect()
+            check(studio.findViewById<View>(R.id.clocky_studio_resize_preview).getGlobalVisibleRect(bounds))
+            Triple(bounds.centerX().toFloat(), bounds.centerY().toFloat(),
+                overlay(studio.window.decorView)!!.currentGeometry()!!.transform.pxPerDp)
+        }
+        val down = SystemClock.uptimeMillis()
+        send(down, MotionEvent.ACTION_DOWN, intArrayOf(7), floatArrayOf(x), y)
+        val endX = x - 95f * scale
+        val endY = y - 138f * scale
+        send(down, MotionEvent.ACTION_MOVE, intArrayOf(7), floatArrayOf(endX), endY)
+        onMain {
+            check(vm.previewCells == PreviewCells(3, 2)) { "Handle cells ${vm.previewCells}" }
+            check(studio.previewClass == SizeClass.CARD)
+            check(studio.design == original)
+            fit()
+        }
+        send(down, if (cancel) MotionEvent.ACTION_CANCEL else MotionEvent.ACTION_UP,
+            intArrayOf(7), floatArrayOf(endX), endY)
+        onMain {
+            check(vm.previewCells == if (cancel) PreviewCells(4, 3) else PreviewCells(3, 2))
+            check(studio.design == original)
+            fit()
+        }
+        passed(if (cancel) "pseudo-handle-cancel-restores" else "pseudo-handle-drag-class-transition")
+    }
+
+    private fun dragTransition(original: DigitalDesign) {
+        val (x, y) = onMain {
+            val bounds = Rect()
+            check(text(studio.findViewById(R.id.clocky_time_slot))!!.getGlobalVisibleRect(bounds))
+            bounds.centerX().toFloat() to bounds.centerY().toFloat()
+        }
+        val down = SystemClock.uptimeMillis()
+        send(down, MotionEvent.ACTION_DOWN, intArrayOf(7), floatArrayOf(x), y)
+        send(down, MotionEvent.ACTION_MOVE, intArrayOf(7), floatArrayOf(x + 30), y + 20)
+        check(onMain { studio.design } != original) { "First-pointer drag unchanged" }
+        send(down, MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),
+            intArrayOf(7, 9), floatArrayOf(x + 30, x + 110), y + 20)
+        send(down, MotionEvent.ACTION_MOVE, intArrayOf(9, 7), floatArrayOf(x + 130, x + 50), y + 20)
+        onMain {
+            check(DesignEdits.sizeOf(studio.design, TextTarget.TIME, studio.scope) ==
+                DesignEdits.sizeOf(original, TextTarget.TIME, studio.scope))
+            check(overlay(studio.window.decorView)!!.activeGuides.isEmpty())
+        }
+        val moved = onMain { studio.design }
+        check(moved != original)
+        send(down, MotionEvent.ACTION_MOVE, intArrayOf(9, 7), floatArrayOf(x + 170, x + 50), y + 20)
+        val expected = onMain { DesignEdits.setSize(moved, TextTarget.TIME,
+            DesignEdits.sizeOf(moved, TextTarget.TIME, studio.scope) * 1.5f, studio.scope) }
+        check(onMain { studio.design } == expected)
+        // Lift the owning pointer; the remaining pointer must not resume dragging.
+        send(down, MotionEvent.ACTION_POINTER_UP, intArrayOf(7, 9), floatArrayOf(x + 50, x + 170), y + 20)
+        send(down, MotionEvent.ACTION_MOVE, intArrayOf(9), floatArrayOf(x + 190), y + 20)
+        send(down, MotionEvent.ACTION_UP, intArrayOf(9), floatArrayOf(x + 190), y + 20)
+        check(onMain { studio.design } == expected)
+        onMain { studio.findViewById<View>(R.id.clocky_studio_undo).performClick() }
+        waitForIdleSync()
+        check(onMain { studio.design } == original) { "Drag-to-pinch was not one undo step" }
+        passed("drag-unsnapped-to-pinch-owner-up-one-undo")
     }
 
     private fun send(down: Long, action: Int, ids: IntArray, xs: FloatArray, screenY: Float) {
@@ -250,3 +425,4 @@ class Phase3DeviceInstrumentation : Instrumentation() {
         waitForIdleSync()
     }
 }
+
