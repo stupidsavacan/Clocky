@@ -84,6 +84,27 @@ class HostFontResolverTest {
         }
     }
 
+    @Test fun specCarriesTheHostCapabilityItWasResolvedAgainst() {
+        for (bundled in listOf(true, false)) {
+            assertEquals(bundled, DesignResolver.resolve(designWith(FontIds.SYSTEM_SANS), card, env(bundled = bundled)).supportsBundledFonts)
+        }
+    }
+
+    /** Issue #60: the picker's "(System)" label must agree with what the resolver renders, for every family. */
+    @Test fun showsAsSystemMatchesTheResolvedTimeFace() {
+        for (id in FontCatalog.allIds) for (weight in 100..900 step 100) for (sdk in listOf(23, 26, 28, 34)) for (bundled in listOf(true, false)) {
+            val face = DesignResolver.resolve(designWith(id, weight), card, env(sdk, bundled)).time.face
+            val expected = id != FontIds.SYSTEM_SANS && face.fontId == FontIds.SYSTEM_SANS
+            assertEquals("$id/$weight/$sdk/$bundled", expected, FontCatalog.showsAsSystem(id, weight, sdk, bundled))
+        }
+    }
+
+    @Test fun onAHostWithoutBundledFontsOnlyWeight400LeavesAnyChoiceThatDiffersFromSystem() {
+        val distinct = { weight: Int -> FontCatalog.allIds.filterNot { it == FontIds.SYSTEM_SANS || FontCatalog.showsAsSystem(it, weight, 34, false) } }
+        assertEquals(FontCatalog.legacyFamilyIds.toSet(), distinct(400).toSet())
+        for (weight in (100..900 step 100) - 400) assertTrue("$weight", distinct(weight).isEmpty())
+    }
+
     @Test fun hostFallbackUsesTheSystemSansWeightLikeTheOtherFallbacks() {
         val spec = DesignResolver.resolve(designWith("clocky-poppins", 600), card, env(34, bundled = false))
         assertEquals(ResolvedFace(FontIds.SYSTEM_SANS, 600), spec.time.face)

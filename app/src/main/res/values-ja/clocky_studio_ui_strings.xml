@@ -45,6 +45,9 @@
     <string name="clocky_studio_role_surface">面</string>
     <string name="clocky_studio_advanced">詳細設定</string>
     <string name="clocky_studio_font">書体</string>
+    <string name="clocky_studio_font_shows_system">%1$s（システム書体）</string>
+    <string name="clocky_studio_font_needs_400">%1$s は太さ 400 のみのため、太さ %2$d ではシステム書体で表示されます。</string>
+    <string name="clocky_studio_use_weight_400">太さを 400 にする</string>
     <string name="clocky_studio_weight">太さ</string>
     <string name="clocky_studio_weight_shows">太さ %1$d は %3$s では %2$d で表示されます。</string>
     <string name="clocky_studio_size">サイズ</string>

@@ -140,6 +140,8 @@ data class ResolvedDigitalSpec(
     val taps: TapActions = TapActions(),
     /** Every requested ≠ effective difference, for editor disclosure (principle 5). */
     val degradations: List<Degradation>,
+    /** The host capability this spec was resolved against, so the font picker shows the same effective faces. */
+    val supportsBundledFonts: Boolean = false,
 )
 
 data class TimeFormats(val format12Hour: String, val format24Hour: String)

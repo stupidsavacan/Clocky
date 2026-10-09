@@ -287,8 +287,11 @@ class StudioActivity : AppCompatActivity(), StudioHost, CanvasHost {
             // The Info panel's "sample" note depends on the resolved spec, which only exists after a render.
             val sample = resolved.info?.isSample == true
             if (vm.slot == Slot.INFO && sample != panels.showsSampleNote) rebuildPanel()
-            // The weight note defers to the host-fallback notice, which is only known after a render.
-            else if (hostFallbackFonts(resolved) != panels.builtHostFallback) rebuildPanel()
+            // The weight note defers to the host-fallback notice and the font chips label host fallback;
+            // both are only known after a render.
+            else if (hostFallbackFonts(resolved) != panels.builtHostFallback ||
+                resolved.supportsBundledFonts != panels.builtBundledFonts
+            ) rebuildPanel()
             (backdrop.background?.mutate() as? GradientDrawable)?.setColor(DesignPreview.backdropColor(resolved))
             renderChecks(resolved)
             if (::canvas.isInitialized) canvas.refresh()

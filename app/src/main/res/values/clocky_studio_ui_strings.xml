@@ -45,6 +45,9 @@
     <string name="clocky_studio_role_surface" tools:ignore="MissingTranslation">Surface</string>
     <string name="clocky_studio_advanced" tools:ignore="MissingTranslation">Advanced</string>
     <string name="clocky_studio_font" tools:ignore="MissingTranslation">Font</string>
+    <string name="clocky_studio_font_shows_system" tools:ignore="MissingTranslation">%1$s (System)</string>
+    <string name="clocky_studio_font_needs_400" tools:ignore="MissingTranslation">%1$s only has weight 400, so at weight %2$d the system font is shown.</string>
+    <string name="clocky_studio_use_weight_400" tools:ignore="MissingTranslation">Use weight 400</string>
     <string name="clocky_studio_weight" tools:ignore="MissingTranslation">Weight</string>
     <string name="clocky_studio_weight_shows" tools:ignore="MissingTranslation">Weight %1$d shows as %2$d in %3$s.</string>
     <string name="clocky_studio_size" tools:ignore="MissingTranslation">Size</string>
