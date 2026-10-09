@@ -1,0 +1,878 @@
+{
+  "sdk": 34,
+  "samples": [
+    {
+      "firstUpdate": true,
+      "generationMs": 309.789923,
+      "remoteViewsMs": 4.618846,
+      "sendMs": 2.271692,
+      "endToEndMs": 314.730385,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 3.708615,
+          "fitMs": 206.215154,
+          "composeMs": 8.952538,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.332693,
+          "fitMs": 61.019615,
+          "composeMs": 8.034154,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 207.440539,
+      "remoteViewsMs": 4.738154,
+      "sendMs": 3.40923,
+      "endToEndMs": 212.100077,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 0.964616,
+          "fitMs": 131.027,
+          "composeMs": 7.648308,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.079385,
+          "fitMs": 44.978077,
+          "composeMs": 7.64223,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 254.869769,
+      "remoteViewsMs": 5.186462,
+      "sendMs": 2.404,
+      "endToEndMs": 259.684846,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.197846,
+          "fitMs": 154.248539,
+          "composeMs": 8.807077,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.237,
+          "fitMs": 55.742769,
+          "composeMs": 8.595615,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 250.212692,
+      "remoteViewsMs": 5.817308,
+      "sendMs": 1.580693,
+      "endToEndMs": 254.005616,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.150769,
+          "fitMs": 155.032846,
+          "composeMs": 8.970539,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.260846,
+          "fitMs": 50.678847,
+          "composeMs": 8.923384,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 240.417,
+      "remoteViewsMs": 5.541231,
+      "sendMs": 1.567923,
+      "endToEndMs": 244.308,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.174539,
+          "fitMs": 146.293461,
+          "composeMs": 9.116308,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.154462,
+          "fitMs": 50.540692,
+          "composeMs": 8.418461,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 246.792307,
+      "remoteViewsMs": 6.101462,
+      "sendMs": 1.612923,
+      "endToEndMs": 250.487077,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.112616,
+          "fitMs": 152.251384,
+          "composeMs": 9.01177,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.142154,
+          "fitMs": 51.363384,
+          "composeMs": 8.392693,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 236.759384,
+      "remoteViewsMs": 6.464615,
+      "sendMs": 1.520231,
+      "endToEndMs": 240.752231,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.075077,
+          "fitMs": 146.426385,
+          "composeMs": 8.850154,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.136,
+          "fitMs": 46.184846,
+          "composeMs": 8.668077,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 243.446154,
+      "remoteViewsMs": 5.987077,
+      "sendMs": 1.571923,
+      "endToEndMs": 247.095923,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.096692,
+          "fitMs": 149.871923,
+          "composeMs": 8.911462,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.270692,
+          "fitMs": 50.291692,
+          "composeMs": 8.498231,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 246.256616,
+      "remoteViewsMs": 5.66623,
+      "sendMs": 1.839,
+      "endToEndMs": 250.487692,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.222154,
+          "fitMs": 154.238692,
+          "composeMs": 8.662461,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.420308,
+          "fitMs": 49.435077,
+          "composeMs": 8.484923,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 249.597846,
+      "remoteViewsMs": 5.364538,
+      "sendMs": 2.341231,
+      "endToEndMs": 254.409539,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.171308,
+          "fitMs": 156.378154,
+          "composeMs": 9.180923,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.159077,
+          "fitMs": 50.700385,
+          "composeMs": 8.473461,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 259.96,
+      "remoteViewsMs": 4.833846,
+      "sendMs": 1.620538,
+      "endToEndMs": 263.757154,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.224615,
+          "fitMs": 153.674692,
+          "composeMs": 8.991385,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.295,
+          "fitMs": 62.452,
+          "composeMs": 8.400923,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 248.638154,
+      "remoteViewsMs": 5.702154,
+      "sendMs": 1.828846,
+      "endToEndMs": 252.990077,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.147692,
+          "fitMs": 153.756385,
+          "composeMs": 8.900538,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.177231,
+          "fitMs": 51.738077,
+          "composeMs": 8.58923,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 236.808847,
+      "remoteViewsMs": 5.252308,
+      "sendMs": 1.594154,
+      "endToEndMs": 240.043769,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.093231,
+          "fitMs": 142.477846,
+          "composeMs": 8.856923,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.270846,
+          "fitMs": 51.525462,
+          "composeMs": 8.419153,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 264.868538,
+      "remoteViewsMs": 4.921154,
+      "sendMs": 12.972,
+      "endToEndMs": 279.387693,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.202154,
+          "fitMs": 153.654154,
+          "composeMs": 9.165,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.352923,
+          "fitMs": 68.113539,
+          "composeMs": 8.696923,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 249.926769,
+      "remoteViewsMs": 6.000539,
+      "sendMs": 1.560308,
+      "endToEndMs": 253.704385,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.120615,
+          "fitMs": 154.172692,
+          "composeMs": 8.999,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.143693,
+          "fitMs": 51.239384,
+          "composeMs": 8.982462,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 241.633154,
+      "remoteViewsMs": 5.950769,
+      "sendMs": 1.596384,
+      "endToEndMs": 245.563461,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.092923,
+          "fitMs": 143.78923,
+          "composeMs": 9.110077,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.278077,
+          "fitMs": 52.689538,
+          "composeMs": 8.434462,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 248.101846,
+      "remoteViewsMs": 5.165231,
+      "sendMs": 2.675923,
+      "endToEndMs": 253.363615,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 0.971769,
+          "fitMs": 155.666077,
+          "composeMs": 9.135461,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.255692,
+          "fitMs": 51.458385,
+          "composeMs": 8.460077,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 239.637308,
+      "remoteViewsMs": 5.479923,
+      "sendMs": 1.572,
+      "endToEndMs": 243.883385,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.282692,
+          "fitMs": 144.662462,
+          "composeMs": 8.809923,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.148616,
+          "fitMs": 52.151615,
+          "composeMs": 8.397846,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 227.064077,
+      "remoteViewsMs": 5.072077,
+      "sendMs": 1.527077,
+      "endToEndMs": 231.400923,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.082846,
+          "fitMs": 135.734154,
+          "composeMs": 8.879692,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.083615,
+          "fitMs": 47.608308,
+          "composeMs": 8.437231,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 223.421847,
+      "remoteViewsMs": 5.401923,
+      "sendMs": 1.759384,
+      "endToEndMs": 227.580692,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.130846,
+          "fitMs": 132.775,
+          "composeMs": 8.897923,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.315,
+          "fitMs": 47.884615,
+          "composeMs": 8.319385,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 232.869846,
+      "remoteViewsMs": 5.11177,
+      "sendMs": 1.528616,
+      "endToEndMs": 237.212308,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.219769,
+          "fitMs": 132.129154,
+          "composeMs": 8.723769,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.144308,
+          "fitMs": 56.762154,
+          "composeMs": 8.518769,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 221.633539,
+      "remoteViewsMs": 5.387384,
+      "sendMs": 1.563923,
+      "endToEndMs": 225.092,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.103769,
+          "fitMs": 130.978462,
+          "composeMs": 8.85323,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.154846,
+          "fitMs": 47.928231,
+          "composeMs": 8.385231,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 237.39023,
+      "remoteViewsMs": 4.956923,
+      "sendMs": 1.507154,
+      "endToEndMs": 240.680077,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.066769,
+          "fitMs": 144.731154,
+          "composeMs": 8.969769,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.507307,
+          "fitMs": 52.20377,
+          "composeMs": 8.447384,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 236.443077,
+      "remoteViewsMs": 5.205539,
+      "sendMs": 2.004923,
+      "endToEndMs": 241.320923,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.227385,
+          "fitMs": 139.792692,
+          "composeMs": 8.994154,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.076,
+          "fitMs": 49.904616,
+          "composeMs": 8.697846,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 238.385153,
+      "remoteViewsMs": 5.736616,
+      "sendMs": 1.928231,
+      "endToEndMs": 243.391616,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.142538,
+          "fitMs": 141.247615,
+          "composeMs": 10.832616,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.205538,
+          "fitMs": 50.170231,
+          "composeMs": 8.495,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 238.508923,
+      "remoteViewsMs": 4.759692,
+      "sendMs": 1.492308,
+      "endToEndMs": 242.07977,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.304077,
+          "fitMs": 143.178769,
+          "composeMs": 9.627693,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.150692,
+          "fitMs": 52.889616,
+          "composeMs": 8.689538,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 232.930077,
+      "remoteViewsMs": 5.42023,
+      "sendMs": 1.587077,
+      "endToEndMs": 236.854077,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.153231,
+          "fitMs": 136.863385,
+          "composeMs": 9.359077,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.135077,
+          "fitMs": 53.008692,
+          "composeMs": 8.378769,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 231.356307,
+      "remoteViewsMs": 5.339153,
+      "sendMs": 1.517308,
+      "endToEndMs": 234.841847,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.099385,
+          "fitMs": 137.246846,
+          "composeMs": 8.984231,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.098461,
+          "fitMs": 51.959385,
+          "composeMs": 8.336692,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 233.151769,
+      "remoteViewsMs": 4.807616,
+      "sendMs": 1.591462,
+      "endToEndMs": 236.661539,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.112539,
+          "fitMs": 139.052923,
+          "composeMs": 9.497,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.134231,
+          "fitMs": 52.013154,
+          "composeMs": 8.457,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    },
+    {
+      "firstUpdate": false,
+      "generationMs": 220.311462,
+      "remoteViewsMs": 5.142154,
+      "sendMs": 1.600231,
+      "endToEndMs": 223.991693,
+      "bitmapBytes": 3466976,
+      "parcelBytes": 5212,
+      "entries": [
+        {
+          "key": "363.42856x398.85715",
+          "class": "LARGE",
+          "resolveMs": 1.204308,
+          "fitMs": 131.516923,
+          "composeMs": 9.414692,
+          "bitmapBytes": 1775712,
+          "effectiveFont": "system-sans"
+        },
+        {
+          "key": "667.4286x206.85715",
+          "class": "LARGE",
+          "resolveMs": 1.091385,
+          "fitMs": 46.076231,
+          "composeMs": 8.271461,
+          "bitmapBytes": 1691264,
+          "effectiveFont": "system-sans"
+        }
+      ]
+    }
+  ],
+  "previewClass": "LARGE",
+  "previewEntry": "363.42856x398.85715",
+  "previewSpecMatchesProduction": true
+}

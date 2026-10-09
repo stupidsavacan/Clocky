@@ -35,7 +35,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicReference
 
-/** Local moto acceptance runner. Debug-only; no Save, widget writes, or alternative renderer. */
+/** Historical debug-only acceptance runner, intentionally unregistered after target force-stop was observed.
+ * Do not reactivate under the current device-preservation rules. No alternative renderer is used.
+ */
 class Phase3DeviceInstrumentation : Instrumentation() {
     private lateinit var arguments: Bundle
     private val results = JSONArray()
@@ -151,6 +153,17 @@ class Phase3DeviceInstrumentation : Instrumentation() {
         return null
     }
 
+    private fun screenRect(view: View): Rect {
+        val bounds = Rect()
+        check(view.getGlobalVisibleRect(bounds)) { "View is not visible" }
+        // GlobalVisibleRect is relative to the root view, not the physical display.
+        // Landscape's cutout can inset the entire Activity window on moto.
+        val origin = IntArray(2)
+        view.rootView.getLocationOnScreen(origin)
+        bounds.offset(origin[0], origin[1])
+        return bounds
+    }
+
     private fun overlay(view: View): CanvasOverlayView? {
         if (view is CanvasOverlayView) return view
         if (view is ViewGroup) for (i in 0 until view.childCount) overlay(view.getChildAt(i))?.let { return it }
@@ -207,8 +220,7 @@ class Phase3DeviceInstrumentation : Instrumentation() {
                 TextTarget.DATE -> R.id.clocky_date_slot
                 TextTarget.INFO -> R.id.clocky_info_slot
             })
-            val bounds = Rect()
-            check(text(slot)?.getGlobalVisibleRect(bounds) == true) { "$target absent from preview" }
+            val bounds = screenRect(checkNotNull(text(slot)) { "$target absent from preview" })
             trace.put(JSONObject().put("target", target.name).put("textBounds", bounds.toString()))
             bounds.centerX().toFloat() to bounds.centerY().toFloat()
         }
@@ -361,8 +373,7 @@ class Phase3DeviceInstrumentation : Instrumentation() {
     private fun handle(cancel: Boolean, original: DigitalDesign) {
         val vm = onMain { ViewModelProvider(studio)[StudioViewModel::class.java] }
         val (x, y, scale) = onMain {
-            val bounds = Rect()
-            check(studio.findViewById<View>(R.id.clocky_studio_resize_preview).getGlobalVisibleRect(bounds))
+            val bounds = screenRect(studio.findViewById(R.id.clocky_studio_resize_preview))
             Triple(bounds.centerX().toFloat(), bounds.centerY().toFloat(),
                 overlay(studio.window.decorView)!!.currentGeometry()!!.transform.pxPerDp)
         }
@@ -390,8 +401,7 @@ class Phase3DeviceInstrumentation : Instrumentation() {
 
     private fun dragTransition(original: DigitalDesign) {
         val (x, y) = onMain {
-            val bounds = Rect()
-            check(text(studio.findViewById(R.id.clocky_time_slot))!!.getGlobalVisibleRect(bounds))
+            val bounds = screenRect(checkNotNull(text(studio.findViewById(R.id.clocky_time_slot))))
             bounds.centerX().toFloat() to bounds.centerY().toFloat()
         }
         val down = SystemClock.uptimeMillis()

@@ -3,6 +3,6 @@
         <activity android:name="com.stupidsavacan.clocky.widget.digital.ResponsiveAuditActivity"
             android:exported="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" />
     </application>
-    <instrumentation android:name="com.stupidsavacan.clocky.debug.Phase3DeviceInstrumentation"
-        android:targetPackage="com.stupidsavacan.clocky" android:functionalTest="true" />
+    <!-- Historical Phase3DeviceInstrumentation is intentionally unregistered: Android force-stops
+         the target on instrumentation completion, conflicting with preservation-only moto work. -->
 </manifest>
