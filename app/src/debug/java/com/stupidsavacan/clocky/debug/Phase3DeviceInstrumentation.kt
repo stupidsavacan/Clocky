@@ -12,7 +12,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.view.KeyEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.TextView
 import android.widget.FrameLayout
@@ -316,10 +315,8 @@ class Phase3DeviceInstrumentation : Instrumentation() {
             check(SharedPreferencesDesignStore(targetContext).load(id).design == changed)
             check(prefs.getString(SharedPreferencesDesignStore.key(id), null) != raw)
             passed("pinch-save-exact-design")
-            val keyDown = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HOME)
-            val keyUp = KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HOME)
-            check(uiAutomation.injectInputEvent(keyDown, true))
-            check(uiAutomation.injectInputEvent(keyUp, true))
+            onMain { targetContext.startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
             SystemClock.sleep(1000)
             check(find(uiAutomation.rootInActiveWindow) {
                 it.viewIdResourceName == "com.stupidsavacan.clocky:id/clocky_widget_root"
