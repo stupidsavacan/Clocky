@@ -262,15 +262,18 @@ class Phase3DeviceInstrumentation : Instrumentation() {
         onMain { studio.findViewById<View>(R.id.clocky_studio_resize_preview).performClick() }
         waitForIdleSync()
         val deadline = SystemClock.uptimeMillis() + 5000
-        var clicked = false
-        while (!clicked && SystemClock.uptimeMillis() < deadline) {
+        var bounds: Rect? = null
+        while (bounds == null && SystemClock.uptimeMillis() < deadline) {
             val node = find(uiAutomation.rootInActiveWindow) {
                 it.viewIdResourceName == "android:id/text1" && it.text?.toString()?.startsWith("$label ") == true
             }
-            clicked = node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
-            if (!clicked) SystemClock.sleep(100)
+            node?.let { bounds = Rect().also(it::getBoundsInScreen).takeUnless(Rect::isEmpty) }
+            if (bounds == null) SystemClock.sleep(100)
         }
-        check(clicked) { "Cell $label could not be clicked after dialog became visible" }
+        val point = checkNotNull(bounds) { "Cell $label absent from visible dialog" }
+        val down = SystemClock.uptimeMillis()
+        send(down, MotionEvent.ACTION_DOWN, intArrayOf(7), floatArrayOf(point.centerX().toFloat()), point.centerY().toFloat())
+        send(down, MotionEvent.ACTION_UP, intArrayOf(7), floatArrayOf(point.centerX().toFloat()), point.centerY().toFloat())
         waitForIdleSync()
         SystemClock.sleep(250)
     }
