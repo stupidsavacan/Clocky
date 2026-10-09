@@ -71,12 +71,13 @@ class PreviewHost(
 ) {
     private val context: Context = frame.context
     private val handler = Handler(Looper.getMainLooper())
-    private var pending: Pair<DigitalDesign, SizeClass>? = null
+    private data class Pending(val design: DigitalDesign, val sizeClass: SizeClass, val size: SizeContext?)
+    private var pending: Pending? = null
 
     /** The entry size (dp) of the latest render: what the resolver clamps offsets against. */
     var lastEntrySize: SizeF? = null
         private set
-    private val renderPending = Runnable { pending?.let { (d, c) -> render(d, c) } }
+    private val renderPending = Runnable { pending?.let { render(it.design, it.sizeClass, it.size) } }
 
     /** Size class the placed widget currently has, or Card when the host has not reported one. */
     fun hostSizeClass(): SizeClass {
@@ -85,15 +86,18 @@ class PreviewHost(
     }
 
     /** Coalesces rapid edits (e.g. slider drags) into one render per frame. */
-    fun schedule(design: DigitalDesign, sizeClass: SizeClass) {
-        pending = design to sizeClass
+    fun schedule(design: DigitalDesign, sizeClass: SizeClass, size: SizeContext? = null) {
+        pending = Pending(design, sizeClass, size)
         handler.removeCallbacks(renderPending)
         handler.post(renderPending)
     }
 
-    fun render(design: DigitalDesign, sizeClass: SizeClass): ResolvedDigitalSpec {
-        val size = previewSize(sizeClass)
-        val entry = previewEntry(sizeClass, size)
+    fun render(design: DigitalDesign, sizeClass: SizeClass, simulatedSize: SizeContext? = null): ResolvedDigitalSpec {
+        val size = simulatedSize ?: previewSize(sizeClass)
+        val landscape = context.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        val entry = if (simulatedSize == null) previewEntry(sizeClass, size) else if (landscape)
+            SizeF(size.maxWidthDp.toFloat(), size.minHeightDp.toFloat()) else
+            SizeF(size.minWidthDp.toFloat(), size.maxHeightDp.toFloat())
         lastEntrySize = entry
         val density = context.resources.displayMetrics.density
         val widthPx = (entry.width * density).toInt()

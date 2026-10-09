@@ -94,10 +94,10 @@ class CanvasStudioTest {
 
     private class AppGeo(val geometry: AppliedGeometry?, val overlay: CanvasOverlayView)
 
-    private class Finger(val x: Float, val y: Float)
+    private class Finger(val x: Float, val y: Float, val id: Int = -1)
 
     private fun event(action: Int, time: Long, vararg fingers: Finger, actionIndex: Int = 0): MotionEvent {
-        val props = Array(fingers.size) { MotionEvent.PointerProperties().apply { id = it; toolType = MotionEvent.TOOL_TYPE_FINGER } }
+        val props = Array(fingers.size) { MotionEvent.PointerProperties().apply { id = fingers[it].id.takeIf { id -> id >= 0 } ?: it; toolType = MotionEvent.TOOL_TYPE_FINGER } }
         val coords = Array(fingers.size) { MotionEvent.PointerCoords().apply { x = fingers[it].x; y = fingers[it].y } }
         val masked = if (action == MotionEvent.ACTION_POINTER_DOWN || action == MotionEvent.ACTION_POINTER_UP) {
             action or (actionIndex shl MotionEvent.ACTION_POINTER_INDEX_SHIFT)
@@ -325,7 +325,7 @@ class CanvasStudioTest {
         if (secondFingerFirst) {
             overlay.send(MotionEvent.ACTION_POINTER_DOWN, Finger(from.first, from.second), Finger(from.first + 200f, from.second + 200f), actionIndex = 1)
         }
-        val pointers = if (secondFingerFirst) arrayOf(Finger(from.first + dxDp * s, from.second + 60f * s), Finger(from.first + 200f, from.second + 200f))
+        val pointers = if (secondFingerFirst) arrayOf(Finger(from.first + dxDp * s, from.second + 60f * s), Finger(from.first + dxDp * s + 200f, from.second + 60f * s + 200f))
             else arrayOf(Finger(from.first + dxDp * s, from.second + 60f * s))
         overlay.send(MotionEvent.ACTION_MOVE, *pointers)
         val end = a.timeOffset()
@@ -365,7 +365,7 @@ class CanvasStudioTest {
             overlay.send(MotionEvent.ACTION_POINTER_DOWN, Finger(from.first - 50f * s, from.second + 60f * s),
                 Finger(from.first + 300f, from.second + 300f), actionIndex = 1)
             val dxDp = geo.widthDp / 2f - t.box.centerX + 2f
-            val pointers = arrayOf(Finger(from.first + dxDp * s, from.second + 60f * s), Finger(from.first + 300f, from.second + 300f))
+            val pointers = arrayOf(Finger(from.first + dxDp * s, from.second + 60f * s), Finger(from.first + dxDp * s + 50f * s + 300f, from.second + 300f))
             overlay.send(MotionEvent.ACTION_MOVE, *pointers)
             assertEquals(dxDp, a.timeOffset().first - start.first, 0.01f)
         }
@@ -444,6 +444,240 @@ class CanvasStudioTest {
             idle()
             val up = a.getString(R.string.clocky_studio_nudge_up, a.getString(R.string.clocky_element_time))
             assertFalse(a.nudge(up).isEnabled)
+        }
+    }
+
+    private fun pinch(a: StudioActivity, target: TextTarget = TextTarget.TIME, cancel: Boolean = false): Float {
+        val (geo, overlay) = a.layoutPreview().let { it.geometry!! to it.overlay }
+        val (x, y) = geo.centerPx(target)
+        overlay.send(MotionEvent.ACTION_DOWN, Finger(x, y, 7))
+        overlay.send(MotionEvent.ACTION_POINTER_DOWN, Finger(x, y, 7), Finger(x + 100f, y, 19), actionIndex = 1)
+        // Reorder indices: tracking must use stable IDs, not pointer indices.
+        overlay.send(MotionEvent.ACTION_MOVE, Finger(x + 125f, y, 19), Finger(x, y, 7))
+        overlay.send(MotionEvent.ACTION_MOVE, Finger(x + 150f, y, 19), Finger(x, y, 7))
+        overlay.send(if (cancel) MotionEvent.ACTION_CANCEL else MotionEvent.ACTION_POINTER_UP,
+            Finger(x + 150f, y, 19), Finger(x, y, 7), actionIndex = 0)
+        overlay.send(MotionEvent.ACTION_UP, Finger(x, y, 7))
+        idle()
+        return ((x + 150f) - x) / ((x + 100f) - x)
+    }
+
+    @Test fun pinchTracksIdsAndIsOneUndoStepWithNumericEquality() {
+        open(widget()).use { c ->
+            val a = c.get(); val before = a.design
+            pinch(a)
+            val expected = DesignEdits.setSize(before, TextTarget.TIME,
+                DesignEdits.sizeOf(before, TextTarget.TIME, EditScope.ALL) * 1.5f, EditScope.ALL)
+            assertEquals(expected, a.design)
+            assertEquals(1, a.session().historySize)
+            a.undo(); assertEquals(before, a.design)
+            assertTrue(a.session().redo()); assertEquals(expected, a.design)
+        }
+    }
+
+    @Test @Config(sdk = [23, 30]) fun pinchWorksBelowApi31WhenDraggingIsDisabled() {
+        open(widget()).use { c ->
+            val a = c.get(); val before = a.design.time.style.sizeSp
+            pinch(a)
+            assertEquals(before * 1.5f, a.design.time.style.sizeSp, 0.001f)
+            assertEquals(0f, a.design.time.style.xDp, 0f)
+        }
+    }
+
+    @Test fun datePinchUsesTheSelectedClassPatchAndLeavesBaseUntouched() {
+        open(widget()).use { c ->
+            val a = c.get()
+            a.findViewById<MaterialSwitch>(R.id.clocky_studio_scope).isChecked = true
+            val before = a.design
+            pinch(a, TextTarget.DATE)
+            assertEquals(TextTarget.DATE, a.selected)
+            assertEquals(before.date, a.design.date)
+            assertEquals(DesignEdits.setSize(before, TextTarget.DATE,
+                DesignEdits.sizeOf(before, TextTarget.DATE, a.scope) * 1.5f, a.scope), a.design)
+        }
+    }
+
+    @Test fun infoPinchUsesItsOwnRequestedSize() {
+        val id = widget()
+        val original = DigitalDesign().let { it.copy(info = it.info.copy(source = com.stupidsavacan.clocky.design.model.InfoSource.SECOND_TIMEZONE)) }
+        store.save(WidgetInstance(id, original))
+        open(id).use { c ->
+            val a = c.get(); val before = a.design
+            val ratio = pinch(a, TextTarget.INFO)
+            assertEquals(TextTarget.INFO, a.selected)
+            assertEquals(DesignEdits.setSize(before, TextTarget.INFO,
+                DesignEdits.sizeOf(before, TextTarget.INFO, EditScope.ALL) * ratio, EditScope.ALL), a.design)
+        }
+    }
+
+    @Test fun pinchCancelRestoresEarlierEditsAndDoesNotCreateRedo() {
+        open(widget()).use { c ->
+            val a = c.get()
+            a.edit("prior", null, true) { DesignEdits.setSize(it, TextTarget.TIME, 80f, EditScope.ALL) }
+            idle(); val before = a.design
+            pinch(a, cancel = true)
+            assertEquals(before, a.design)
+            assertEquals(1, a.session().historySize)
+            assertFalse(a.session().canRedo)
+        }
+    }
+
+    @Test fun dragThenPinchIsOneTransactionAndFreezesOffsetWhilePinching() {
+        open(widget()).use { c ->
+            val a = c.get(); val before = a.design
+            val (geo, overlay) = a.layoutPreview().let { it.geometry!! to it.overlay }
+            val (x, y) = geo.centerPx(TextTarget.TIME)
+            overlay.send(MotionEvent.ACTION_DOWN, Finger(x, y, 7))
+            overlay.send(MotionEvent.ACTION_MOVE, Finger(x + 40f, y + 20f, 7))
+            val offset = a.timeOffset()
+            overlay.send(MotionEvent.ACTION_POINTER_DOWN, Finger(x + 40f, y + 20f, 7), Finger(x + 140f, y + 20f, 19), actionIndex = 1)
+            overlay.send(MotionEvent.ACTION_MOVE, Finger(x + 60f, y + 30f, 7), Finger(x + 260f, y + 30f, 19))
+            assertEquals(offset, a.timeOffset())
+            assertTrue(overlay.activeGuides.isEmpty())
+            overlay.send(MotionEvent.ACTION_POINTER_UP, Finger(x + 60f, y + 30f, 7), Finger(x + 260f, y + 30f, 19), actionIndex = 0)
+            // Remaining finger must not start another drag.
+            overlay.send(MotionEvent.ACTION_MOVE, Finger(x + 300f, y, 19))
+            overlay.send(MotionEvent.ACTION_UP, Finger(x + 300f, y, 19))
+            assertEquals(1, a.session().historySize)
+            a.undo(); assertEquals(before, a.design)
+        }
+    }
+
+    @Test fun aThirdPointerDoesNotReplaceThePinchPairAndMissingIdsCancel() {
+        open(widget()).use { c ->
+            val a = c.get(); val before = a.design
+            val (geo, overlay) = a.layoutPreview().let { it.geometry!! to it.overlay }
+            val (x, y) = geo.centerPx(TextTarget.TIME)
+            overlay.send(MotionEvent.ACTION_DOWN, Finger(x, y, 7))
+            overlay.send(MotionEvent.ACTION_POINTER_DOWN, Finger(x, y, 7), Finger(x + 100f, y, 19), actionIndex = 1)
+            overlay.send(MotionEvent.ACTION_POINTER_DOWN, Finger(x, y, 7), Finger(x + 100f, y, 19), Finger(x + 900f, y, 23), actionIndex = 2)
+            overlay.send(MotionEvent.ACTION_MOVE, Finger(x, y, 7), Finger(x + 150f, y, 19), Finger(x + 2000f, y, 23))
+            assertEquals(before.time.style.sizeSp * 1.5f, a.design.time.style.sizeSp, 0.001f)
+            overlay.send(MotionEvent.ACTION_POINTER_UP, Finger(x, y, 7), Finger(x + 150f, y, 19), Finger(x + 2000f, y, 23), actionIndex = 2)
+            overlay.send(MotionEvent.ACTION_MOVE, Finger(x, y, 7)) // malformed/lost pointer cancels
+            assertEquals(before, a.design)
+            assertFalse(a.canUndo())
+        }
+    }
+
+    @Test fun liftingSecondFingerBeforePinchKeepsSnappingOffAndDragAlive() {
+        open(widget()).use { c ->
+            val a = c.get()
+            val (geo, overlay) = a.layoutPreview().let { it.geometry!! to it.overlay }
+            val (x, y) = geo.centerPx(TextTarget.TIME)
+            overlay.send(MotionEvent.ACTION_DOWN, Finger(x, y, 7))
+            overlay.send(MotionEvent.ACTION_POINTER_DOWN, Finger(x, y, 7), Finger(x + 100f, y, 19), actionIndex = 1)
+            overlay.send(MotionEvent.ACTION_POINTER_UP, Finger(x, y, 7), Finger(x + 100f, y, 19), actionIndex = 1)
+            overlay.send(MotionEvent.ACTION_MOVE, Finger(x + 40f, y + 20f, 7))
+            assertTrue(overlay.activeGuides.isEmpty())
+            assertEquals(40f / geo.transform.pxPerDp, a.timeOffset().first, 0.001f)
+            overlay.send(MotionEvent.ACTION_UP, Finger(x + 40f, y + 20f, 7))
+            assertEquals(1, a.session().historySize)
+        }
+    }
+
+    @Test fun twoPinchesAreTwoUndoStepsAndShrinkingClampsThroughDesignEdits() {
+        open(widget()).use { c ->
+            val a = c.get(); val before = a.design
+            pinch(a); pinch(a)
+            assertEquals(2, a.session().historySize)
+            a.undo(); a.undo(); assertEquals(before, a.design)
+            val (geo, overlay) = a.layoutPreview().let { it.geometry!! to it.overlay }
+            val (x, y) = geo.centerPx(TextTarget.TIME)
+            overlay.send(MotionEvent.ACTION_DOWN, Finger(x, y, 7))
+            overlay.send(MotionEvent.ACTION_POINTER_DOWN, Finger(x, y, 7), Finger(x + 100f, y, 19), actionIndex = 1)
+            overlay.send(MotionEvent.ACTION_MOVE, Finger(x, y, 7), Finger(x, y, 19))
+            overlay.send(MotionEvent.ACTION_UP, Finger(x, y, 7))
+            assertEquals(DesignEdits.setSize(before, TextTarget.TIME, 0f, EditScope.ALL), a.design)
+        }
+    }
+
+    private fun chooseCells(a: StudioActivity, cells: com.stupidsavacan.clocky.studio.canvas.PreviewCells) {
+        a.findViewById<Button>(R.id.clocky_studio_resize_preview).performClick()
+        val dialog = org.robolectric.shadows.ShadowDialog.getLatestDialog() as androidx.appcompat.app.AlertDialog
+        val index = com.stupidsavacan.clocky.studio.canvas.PreviewCells.ALL.indexOf(cells)
+        dialog.listView.performItemClick(dialog.listView.getChildAt(index), index, index.toLong())
+        idle()
+    }
+
+    @Test fun accessiblePseudoResizeChangesClassAndScopeWithoutSavingOrUndo() {
+        val id = widget(); val options = AppWidgetManager.getInstance(app).getAppWidgetOptions(id)
+        val stored = store.load(id).design
+        open(id).use { c ->
+            val a = c.get(); val before = a.design
+            a.findViewById<MaterialSwitch>(R.id.clocky_studio_scope).isChecked = true
+            for (cells in listOf(4 to 1, 4 to 2, 4 to 3, 4 to 4)) {
+                val grid = com.stupidsavacan.clocky.studio.canvas.PreviewCells(cells.first, cells.second)
+                chooseCells(a, grid)
+                assertEquals(grid.sizeClass, a.previewClass)
+                assertEquals(EditScope(grid.sizeClass), a.scope)
+                assertEquals(before, a.design)
+                assertFalse(a.canUndo())
+                assertTrue(a.findViewById<MaterialSwitch>(R.id.clocky_studio_scope).text.contains(a.getString(com.stupidsavacan.clocky.widget.digital.SizeClassLabels.label(grid.sizeClass))))
+            }
+            pinch(a)
+            assertEquals(before.time, a.design.time)
+            assertFalse(a.design.layout.patchFor(SizeClass.SQUARE).isEmpty)
+            assertEquals(stored, store.load(id).design)
+            val afterOptions = AppWidgetManager.getInstance(app).getAppWidgetOptions(id)
+            assertEquals(options.keySet(), afterOptions.keySet())
+            options.keySet().forEach { assertEquals(options.get(it), afterOptions.get(it)) }
+        }
+    }
+
+    @Test fun pseudoResizeSaveOnlyLeavesWidgetDesignUnchangedAndClassButtonsExitSimulation() {
+        val id = widget()
+        open(id).use { c ->
+            val a = c.get(); val before = a.design
+            chooseCells(a, com.stupidsavacan.clocky.studio.canvas.PreviewCells(5, 4))
+            val vm = androidx.lifecycle.ViewModelProvider(a)[StudioViewModel::class.java]
+            assertEquals(com.stupidsavacan.clocky.studio.canvas.PreviewCells(5, 4), vm.previewCells)
+            a.findViewById<View>(R.id.clocky_preview_strip).performClick()
+            idle(); assertNull(vm.previewCells)
+            chooseCells(a, com.stupidsavacan.clocky.studio.canvas.PreviewCells(4, 4))
+            a.findViewById<Button>(R.id.clocky_studio_save).performClick()
+            assertEquals(before, store.load(id).design)
+        }
+    }
+
+    @Test fun recreationKeepsPreviewCellsAndClassWithoutPersistingSimulation() {
+        open(widget()).use { c ->
+            chooseCells(c.get(), com.stupidsavacan.clocky.studio.canvas.PreviewCells(5, 3))
+            c.recreate(); idle()
+            val a = c.get()
+            assertEquals(SizeClass.LARGE, a.previewClass)
+            assertEquals(com.stupidsavacan.clocky.studio.canvas.PreviewCells(5, 3),
+                androidx.lifecycle.ViewModelProvider(a)[StudioViewModel::class.java].previewCells)
+            assertFalse(a.canUndo())
+        }
+    }
+
+    @Test fun pseudoHandleDragAndCancelRestoreThePriorSimulation() {
+        open(widget()).use { c ->
+            val a = c.get(); chooseCells(a, com.stupidsavacan.clocky.studio.canvas.PreviewCells(4, 2))
+            a.layoutPreview()
+            val handle = a.findViewById<Button>(R.id.clocky_studio_resize_preview)
+            handle.dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, 0, Finger(20f, 20f)))
+            handle.dispatchTouchEvent(event(MotionEvent.ACTION_MOVE, 10, Finger(20f, 700f)))
+            assertEquals(SizeClass.SQUARE, a.previewClass)
+            handle.dispatchTouchEvent(event(MotionEvent.ACTION_CANCEL, 20, Finger(20f, 700f)))
+            assertEquals(SizeClass.CARD, a.previewClass)
+            assertFalse(a.canUndo())
+        }
+    }
+
+    @Test @Config(qualifiers = "ar-ldrtl")
+    fun pseudoHandleExpandsOutwardFromTheEndEdgeInRtl() {
+        open(widget()).use { c ->
+            val a = c.get(); chooseCells(a, com.stupidsavacan.clocky.studio.canvas.PreviewCells(4, 2))
+            a.layoutPreview()
+            val handle = a.findViewById<Button>(R.id.clocky_studio_resize_preview)
+            handle.dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, 0, Finger(20f, 20f, 7)))
+            handle.dispatchTouchEvent(event(MotionEvent.ACTION_MOVE, 10, Finger(-500f, 20f, 7)))
+            handle.dispatchTouchEvent(event(MotionEvent.ACTION_UP, 20, Finger(-500f, 20f, 7)))
+            assertEquals(com.stupidsavacan.clocky.studio.canvas.PreviewCells(5, 2),
+                androidx.lifecycle.ViewModelProvider(a)[StudioViewModel::class.java].previewCells)
+            assertFalse(a.canUndo())
         }
     }
 

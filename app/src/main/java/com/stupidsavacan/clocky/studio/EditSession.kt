@@ -34,6 +34,23 @@ class EditSession(
 
     /** The coalescing key of the gesture in progress, until [endGesture] or a different edit. */
     private var openKey: String? = null
+    private data class Checkpoint(val design: DigitalDesign, val undo: List<Entry>, val redo: List<Entry>)
+    private var checkpoint: Checkpoint? = null
+
+    /** Canvas cancellation restores the whole transaction, including pre-existing redo history. */
+    fun beginGesture() {
+        endGesture()
+        checkpoint = Checkpoint(design, undoStack.toList(), redoStack.toList())
+    }
+
+    fun cancelGesture() {
+        checkpoint?.let {
+            design = it.design
+            undoStack.clear(); undoStack.addAll(it.undo)
+            redoStack.clear(); redoStack.addAll(it.redo)
+        }
+        endGesture()
+    }
 
     val canUndo: Boolean get() = undoStack.isNotEmpty()
     val canRedo: Boolean get() = redoStack.isNotEmpty()
@@ -72,9 +89,11 @@ class EditSession(
     /** Ends the current continuous gesture so the next edit with the same key is a new step. */
     fun endGesture() {
         openKey = null
+        checkpoint = null
     }
 
     fun undo(): Boolean {
+        endGesture()
         val entry = undoStack.removeLastOrNull() ?: return false
         redoStack.addLast(entry)
         design = entry.before
@@ -83,6 +102,7 @@ class EditSession(
     }
 
     fun redo(): Boolean {
+        endGesture()
         val entry = redoStack.removeLastOrNull() ?: return false
         undoStack.addLast(entry)
         design = entry.after
@@ -96,6 +116,7 @@ class EditSession(
         undoStack.clear()
         redoStack.clear()
         openKey = null
+        checkpoint = null
     }
 
     companion object {

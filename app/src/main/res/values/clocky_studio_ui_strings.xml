@@ -150,11 +150,12 @@
     <string name="clocky_tap_calendar" tools:ignore="MissingTranslation">Calendar</string>
     <string name="clocky_tap_edit" tools:ignore="MissingTranslation">Edit this widget</string>
     <string name="clocky_tap_none" tools:ignore="MissingTranslation">Do nothing</string>
-    <string name="clocky_studio_canvas_hint" tools:ignore="MissingTranslation">Tap a part of the clock to select it. Drag to move it; it snaps to centers, padding edges and baselines. A second finger turns snapping off.</string>
-    <string name="clocky_studio_canvas_unavailable" tools:ignore="MissingTranslation">Position is not shown on this Android version, so dragging is off. Tap still selects; use the Position controls to type a value.</string>
+    <string name="clocky_studio_canvas_hint" tools:ignore="MissingTranslation">Tap text to select. Drag to move; a second finger turns snapping off. Spread or pinch two fingers to resize text. Text size can also be typed in its panel.</string>
+    <string name="clocky_studio_canvas_unavailable" tools:ignore="MissingTranslation">Position is not shown on this Android version, so dragging is off. Tap to select; pinch to resize text, or type its size in the panel.</string>
     <string name="clocky_studio_nudge_label" tools:ignore="MissingTranslation">%1$s: nudge by 1 dp</string>
     <string name="clocky_studio_nudge_left" tools:ignore="MissingTranslation">Move %1$s left by 1 dp</string>
     <string name="clocky_studio_nudge_right" tools:ignore="MissingTranslation">Move %1$s right by 1 dp</string>
     <string name="clocky_studio_nudge_up" tools:ignore="MissingTranslation">Move %1$s up by 1 dp</string>
     <string name="clocky_studio_nudge_down" tools:ignore="MissingTranslation">Move %1$s down by 1 dp</string>
+    <string name="clocky_studio_resize_preview" tools:ignore="MissingTranslation">Resize preview only (2×1–5×4). Drag or tap to choose cells.</string>
 </resources>

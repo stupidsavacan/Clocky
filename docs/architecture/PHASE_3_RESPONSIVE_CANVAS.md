@@ -764,6 +764,27 @@ Scope: selection, drag, snap, 1 dp nudge. Pinch and pseudo-resize (3B-2) are not
 - **moto g13:** [RESULTS](../measurements/phase3b1/RESULTS.md). Device bugs found and fixed: overlay sizing (twice) and a stale
   selection frame. Not verified: haptic, real two-finger cancel, TalkBack, landscape, other hosts.
 
+
+### 3.10 3B-2 implementation record (2026-10-09)
+
+Pinch and pseudo widget resizing are implemented on the existing production-applied preview. The second
+pointer still disables snap; a span change beyond touch slop switches unsnapped dragging to pinch, freezing
+offsets. Stable pointer IDs define the pair; either pinch pointer lifting ends the transaction. Drag/pinch
+share one undo key and captured edit scope. EditSession now supports an explicit canvas checkpoint so cancel
+restores the draft and previous undo/redo history without leaving a cancelled edit redoable.
+
+Studio's 48dp pseudo-resize handle changes only a runtime preview SizeContext. Tap/accessibility click offers
+a native 2x1..5x4 cell chooser; drag snaps to cells. Moto measured pairs are retained exactly and unmeasured
+cells extrapolated. Class follows the existing maxWidth/minHeight rule, including 4x4 Square; the scope label
+and text panel follow it. Class buttons exit simulation; recreation retains it. Numeric text size controls
+remain the accessible alternative to pinch. No provider/schema/resolver/storage overhaul or second renderer.
+
+[Implementation, automated results, measurement limits and pending device gates](../measurements/phase3b2/RESULTS.md).
+Issue54 synchronous scale/stale-child protection is covered through intermediate production PreviewHost renders.
+**Moto acceptance PENDING:** this PC's Broker v2 registry has no registered devices; no bootstrap, lease or
+phone access is claimed. True two-pointer pinch cannot be validated by single-pointer cdev drag. PR is for
+review only; no merge performed.
+
 ---
 
 ## 4. 3C — Library & Stacked
