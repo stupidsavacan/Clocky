@@ -26,6 +26,16 @@ interface DesignRepository {
     /** Saves [design] as a new entry (a fresh UUID). Throws [IllegalArgumentException] for a blank name. */
     fun create(name: String, design: DigitalDesign): SavedDesign
 
+    /**
+     * Saves an imported schema-2 `design` object as a new entry (a fresh UUID), storing it verbatim so unknown
+     * fields survive (Phase 3C-2). Throws [IllegalArgumentException] for a blank name or a document the codec
+     * cannot decode. Never touches an existing entry or a placed widget.
+     */
+    fun createFromDocument(name: String, design: JSONObject): SavedDesign
+
+    /** The stored schema-2 `design` object of [id] exactly as saved (unknown fields included), or null. */
+    fun rawDesign(id: String): JSONObject?
+
     fun get(id: String): SavedDesign?
 
     /** Valid entries, most recently updated first. Unreadable files are skipped, never deleted. */
@@ -55,19 +65,29 @@ class FileDesignRepository(
 
     constructor(context: Context) : this(File(context.filesDir, DIR_NAME))
 
-    override fun create(name: String, design: DigitalDesign): SavedDesign = synchronized(lock) {
+    override fun create(name: String, design: DigitalDesign): SavedDesign =
+        createFromDocument(name, DigitalDesignCodec.encode(design))
+
+    override fun createFromDocument(name: String, design: JSONObject): SavedDesign = synchronized(lock) {
+        val clean = cleanName(name)
+        // Decode first: a document the codec rejects must never reach disk.
+        DigitalDesignCodec.decode(design)
         val now = clock()
         val id = freshId()
         val root = JSONObject()
             .put("format", FORMAT)
             .put("id", id)
-            .put("name", cleanName(name))
+            .put("name", clean)
             .put("createdAt", now)
             .put("updatedAt", now)
             .put("favorite", false)
-            .put("design", DigitalDesignCodec.encode(design))
+            .put("design", JSONObject(design.toString()))
         write(id, root)
         checkNotNull(read(id)) { "Saved design could not be read back" }
+    }
+
+    override fun rawDesign(id: String): JSONObject? = synchronized(lock) {
+        if (read(id) == null) null else readRoot(id)?.optJSONObject("design")
     }
 
     override fun get(id: String): SavedDesign? = synchronized(lock) { read(id) }

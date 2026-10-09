@@ -14,6 +14,11 @@ import com.android.deskclock.R
 import com.google.android.material.chip.Chip
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.stupidsavacan.clocky.design.model.DigitalDesign
+import com.stupidsavacan.clocky.design.exchange.DesignExchange
+import com.stupidsavacan.clocky.design.exchange.ImportOutcome
+import com.stupidsavacan.clocky.design.exchange.TextCode
+import com.stupidsavacan.clocky.design.storage.DigitalDesignCodec
+import com.stupidsavacan.clocky.design.storage.FileDesignRepository
 import com.stupidsavacan.clocky.design.model.SizeClass
 import com.stupidsavacan.clocky.design.model.WidgetInstance
 import com.stupidsavacan.clocky.design.storage.SharedPreferencesDesignStore
@@ -31,7 +36,9 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
@@ -48,6 +55,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class CanvasStudioTest {
+    @get:Rule val exchangeFiles = TemporaryFolder()
     private val app = RuntimeEnvironment.getApplication()
     private val store = SharedPreferencesDesignStore(app)
     private val density get() = app.resources.displayMetrics.density
@@ -633,6 +641,52 @@ class CanvasStudioTest {
         val index = com.stupidsavacan.clocky.studio.canvas.PreviewCells.ALL.indexOf(cells)
         dialog.listView.performItemClick(dialog.listView.getChildAt(index), index, index.toLong())
         idle()
+    }
+
+    @Test fun classScopedPinchesRoundTripThroughFileAndTextExchangeWithoutChangingWidget() {
+        val id = widget()
+        val stored = store.load(id).design
+        val options = AppWidgetManager.getInstance(app).getAppWidgetOptions(id)
+        open(id).use { c ->
+            val a = c.get()
+            val before = a.design
+            a.findViewById<MaterialSwitch>(R.id.clocky_studio_scope).isChecked = true
+            for (cells in listOf(4 to 1, 4 to 4)) {
+                val grid = com.stupidsavacan.clocky.studio.canvas.PreviewCells(cells.first, cells.second)
+                chooseCells(a, grid)
+                val prior = a.design
+                val ratio = pinch(a)
+                assertEquals(DesignEdits.setSize(prior, TextTarget.TIME,
+                    DesignEdits.sizeOf(prior, TextTarget.TIME, EditScope(grid.sizeClass)) * ratio,
+                    EditScope(grid.sizeClass)), a.design)
+            }
+            assertEquals(before.time, a.design.time)
+            assertEquals(2, a.session().historySize)
+            val repository = FileDesignRepository(exchangeFiles.newFolder("designs"))
+            val saved = repository.create("Pinched classes", a.design)
+            val document = repository.rawDesign(saved.id)!!
+            val original = document.toString()
+            val code = DesignExchange.toTextCode(saved.name, document) as TextCode.Ready
+            val outcomes = listOf(
+                DesignExchange.parseFile(DesignExchange.toFileBytes(saved.name, document)),
+                DesignExchange.parseTextCode(code.code),
+            )
+            for (outcome in outcomes) {
+                val imported = outcome as ImportOutcome.Success
+                assertTrue(imported.unknownFonts.isEmpty())
+                assertEquals(a.design, DigitalDesignCodec.decode(imported.design))
+                val copy = repository.createFromDocument(imported.name!!, imported.design)
+                assertFalse(saved.id == copy.id)
+                assertEquals(a.design, copy.design)
+            }
+            assertEquals(original, repository.rawDesign(saved.id)!!.toString())
+            assertEquals(stored, store.load(id).design)
+            val afterOptions = AppWidgetManager.getInstance(app).getAppWidgetOptions(id)
+            assertEquals(options.keySet(), afterOptions.keySet())
+            options.keySet().forEach { assertEquals(options.get(it), afterOptions.get(it)) }
+            a.undo(); a.undo(); assertEquals(before, a.design)
+            assertEquals(saved.design, repository.get(saved.id)!!.design)
+        }
     }
 
     @Test fun accessiblePseudoResizeChangesClassAndScopeWithoutSavingOrUndo() {

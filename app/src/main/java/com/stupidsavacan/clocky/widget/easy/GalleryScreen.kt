@@ -53,6 +53,9 @@ class GalleryScreen(
     private val onSelect: (GalleryEntry) -> Unit,
     private val onAdd: () -> Unit,
     private val onCustomize: () -> Unit,
+    private val onImport: () -> Unit = {},
+    private val onExport: (key: String) -> Unit = {},
+    private val onShare: (key: String) -> Unit = {},
 ) {
     private val context = root.context
     private val density = context.resources.displayMetrics.density
@@ -66,6 +69,8 @@ class GalleryScreen(
     private val duplicateButton: Button = root.findViewById(R.id.clocky_gallery_duplicate)
     private val renameButton: Button = root.findViewById(R.id.clocky_gallery_rename)
     private val deleteButton: Button = root.findViewById(R.id.clocky_gallery_delete)
+    private val exportButton: Button = root.findViewById(R.id.clocky_gallery_export)
+    private val shareButton: Button = root.findViewById(R.id.clocky_gallery_share)
 
     private class Card(val entry: GalleryEntry, val container: View, val column: View, val ring: GradientDrawable)
 
@@ -84,6 +89,9 @@ class GalleryScreen(
         duplicateButton.setOnClickListener { duplicateSelected() }
         renameButton.setOnClickListener { renameSelected() }
         deleteButton.setOnClickListener { deleteSelected() }
+        root.findViewById<Button>(R.id.clocky_gallery_import).setOnClickListener { onImport() }
+        exportButton.setOnClickListener { selectedId?.let(onExport) }
+        shareButton.setOnClickListener { selectedId?.let(onShare) }
         root.findViewById<Button>(R.id.clocky_gallery_add).setOnClickListener { onAdd() }
         root.findViewById<Button>(R.id.clocky_gallery_customize).setOnClickListener { onCustomize() }
     }
@@ -91,6 +99,17 @@ class GalleryScreen(
     fun select(key: String?) {
         selectedId = key
         refreshSelection()
+    }
+
+    /** Shows a design that was just imported: switches to My Designs and selects it (the host runs [onSelect]). */
+    fun showImported(saved: SavedDesign) {
+        filter = FILTER_MINE
+        selectedId = saved.id
+        root.findViewById<ChipGroup>(R.id.clocky_gallery_moods).let { group ->
+            (0 until group.childCount).map { group.getChildAt(it) as Chip }.firstOrNull { it.tag == FILTER_MINE }?.isChecked = true
+        }
+        reload()
+        cards[saved.id]?.let { onSelect(it.entry) }
     }
 
     private fun buildMoodChips() {
@@ -264,6 +283,9 @@ class GalleryScreen(
         val entry = selectedCard?.entry
         actions.visibility = if (entry == null) View.GONE else View.VISIBLE
         favoriteButton.setText(if (entry?.favorite == true) R.string.clocky_gallery_unfavorite else R.string.clocky_gallery_favorite)
+        val any = if (entry != null) View.VISIBLE else View.GONE
+        exportButton.visibility = any
+        shareButton.visibility = any
         val own = if (entry?.saved != null) View.VISIBLE else View.GONE
         duplicateButton.visibility = own
         renameButton.visibility = own

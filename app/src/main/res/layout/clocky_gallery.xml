@@ -77,6 +77,43 @@
         </LinearLayout>
     </ScrollView>
 
+    <!-- Import is always available; export and share act on the selected card (built-in or saved). -->
+    <LinearLayout
+        android:id="@+id/clocky_gallery_exchange"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
+
+        <Button
+            android:id="@+id/clocky_gallery_import"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="@string/clocky_exchange_import" />
+
+        <Button
+            android:id="@+id/clocky_gallery_export"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="@string/clocky_exchange_export"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/clocky_gallery_share"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="@string/clocky_exchange_share"
+            android:visibility="gone" />
+    </LinearLayout>
+
     <!-- Manage the selected card: favorite for any card, the rest only for saved designs. -->
     <LinearLayout
         android:id="@+id/clocky_gallery_actions"
