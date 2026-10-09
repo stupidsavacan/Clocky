@@ -3,4 +3,6 @@
         <activity android:name="com.stupidsavacan.clocky.widget.digital.ResponsiveAuditActivity"
             android:exported="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" />
     </application>
+    <instrumentation android:name="com.stupidsavacan.clocky.debug.Phase3DeviceInstrumentation"
+        android:targetPackage="com.stupidsavacan.clocky" android:functionalTest="true" />
 </manifest>
