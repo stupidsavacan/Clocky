@@ -98,6 +98,7 @@ def cmd_logs(ctx, args):
 
 def _install_setup(p):
     p.add_argument("apk", nargs="?", default=C.DEFAULT_APK)
+    p.add_argument("--source-commit", help="exact commit that produced this APK (required under broker)")
 
 
 @command("install", _install_setup)
@@ -108,6 +109,9 @@ def cmd_install(ctx, args):
         raise usage("APK_NOT_FOUND", "APK not found: %s" % args.apk,
                     "Build it first (./gradlew :app:assembleDebug) or pass the APK path.")
     dev = ctx.device()
+    source_commit = getattr(args, "source_commit", None)
+    if getattr(ctx, "broker", None) and (not source_commit or not re.fullmatch(r"[0-9a-fA-F]{40}", source_commit)):
+        raise usage("SOURCE_COMMIT_REQUIRED", "Broker install requires --source-commit with the full tested source commit")
     h = hashlib.sha256()
     with open(apk, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
@@ -127,6 +131,15 @@ def cmd_install(ctx, args):
             "versionName": pkg.get("versionName"), "lastUpdateTime": pkg.get("lastUpdateTime"),
             "time": time.strftime("%Y-%m-%dT%H:%M:%S")}
     state["install"] = info
+    if source_commit:
+        info["source_commit"] = source_commit
+    if getattr(ctx, "broker", None):
+        from .verification import installed_apk
+        actual = installed_apk(dev.adb, ctx.broker.status(dev.identity).get("installed"))
+        if actual["sha256"] != info["sha256"]:
+            raise adb_err("INSTALLED_APK_MISMATCH", "Installed APK differs from the supplied APK; recovery required")
+        actual["source_commit"] = source_commit
+        ctx.broker.update(dev.identity, ctx.env["CLOCKY_LEASE_SESSION"], ctx.env["CLOCKY_LEASE_TOKEN"], installed=actual)
     from .session import save_state
     save_state(ctx.build_dir, state)
     return Out(info, ["installed %s" % info["apk"], "sha256 %s" % info["sha256"],
@@ -240,6 +253,8 @@ def cmd_adb(ctx, args):
     if tail is None:
         raise usage("NO_DASHDASH", "usage: cdev adb -- <adb args...>", "Example: cdev adb -- shell getprop ro.build.version.sdk")
     check_raw(tail)
+    if getattr(ctx, "broker", None) and tail and tail[0] == "install":
+        raise refused("BROKER_INSTALL", "Use cdev install --source-commit so installed provenance is recorded")
     dev = ctx.device()
     r = dev.adb.run(tail, timeout=120)
     lines = [l for l in (r.text + r.err_text).splitlines()]

@@ -67,7 +67,7 @@ class Ctx:
         self.adb_calls.append({"args": list(args)[:6], "rc": res.rc})
 
     def raw_adb(self):
-        return Adb(self.adb_exe(), None, self._log_adb)
+        return Adb(self.adb_exe(), None, self._log_adb, managed=bool(getattr(self, "broker", None)))
 
     def device(self):
         """Select the device per policy; returns a Device bundle (cached)."""
@@ -136,7 +136,9 @@ def main(argv=None, env=None):
     ctx = Ctx(args, env)
     handler = COMMANDS[args.command][1]
     try:
-        out = handler(ctx, args)
+        from .broker import command_access
+        with command_access(ctx):
+            out = handler(ctx, args)
         code = C.EXIT_OK
     except CdevError as e:
         _finish_log(ctx, False, e.message)

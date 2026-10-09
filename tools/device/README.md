@@ -11,7 +11,149 @@ Use `python` (not `python3`, which is a Microsoft Store stub on this machine). W
 Output goes to `build/device/` (git-ignored). Nothing is ever written to `/sdcard`; device temp files are
 `/data/local/tmp/clocky-dev-*` and are deleted right after use.
 
+## Device Broker v2 — shared Windows worktrees
+
+Read [DEVICE_BROKER_V2.md](../../docs/architecture/DEVICE_BROKER_V2.md) for architecture,
+recovery, limitations and the Issue #51 migration procedure. **Until this implementation
+is merged and every participating checkout is updated, agents must not assume the
+broker is available.** This PR's host tests do not operate the moto or perform migration.
+
+After migration, normal device work uses `lease run` or a supervised `lease hold`.
+Code editing/build/unit tests do not acquire the phone. A/B can work concurrently;
+only request immediately before one finite device unit, then return promptly. Later
+units requeue. Waiting reads the local persistent FIFO; GitHub comments/replies and
+Owner approval are not involved in normal clean handoff.
+
+The shared default is `%LOCALAPPDATA%\Clocky\device-broker\` for the same Windows
+account. `CLOCKY_BROKER_ROOT` is an optional **shared local** override; all agents
+must agree on it. Never use separate roots to bypass another holder. Once enabled,
+every device-touching cdev command requires a registered serial and valid lease
+identity/session/token; even screenshot/status/log reads are refused without them.
+`lease status` and local `compare` require no device access. Before enablement, the
+unconfigured v1 behavior/test suite remains available.
+
+One-time migration (operator action **after merge**, not performed in this task):
+
+```powershell
+$deviceId = '<physical-ro.serialno>'
+$usbSerial = '<known-USB-adb-serial>'
+# Offline registration creates DIRTY / RECOVERY_REQUIRED, never FREE.
+python tools/device/cdev.py lease register --identity $deviceId --transport $usbSerial
+python tools/device/cdev.py lease status --identity $deviceId --json
+# Only after stopping old clients, reconciling Owner/legacy sessions, and placing
+# all existing Clocky widgets on the visible launcher page:
+python tools/device/cdev.py lease recover --identity $deviceId --serial $usbSerial --agent operator --acknowledge-quiescent --reason 'Owner reconciled legacy sessions; bootstrap baseline' -- python tools/device/examples/broker_smoke.py
+```
+
+The shared ADB server must already be running with the selected ADB client protocol.
+Broker-managed commands do not start/restart it. Missing server, protocol mismatch,
+custom server endpoints, unreadable installed APK/settings or incomplete evidence
+stop verification. Do not fix these failures by resetting the phone/server.
+
+Independent agent A, from its own updated worktree:
+
+```powershell
+python tools/device/cdev.py lease run --identity $deviceId --serial $usbSerial --agent agent-A --duration 180 --wait-timeout 900 --credential-file build/device/agent-A-unit1.json -- python tools/device/examples/broker_smoke.py
+```
+
+Independent agent B, from its own updated worktree, can issue this concurrently:
+
+```powershell
+python tools/device/cdev.py lease run --identity $deviceId --serial $usbSerial --agent agent-B --duration 180 --wait-timeout 900 --credential-file build/device/agent-B-unit1.json -- python tools/device/examples/broker_smoke.py
+```
+
+The first request owns the phone; the other waits. A clean return automatically
+allows the FIFO head to acquire on its next local poll. A completed failed test can
+still return clean if restoration verifies; test failure remains recorded. Exceptions,
+incomplete evidence or failed restoration leave DIRTY, blocking subsequent acquisition.
+No timeout or process disappearance grants another ordinary owner.
+
+For multiple interactive commands, keep a finite supervisor in terminal 1:
+
+```powershell
+python tools/device/cdev.py lease hold --identity $deviceId --serial $usbSerial --agent agent-A --duration 300 --credential-file build/device/agent-A-unit2.json
+```
+
+Wait for terminal 1's `Lease ACTIVE` message. In terminal 2 of the same worktree:
+
+```powershell
+$leaseCred = Get-Content build/device/agent-A-unit2.json -Raw | ConvertFrom-Json
+$env:CLOCKY_BROKER_ROOT = $leaseCred.root
+$env:CLOCKY_SERIAL = $leaseCred.serial
+$env:CLOCKY_DEVICE_IDENTITY = $leaseCred.identity
+$env:CLOCKY_LEASE_SESSION = $leaseCred.session
+$env:CLOCKY_LEASE_TOKEN = $leaseCred.token
+python tools/device/cdev.py status
+python tools/device/cdev.py widget --locate
+# Optional in-place install only with verified build provenance (full source SHA):
+# python tools/device/cdev.py install path/to/tested.apk --source-commit <40-character-source-commit>
+# Optional finite GUI/recording; close GUI to let other cdev commands proceed:
+# python tools/device/cdev.py project --duration 60 --record build/device/unit2.mkv
+python tools/device/cdev.py lease release --identity $deviceId --credential-file build/device/agent-A-unit2.json
+```
+
+`release` asks the hold supervisor to restore/compare/finish; it does not directly
+grant FREE. Wait for its clean result. Repeated release is refused. `cdev finish`
+alone does not return a broker lease. Use a **new credential filename/session for
+each unit**; used/cancelled credentials are retired. Tokens are local bearer secrets:
+do not attach credential files, registry contents or raw evidence to issues/PRs.
+The token expires on return even if terminal 2 retains its environment variables.
+
+Detached request/cancellation/resume (no ADB while waiting):
+
+```powershell
+python tools/device/cdev.py lease request --identity $deviceId --serial $usbSerial --agent agent-B --credential-file build/device/agent-B-unit2.json
+python tools/device/cdev.py lease status --identity $deviceId
+# Either cancel before acquisition:
+# python tools/device/cdev.py lease cancel --identity $deviceId --credential-file build/device/agent-B-unit2.json
+# Or start the waiting supervisor for that exact request:
+python tools/device/cdev.py lease run --identity $deviceId --serial $usbSerial --agent agent-B --request-file build/device/agent-B-unit2.json -- python tools/device/examples/broker_smoke.py
+```
+
+Broker evidence and cdev pending settings are shared under the registry's
+`devices/<identity-hash>/leases/<session>/`; another worktree with the same credentials
+sees the same session. `handoff.json`, test stdout/stderr, screenshots and raw data
+stay local. Continue attaching **only collect's `summary.md`**, whose broker session
+ID contains no physical serial. Inventory explicitly reports installed source UNKNOWN
+unless recorded provenance matches the actual installed bytes.
+
+Widget-changing tests need `--restore-script path/to/restore_unit.py`. This finite
+Python script inherits cleanup credentials and `CLOCKY_BASELINE_DIR`; use cdev to
+restore original widget configuration/placement, then leave the original launcher
+page visible. cdev restore itself restores rotation/stay-awake, **not app widget
+settings**. No restore script is needed for the provided preservation-only smoke
+script. The broker independently compares original/restored settings, widget IDs,
+geometry and display state, runs finish and checks no PENDING RESTORE before release.
+It cannot automatically restore arbitrary widget edits or certify pixel equality.
+
+Keep the current installed APK when a safe baseline return is unavailable; never
+downgrade automatically. The handoff records the remaining SHA/source commit and
+widget/settings preservation result. Do not delete existing widgets, uninstall,
+pm clear, force-stop, restart the ADB server, rewrite launcher data or reset settings.
+
+On DIRTY, ordinary commands stop. After reviewing preserved evidence and stopping
+all old/external clients, an explicit operator recovery runs a finite repair command
+against the **original** saved baseline, with the same final restoration checks:
+
+```powershell
+python tools/device/cdev.py lease recover --identity $deviceId --serial $usbSerial --agent operator --acknowledge-quiescent --reason 'Reviewed failed handoff; restore original baseline' --restore-script path/to/restore_unit.py -- python path/to/recovery_check.py
+```
+
+Recovery cannot steal a live owner. Failed recovery stays DIRTY. If the original
+baseline was never captured, a reviewed original `--baseline <bundle>` is required;
+it cannot replace an existing baseline. Preserve corrupt/missing enabled registry
+files for diagnosis; deleting lock/state files is not a handoff/recovery mechanism.
+
+This is cooperative enforcement. Same-user external programs, older cdev checkouts,
+edited registry/root paths and direct ADB/scrcpy are not blocked by OS permissions.
+Only use cdev and its managed projection/recording route. All participating agents
+must adopt it; no claim of mandatory OS-wide access denial is made.
+
 ## Basic flow
+
+The following v1 command recipes run inside a broker lease after migration. Examples
+that add/remove widgets are historical v1 recipes; they do **not** authorize deleting
+existing widgets or expanding the current moto/Phase 5+ scope.
 
 ```
 cdev prepare            # wake, pin device, create session + log mark

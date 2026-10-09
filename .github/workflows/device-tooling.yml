@@ -1,0 +1,33 @@
+name: Device tooling host tests
+
+on:
+  pull_request:
+    paths:
+      - 'tools/device/**'
+      - 'docs/architecture/DEVICE_BROKER_V2.md'
+      - '.github/workflows/device-tooling.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/device/**'
+      - 'docs/architecture/DEVICE_BROKER_V2.md'
+      - '.github/workflows/device-tooling.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-tests:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Offline regression and multiprocess broker tests (no ADB or phone)
+        run: python -m unittest discover -s tools/device/tests -t tools/device
