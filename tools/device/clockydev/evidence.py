@@ -59,6 +59,8 @@ def build_summary_md(meta, widget_state, log_lines, files, log_gaps=None):
     rec = meta["clocky"].get("install_record") or {}
     if rec.get("sha256"):
         out.append("- installed APK sha256: `%s`" % rec["sha256"])
+        if "source_commit" in rec:
+            out.append("- installed APK source commit: `%s`" % (rec["source_commit"] or "UNKNOWN"))
     out.append("- repo: `%s`%s on branch `%s`" % ((g.get("head") or "?")[:10], " (dirty)" if g.get("dirty") else "",
                                                  g.get("branch")))
     out.append("- launcher: %s" % ((meta.get("launcher") or {}).get("package") or "?"))

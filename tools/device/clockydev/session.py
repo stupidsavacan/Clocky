@@ -67,6 +67,20 @@ class Device:
 
 def select_for_ctx(ctx):
     raw = ctx.raw_adb()
+    if getattr(ctx, "broker", None):
+        # Do not discover/probe other devices. The registered alias was authorized
+        # before ADB; now verify physical identity before any further operation.
+        serial = ctx.flag_serial or ctx.env.get("CLOCKY_SERIAL") or ctx.env.get("ANDROID_SERIAL")
+        actual = raw.bind(serial).shell("getprop ro.serialno", timeout=10, check=True).text.strip()
+        if actual != ctx.broker_identity:
+            raise device_err("BROKER_IDENTITY_MISMATCH", "Registered transport is connected to a different physical device")
+        cand = {"serial": serial, "identity": actual, "transport": "usb", "model": None}
+        from .devices import classify_transport
+        cand["transport"] = classify_transport(serial)
+        dev = Device(cand, raw.bind(serial), [], "broker")
+        ctx.all_candidates = [cand]
+        ctx.pinned_mismatch = False
+        return dev
     res = raw.run(["devices", "-l"], timeout=20)
     if res.rc != 0:
         raise adb_err("ADB_DEVICES_FAILED", "adb devices failed: " + res.err_text.strip()[:200],
@@ -166,7 +180,7 @@ def ns_key(item):
 
 def get_setting(adb, item):
     ns, key = ns_key(item)
-    r = adb.shell("settings get %s %s" % (ns, key), timeout=10)
+    r = adb.shell("settings get %s %s" % (ns, key), timeout=10, check=True)
     v = r.text.strip()
     return None if (r.rc != 0 or v in ("", "null")) else v
 
@@ -205,10 +219,10 @@ def put_setting(adb, item, value):
         raise refused("SETTING_NOT_ALLOWED", "refusing to touch setting %s" % item)
     ns, key = ns_key(item)
     if value is None:
-        return adb.shell("settings delete %s %s" % (ns, key), timeout=10)
+        return adb.shell("settings delete %s %s" % (ns, key), timeout=10, check=True)
     if not re.fullmatch(r"-?\d+", str(value)):
         raise refused("SETTING_VALUE", "refusing non-numeric value for %s" % item)
-    return adb.shell("settings put %s %s %s" % (ns, key, value), timeout=10)
+    return adb.shell("settings put %s %s %s" % (ns, key, value), timeout=10, check=True)
 
 
 def restore_all(adb, st):

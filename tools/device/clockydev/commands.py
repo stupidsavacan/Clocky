@@ -16,6 +16,10 @@ def _sessions_warning(ctx):
 @command("devices")
 def cmd_devices(ctx, args):
     """List connected devices and which one would be selected."""
+    if getattr(ctx, "broker", None):
+        dev = ctx.device()
+        return Out({"selected": dev.serial, "devices": [dev.summary()]},
+                   ["selected: %s (broker; other devices not probed)" % dev.serial])
     raw = ctx.raw_adb()
     res = raw.run(["devices", "-l"], timeout=20)
     cands = parse_devices(res.text)
@@ -54,3 +58,4 @@ from . import cmd_ui  # noqa: E402,F401
 from . import cmd_widget  # noqa: E402,F401
 from . import cmd_misc  # noqa: E402,F401
 from . import cmd_collect  # noqa: E402,F401
+from . import cmd_lease  # noqa: E402,F401

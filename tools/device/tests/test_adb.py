@@ -25,7 +25,8 @@ class Deny(unittest.TestCase):
                      ("shell", "settings delete global y"), ("shell", "rm -rf /sdcard/x"),
                      ("shell", "rm /data/local/tmp/other.xml"), ("shell", "rm /data/local/tmp/clocky-dev-../x"),
                      ("shell", "rm"), ("emu", "kill"), ("install", "-d", "a.apk"), ("shell", "reboot"),
-                     ("-s", "abc", "uninstall", "x")]:
+                     ("-s", "abc", "uninstall", "x"), ("kill-server",), ("start-server",),
+                     ("shell", "am force-stop com.x"), ("-s", "other", "shell", "getprop")]:
             self.assertTrue(self.denied(*args), args)
 
     def test_negative(self):

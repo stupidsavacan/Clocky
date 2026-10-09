@@ -75,13 +75,51 @@ class Result:
 class Adb:
     """Thin adb wrapper bound to one serial (or none, for `devices`)."""
 
-    def __init__(self, exe, serial=None, logger=None):
+    def __init__(self, exe, serial=None, logger=None, managed=False):
         self.exe = exe
         self.serial = serial
         self.logger = logger  # callable(args, result) or None
+        self.managed = managed
+        self._client_version = None
+
+    def check_server(self):
+        """Only query host:version; never start/restart a daemon or select a phone."""
+        import socket
+        if any(os.environ.get(k) for k in ("ADB_SERVER_SOCKET", "ANDROID_ADB_SERVER_PORT", "ADB_SERVER_PORT")):
+            raise refused("ADB_SERVER_OVERRIDE", "Broker uses the existing local ADB server on port 5037; remove server overrides")
+        if self._client_version is None:
+            from .managed_process import run
+            p = run([self.exe, "version"], timeout=10)
+            m = re.search(rb"Android Debug Bridge version 1\.0\.(\d+)", p.stdout)
+            if p.returncode or not m:
+                raise refused("ADB_VERSION_UNKNOWN", "Cannot establish ADB client protocol version without touching the device")
+            self._client_version = int(m.group(1))
+        try:
+            with socket.create_connection(("127.0.0.1", 5037), timeout=1) as sock:
+                sock.settimeout(1)
+                def read(n):
+                    data = b""
+                    while len(data) < n:
+                        chunk = sock.recv(n - len(data))
+                        if not chunk:
+                            raise ValueError("short ADB server response")
+                        data += chunk
+                    return data
+                query = b"host:version"
+                sock.sendall(("%04x" % len(query)).encode("ascii") + query)
+                if read(4) != b"OKAY":
+                    raise ValueError("ADB server rejected host:version")
+                length = int(read(4), 16)
+                if length > 16:
+                    raise ValueError("invalid ADB protocol response length")
+                server = int(read(length), 16)
+        except (OSError, ValueError) as e:
+            raise refused("ADB_SERVER_NOT_RUNNING", "Existing shared ADB server unavailable: %s; broker never starts/restarts it" % e)
+        if server != self._client_version:
+            raise refused("ADB_SERVER_VERSION_MISMATCH", "Client/server version mismatch; refusing implicit ADB server restart")
 
     def bind(self, serial):
-        return Adb(self.exe, serial, self.logger)
+        return Adb(self.exe, serial, self.logger, self.managed)
 
     def _argv(self, args):
         argv = [self.exe]
@@ -92,7 +130,12 @@ class Adb:
     def run(self, args, timeout=30, check=False):
         argv = self._argv(args)
         try:
-            p = subprocess.run(argv, capture_output=True, timeout=timeout)
+            if self.managed:
+                self.check_server()
+                from .managed_process import run
+                p = run(argv, timeout=timeout)
+            else:
+                p = subprocess.run(argv, capture_output=True, timeout=timeout)
             res = Result(p.returncode, p.stdout, p.stderr)
         except subprocess.TimeoutExpired:
             raise adb_err("ADB_TIMEOUT", "adb timed out after %ss: %s" % (timeout, " ".join(args)),
@@ -120,7 +163,7 @@ class Adb:
 
 _PM_DESTRUCTIVE = {"clear", "uninstall", "disable", "disable-user", "hide", "suspend"}
 _TOP_DENY = {"uninstall", "reboot", "root", "unroot", "remount", "disable-verity", "enable-verity",
-             "sideload", "reboot-bootloader"}
+             "sideload", "reboot-bootloader", "kill-server", "start-server"}
 _MSYS_RE = re.compile(r"[A-Za-z]:[/\\][^\"']*?[/\\]Git[/\\]\S*", re.I)
 
 
@@ -137,10 +180,8 @@ def _tokens(args):
 def raw_denied(args):
     """Return a reason string if the raw adb args hit the denylist, else None."""
     toks = _tokens(args)
-    i = 0
-    while i < len(toks) and toks[i] in ("-s", "-d", "-e", "-t", "-H", "-P"):
-        i += 2 if toks[i] in ("-s", "-t", "-H", "-P") else 1
-    toks = toks[i:]
+    if toks and toks[0] in ("-s", "-d", "-e", "-t", "-H", "-P", "--one-device"):
+        return "raw adb may not override the selected device/server transport"
     if not toks:
         return None
     head = toks[0]
@@ -155,6 +196,8 @@ def raw_denied(args):
     if head == "shell":
         body = toks[1:]
         low = [t.lower() for t in body]
+        if "force-stop" in low:
+            return "am force-stop is not allowed (invalidates alarms/widgets)"
         for idx, t in enumerate(low):
             rest = low[idx + 1:]
             if t in ("pm", "cmd") and rest:

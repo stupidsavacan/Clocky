@@ -83,6 +83,7 @@ def cmd_prepare(ctx, args):
         item = "global/stay_on_while_plugged_in"
         cur = get_setting(adb, item)
         record_original(state, dev.identity, item, cur)
+        save_state(ctx.build_dir, state)  # persist recovery intent BEFORE changing the device
         put_setting(adb, item, 3)
         notes.append("stay_on_while_plugged_in %s -> 3 (pending restore)" % cur)
     if args.home:
@@ -91,6 +92,9 @@ def cmd_prepare(ctx, args):
         notes.append("pressed HOME")
     epoch = device_epoch(adb)
     sid = new_session_id(dev.identity)
+    if getattr(ctx, "broker", None):
+        import uuid
+        sid = "s-" + uuid.uuid4().hex  # PR-safe summary session must not expose device identity
     state["pinned"] = {"identity": dev.identity, "transport": dev.transport, "serial": dev.serial}
     state["session"] = {"id": sid, "step": 0, "started": time.strftime("%Y-%m-%dT%H:%M:%S")}
     state["marks"] = {"prepare": epoch}
